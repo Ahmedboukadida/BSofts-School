@@ -1,0 +1,58 @@
+import { Type, Transform } from 'class-transformer';
+import { IsOptional, IsString, IsInt, IsIn, IsBoolean, Min } from 'class-validator';
+
+export class PaginatedDto<T> {
+  data: T[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+
+  constructor(data: T[], total: number, page: number, limit: number) {
+    this.data = data;
+    this.meta = {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+}
+
+export class PaginationQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number = 10;
+
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['asc', 'desc'])
+  sortOrder?: 'asc' | 'desc' = 'asc';
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  includeDeleted?: boolean;
+
+  @IsOptional()
+  @IsString()
+  establishmentId?: string;
+}

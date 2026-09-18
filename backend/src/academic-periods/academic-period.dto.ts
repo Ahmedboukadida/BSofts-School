@@ -1,0 +1,70 @@
+import { IsString, IsOptional, IsBoolean, IsDateString, IsEnum, IsNumber, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { PaginationQueryDto } from '../common/dto/pagination.dto';
+
+export class CreateAcademicPeriodDto {
+  @ApiProperty()
+  @IsString()
+  academicYearId: string;
+
+  @ApiProperty()
+  @IsString()
+  @MinLength(2)
+  name: string;
+
+  @ApiProperty({ enum: ['TRIMESTER', 'SEMESTER'] })
+  @IsEnum(['TRIMESTER', 'SEMESTER'])
+  type: string;
+
+  @ApiProperty()
+  @IsDateString()
+  startDate: string;
+
+  @ApiProperty()
+  @IsDateString()
+  endDate: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  isCurrent?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
+export class UpdateAcademicPeriodDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  endDate?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  isCurrent?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
+export class QueryAcademicPeriodDto extends PaginationQueryDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  academicYearId?: string;
+}
