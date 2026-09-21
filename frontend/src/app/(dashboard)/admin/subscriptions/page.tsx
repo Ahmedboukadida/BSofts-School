@@ -18,6 +18,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/auth-store';
 import type { SubscriptionItem } from '@/types';
 
@@ -56,11 +57,46 @@ export default function SaaSAdminSubscriptionsPage() {
     try {
       const res = await api.get('/tenant-subscriptions', {
         params: { includeDeleted: isTrashMode },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
-      setSubscriptions(Array.isArray(rawData) ? rawData : []);
-    } catch {
+      if (Array.isArray(rawData)) {
+        const formatted: SubscriptionItem[] = rawData.map((s: any) => {
+          const tenantName =
+            s.tenantName ||
+            (s.tenant?.user
+              ? `${s.tenant.user.firstName || ''} ${s.tenant.user.lastName || ''}`.trim()
+              : 'Établissement Scolaire');
+          const planName = s.planName || s.plan?.name || 'Pack Standard';
+          const price = Number(s.price ?? s.plan?.price ?? 650);
+          const currency = s.currency || s.plan?.currency || 'TND';
+          const subNum = s.subscriptionNumber || `SUB-${s.id.slice(0, 8).toUpperCase()}`;
+          const startStr = s.startDate ? new Date(s.startDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+          const endStr = s.endDate ? new Date(s.endDate).toISOString().split('T')[0] : '';
+          let daysRemaining = 0;
+          if (endStr) {
+            const diff = new Date(endStr).getTime() - new Date().getTime();
+            daysRemaining = Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+          }
+          return {
+            ...s,
+            tenantName,
+            planName,
+            price,
+            currency,
+            subscriptionNumber: subNum,
+            startDate: startStr,
+            endDate: endStr,
+            daysRemaining,
+            status: s.status || 'ACTIVE',
+          };
+        });
+        setSubscriptions(formatted);
+      } else {
+        setSubscriptions([]);
+      }
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors du chargement des souscriptions');
       setSubscriptions([]);
     } finally {
       setIsLoading(false);
@@ -79,22 +115,11 @@ export default function SaaSAdminSubscriptionsPage() {
     try {
       await api.post(`/tenant-subscriptions/${item.id}/approve`, {
         approvedBy: actor,
-      }).catch(() => {});
-
-      setSubscriptions((prev) =>
-        prev.map((s) =>
-          s.id === item.id
-            ? {
-                ...s,
-                status: 'ACTIVE',
-                approvedBy: actor,
-                approvedAt: new Date().toISOString(),
-              }
-            : s
-        )
-      );
-    } catch {
-      // Fallback update
+      });
+      showToast.success(`Souscription ${item.subscriptionNumber} approuvée avec succès`);
+      fetchSubscriptions();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’approbation de la souscription');
     }
   };
 
@@ -110,7 +135,7 @@ export default function SaaSAdminSubscriptionsPage() {
     if (!renewItem) return;
     setIsRenewing(true);
     try {
-      const currentEnd = new Date(renewItem.endDate);
+      const currentEnd = new Date(renewItem.endDate || new Date());
       currentEnd.setMonth(currentEnd.getMonth() + renewMonths);
       const newEndDate = currentEnd.toISOString().split('T')[0];
 
@@ -118,22 +143,13 @@ export default function SaaSAdminSubscriptionsPage() {
         months: renewMonths,
         price: renewPrice,
         newEndDate,
-      }).catch(() => {});
+      });
 
-      setSubscriptions((prev) =>
-        prev.map((s) =>
-          s.id === renewItem.id
-            ? {
-                ...s,
-                status: 'ACTIVE',
-                endDate: newEndDate,
-                daysRemaining: s.daysRemaining + renewMonths * 30,
-                price: renewPrice,
-              }
-            : s
-        )
-      );
+      showToast.success(`Abonnement prolongé de ${renewMonths} mois`);
       setRenewItem(null);
+      fetchSubscriptions();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors du renouvellement de l’abonnement');
     } finally {
       setIsRenewing(false);
     }
@@ -189,25 +205,49 @@ export default function SaaSAdminSubscriptionsPage() {
       };
 
       if (editingItem) {
-        await api.put(`/tenant-subscriptions/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/tenant-subscriptions/${editingItem.id}`, payload);
+        showToast.success('Souscription modifiée avec succès');
       } else {
-        await api.post('/tenant-subscriptions', payload).catch(() => {});
+        await api.post('/tenant-subscriptions', payload);
+        showToast.success('Souscription enregistrée avec succès');
       }
       setIsFormModalOpen(false);
       fetchSubscriptions();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement de la souscription');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: SubscriptionItem) => {
-    await api.delete(`/tenant-subscriptions/${item.id}`).catch(() => {});
-    setSubscriptions((prev) => prev.filter((s) => s.id !== item.id));
+    try {
+      await api.delete(`/tenant-subscriptions/${item.id}`);
+      showToast.success('Souscription résiliée et déplacée dans la corbeille');
+      fetchSubscriptions();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la résiliation');
+    }
   };
 
   const handlePermanentDelete = async (item: SubscriptionItem) => {
-    await api.delete(`/tenant-subscriptions/${item.id}?permanent=true`).catch(() => {});
-    setSubscriptions((prev) => prev.filter((s) => s.id !== item.id));
+    try {
+      await api.delete(`/tenant-subscriptions/${item.id}?permanent=true`);
+      showToast.success('Souscription supprimée définitivement');
+      fetchSubscriptions();
+    } catch (err) {
+      showApiErrorToast(err, 'Impossible de supprimer définitivement cette souscription');
+    }
+  };
+
+  const handleRestore = async (item: SubscriptionItem) => {
+    try {
+      await api.post(`/tenant-subscriptions/${item.id}/restore`);
+      showToast.success('Souscription réactivée avec succès');
+      fetchSubscriptions();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la réactivation');
+    }
   };
 
   const getStatusBadge = (status: SubscriptionItem['status']) => {
@@ -248,7 +288,7 @@ export default function SaaSAdminSubscriptionsPage() {
           </div>
           <div>
             <span className="font-bold text-text-primary block">{row.tenantName}</span>
-            <span className="text-[11px] font-mono text-brand font-semibold">
+            <span className="text-[11px] font-mono text-[#CCA43B] font-semibold">
               {row.subscriptionNumber}
             </span>
           </div>
@@ -304,7 +344,7 @@ export default function SaaSAdminSubscriptionsPage() {
             <Button
               size="sm"
               onClick={() => handleOpenRenew(row)}
-              className="h-7 text-xs bg-brand hover:bg-brand-hover text-white shadow-xs"
+              className="h-7 text-xs bg-[#CCA43B] hover:bg-[#b59132] text-[#242F40] shadow-xs font-semibold"
             >
               <RefreshCw className="w-3.5 h-3.5 mr-1" />
               Renouveler
@@ -323,10 +363,10 @@ export default function SaaSAdminSubscriptionsPage() {
           <div className="p-4 rounded-xl bg-surface border border-border">
             <span className="text-xs text-text-tertiary block mb-1">Établissement Titulaire</span>
             <p className="text-base font-bold text-text-primary flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-brand" /> {item.tenantName}
+              <Building2 className="w-4 h-4 text-[#CCA43B]" /> {item.tenantName}
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs font-mono font-bold px-2 py-0.5 bg-brand/10 text-brand rounded">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 bg-[#CCA43B]/10 text-[#CCA43B] rounded">
                 Réf: {item.subscriptionNumber}
               </span>
               {getStatusBadge(item.status)}
@@ -395,7 +435,7 @@ export default function SaaSAdminSubscriptionsPage() {
           </div>
         </div>
 
-        <h3 className="font-bold text-base text-text-primary group-hover:text-brand transition-colors line-clamp-1 mb-1">
+        <h3 className="font-bold text-base text-text-primary group-hover:text-[#CCA43B] transition-colors line-clamp-1 mb-1">
           {item.tenantName}
         </h3>
 
@@ -432,7 +472,7 @@ export default function SaaSAdminSubscriptionsPage() {
             </Button>
           )}
           {(item.status === 'EXPIRING_SOON' || item.status === 'EXPIRED') && (
-            <Button size="sm" onClick={() => handleOpenRenew(item)} className="h-7 text-xs bg-brand text-white">
+            <Button size="sm" onClick={() => handleOpenRenew(item)} className="h-7 text-xs bg-[#CCA43B] hover:bg-[#b59132] text-[#242F40] font-semibold">
               Renouveler
             </Button>
           )}
@@ -457,7 +497,7 @@ export default function SaaSAdminSubscriptionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-brand/10 text-brand">
+            <div className="p-2.5 rounded-xl bg-[#CCA43B]/10 text-[#CCA43B]">
               <TrendingUp className="w-6 h-6" />
             </div>
             <div>
@@ -490,7 +530,7 @@ export default function SaaSAdminSubscriptionsPage() {
             onClick={() => setTabFilter(tab.key as typeof tabFilter)}
             className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
               tabFilter === tab.key
-                ? 'bg-brand text-white shadow-xs'
+                ? 'bg-[#CCA43B] text-[#242F40] shadow-xs'
                 : 'bg-surface hover:bg-surface-hover text-text-secondary border border-border-subtle'
             }`}
           >
@@ -514,6 +554,7 @@ export default function SaaSAdminSubscriptionsPage() {
           onEdit: handleOpenEdit,
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
+          onRestore: handleRestore,
         }}
         showTrashToggle={true}
         isTrashActive={isTrashMode}
@@ -532,7 +573,7 @@ export default function SaaSAdminSubscriptionsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border pb-2">
-                <Building2 className="w-4 h-4 text-brand" />
+                <Building2 className="w-4 h-4 text-[#CCA43B]" />
                 Établissement & Formule
               </h3>
 
@@ -565,7 +606,7 @@ export default function SaaSAdminSubscriptionsPage() {
                       });
                     }}
                     aria-label="Formule souscrite"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                     required
                   >
                     <option value="Formule Découverte">Formule Découverte (0 TND)</option>
@@ -601,7 +642,7 @@ export default function SaaSAdminSubscriptionsPage() {
                     value={formData.durationMonths}
                     onChange={(e) => setFormData({ ...formData, durationMonths: Number(e.target.value) })}
                     aria-label="Durée d’engagement"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                   >
                     <option value={1}>1 Mois (Test)</option>
                     <option value={3}>3 Mois (Trimestre)</option>
@@ -614,7 +655,7 @@ export default function SaaSAdminSubscriptionsPage() {
 
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border pb-2">
-                <Sparkles className="w-4 h-4 text-brand" />
+                <Sparkles className="w-4 h-4 text-[#CCA43B]" />
                 Validation & Contacts
               </h3>
 
@@ -642,7 +683,7 @@ export default function SaaSAdminSubscriptionsPage() {
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value as SubscriptionItem['status'] })}
                   aria-label="Statut initial"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                 >
                   <option value="REQUESTED">Demande en Attente d’Approbation</option>
                   <option value="ACTIVE">Souscription Active Immédiate</option>
@@ -658,7 +699,7 @@ export default function SaaSAdminSubscriptionsPage() {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   placeholder="Précisez le mode de paiement (Chèque, Virement) ou conditions particulières..."
                   rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand resize-none"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B] resize-none"
                 />
               </div>
             </div>
@@ -689,7 +730,7 @@ export default function SaaSAdminSubscriptionsPage() {
       >
         {renewItem && (
           <div className="space-y-6">
-            <div className="p-4 rounded-xl bg-brand/5 border border-brand/20 flex items-center justify-between">
+            <div className="p-4 rounded-xl bg-[#CCA43B]/10 border border-[#CCA43B]/30 flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-sm text-text-primary">
                   Abonnement actuel : {renewItem.planName}
@@ -698,7 +739,7 @@ export default function SaaSAdminSubscriptionsPage() {
                   Échéance courante au {renewItem.endDate} ({renewItem.daysRemaining} jours restants)
                 </p>
               </div>
-              <span className="text-base font-extrabold text-brand">
+              <span className="text-base font-extrabold text-[#CCA43B]">
                 {renewItem.subscriptionNumber}
               </span>
             </div>
@@ -712,7 +753,7 @@ export default function SaaSAdminSubscriptionsPage() {
                   value={renewMonths}
                   onChange={(e) => setRenewMonths(Number(e.target.value))}
                   aria-label="Prolongation de la durée"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                 >
                   <option value={3}>+ 3 Mois (Trimestre Supplémentaire)</option>
                   <option value={6}>+ 6 Mois (Semestre)</option>

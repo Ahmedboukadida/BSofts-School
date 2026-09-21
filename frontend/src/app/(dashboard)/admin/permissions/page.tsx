@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { PermissionItem } from '@/types';
 
@@ -55,8 +56,8 @@ export default function SaaSAdminPermissionsPage() {
     setIsLoading(true);
     try {
       const res = await api.get('/permissions', {
-        params: { includeDeleted: isTrashMode },
-      }).catch(() => ({ data: { data: [] } }));
+        params: { includeDeleted: isTrashMode, limit: 100 },
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -85,7 +86,8 @@ export default function SaaSAdminPermissionsPage() {
         };
       });
       setPermissions(mapped);
-    } catch {
+    } catch (err) {
+      console.error('Failed to fetch permissions:', err);
       setPermissions([]);
     } finally {
       setIsLoading(false);
@@ -138,49 +140,75 @@ export default function SaaSAdminPermissionsPage() {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        await api.put(`/permissions/${editingItem.id}`, formData).catch(() => {});
+        await api.put(`/permissions/${editingItem.id}`, formData);
+        showToast('Permission mise à jour avec succès', 'success');
       } else {
-        await api.post('/permissions', formData).catch(() => {});
+        await api.post('/permissions', formData);
+        showToast('Permission créée avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchPermissions();
-    } catch {
-      setIsFormModalOpen(false);
+      await fetchPermissions();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement de la permission');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: PermissionItem) => {
-    await api.delete(`/permissions/${item.id}`).catch(() => {});
-    setPermissions((prev) => prev.filter((p) => p.id !== item.id));
+    try {
+      await api.delete(`/permissions/${item.id}`);
+      showToast('Permission supprimée avec succès', 'success');
+      await fetchPermissions();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression de la permission');
+    }
   };
 
   const handlePermanentDelete = async (item: PermissionItem) => {
-    await api.delete(`/permissions/${item.id}?permanent=true`).catch(() => {});
-    setPermissions((prev) => prev.filter((p) => p.id !== item.id));
+    try {
+      await api.delete(`/permissions/${item.id}?permanent=true`);
+      showToast('Permission définitivement supprimée', 'success');
+      await fetchPermissions();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  const handleRestore = async (item: PermissionItem) => {
+    try {
+      await api.post(`/permissions/${item.id}/restore`);
+      showToast('Permission restaurée avec succès', 'success');
+      await fetchPermissions();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration de la permission');
+    }
   };
 
   const handleToggleStatus = async (item: PermissionItem) => {
-    const updated = !item.isActive;
-    await api.put(`/permissions/${item.id}`, { isActive: updated }).catch(() => {});
-    setPermissions((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, isActive: updated } : p))
-    );
+    try {
+      const updated = !item.isActive;
+      await api.put(`/permissions/${item.id}`, { isActive: updated });
+      showToast(updated ? 'Permission activée' : 'Permission désactivée', 'success');
+      await fetchPermissions();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la mise à jour du statut');
+    }
   };
 
   const getActionBadge = (action: PermissionItem['action']) => {
     const map = {
-      READ: { label: 'LECTURE', color: 'bg-blue-500/10 text-blue-600 border-blue-200' },
+      READ: { label: 'LECTURE', color: 'bg-[#242F40]/10 text-[#242F40] dark:text-[#E5E5E5] border-[#242F40]/20' },
       CREATE: { label: 'CRÉATION', color: 'bg-emerald-500/10 text-emerald-600 border-emerald-200' },
-      UPDATE: { label: 'MODIFICATION', color: 'bg-amber-500/10 text-amber-600 border-amber-200' },
+      UPDATE: { label: 'MODIFICATION', color: 'bg-[#CCA43B]/10 text-[#CCA43B] border-[#CCA43B]/30' },
       DELETE: { label: 'SUPPRESSION', color: 'bg-rose-500/10 text-rose-600 border-rose-200' },
-      EXECUTE: { label: 'EXÉCUTION', color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
-      ADMIN: { label: 'ADMINISTRATION', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-200' },
+      EXECUTE: { label: 'EXÉCUTION', color: 'bg-[#363636]/10 text-[#363636] dark:text-[#E5E5E5] border-[#363636]/20' },
+      ADMIN: { label: 'ADMINISTRATION', color: 'bg-[#242F40] text-[#CCA43B] border-[#363636]' },
     };
-    const c = map[action] || { label: action, color: 'bg-surface text-text-secondary border-border' };
+    const c = (map as any)[action] || { label: action, color: 'bg-surface text-text-secondary border-border' };
     return <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border ${c.color}`}>{c.label}</span>;
   };
+
 
   const filteredPermissions = permissions.filter((p) => {
     if (moduleFilter && p.module !== moduleFilter) return false;
@@ -198,7 +226,7 @@ export default function SaaSAdminPermissionsPage() {
             <Key className="w-5 h-5" />
           </div>
           <div>
-            <span className="font-mono text-xs font-bold text-brand block">{row.code}</span>
+            <span className="font-mono text-xs font-bold text-[#CCA43B] block">{row.code}</span>
             <span className="text-xs font-semibold text-text-primary">{row.name}</span>
           </div>
         </div>
@@ -259,7 +287,7 @@ export default function SaaSAdminPermissionsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-surface border border-border">
             <span className="text-xs text-text-tertiary block mb-1">Clé de contrôle API / Guard</span>
-            <p className="text-base font-mono font-bold text-brand">{item.code}</p>
+            <p className="text-base font-mono font-bold text-[#CCA43B]">{item.code}</p>
             <div className="mt-2 flex items-center gap-2">
               {getActionBadge(item.action)}
               <span className="text-xs text-text-secondary">Module : {item.module}</span>
@@ -324,9 +352,9 @@ export default function SaaSAdminPermissionsPage() {
           <Card key={modName} className="p-5 border border-border overflow-hidden">
             <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <Layers className="w-5 h-5 text-brand" />
+                <Layers className="w-5 h-5 text-[#CCA43B]" />
                 <h3 className="font-bold text-base text-text-primary">{modName}</h3>
-                <span className="text-xs font-semibold px-2 py-0.5 bg-brand/10 text-brand rounded-full">
+                <span className="text-xs font-semibold px-2 py-0.5 bg-[#242F40] text-[#CCA43B] rounded-full">
                   {perms.length} permissions
                 </span>
               </div>
@@ -351,7 +379,7 @@ export default function SaaSAdminPermissionsPage() {
                     <tr key={p.id} className="hover:bg-surface-hover transition-colors">
                       <td className="py-2.5 px-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-brand">{p.code}</span>
+                          <span className="font-mono font-bold text-[#CCA43B]">{p.code}</span>
                           {getActionBadge(p.action)}
                         </div>
                         <span className="text-[11px] text-text-secondary block mt-0.5">{p.name}</span>
@@ -388,7 +416,7 @@ export default function SaaSAdminPermissionsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-brand/10 text-brand">
+            <div className="p-2.5 rounded-xl bg-[#242F40] text-[#CCA43B]">
               <Key className="w-6 h-6" />
             </div>
             <div>
@@ -422,8 +450,10 @@ export default function SaaSAdminPermissionsPage() {
           onEdit: handleOpenEdit,
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
+          onRestore: handleRestore,
           onToggleStatus: handleToggleStatus,
         }}
+
         showTrashToggle={true}
         isTrashActive={isTrashMode}
         onToggleTrash={(active) => setIsTrashMode(active)}
@@ -434,7 +464,7 @@ export default function SaaSAdminPermissionsPage() {
               value={moduleFilter}
               onChange={(e) => setModuleFilter(e.target.value)}
               aria-label="Filtrer par module"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Tous les Modules</option>
               <option value="Élèves">Élèves</option>
@@ -447,7 +477,7 @@ export default function SaaSAdminPermissionsPage() {
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
               aria-label="Filtrer par action"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Toutes les Actions</option>
               <option value="READ">LECTURE</option>
@@ -471,7 +501,7 @@ export default function SaaSAdminPermissionsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border pb-2">
-                <Key className="w-4 h-4 text-brand" />
+                <Key className="w-4 h-4 text-[#CCA43B]" />
                 Spécification du Droit
               </h3>
 
@@ -500,7 +530,7 @@ export default function SaaSAdminPermissionsPage() {
                     value={formData.module}
                     onChange={(e) => setFormData({ ...formData, module: e.target.value })}
                     aria-label="Module"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                     required
                   >
                     <option value="Élèves">Élèves</option>
@@ -519,7 +549,7 @@ export default function SaaSAdminPermissionsPage() {
                     value={formData.action}
                     onChange={(e) => setFormData({ ...formData, action: e.target.value as PermissionItem['action'] })}
                     aria-label="Action"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                     required
                   >
                     <option value="READ">READ (Lecture)</option>
@@ -541,7 +571,7 @@ export default function SaaSAdminPermissionsPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Décrivez les endpoints API et opérations protégés..."
                   rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand resize-none"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B] resize-none"
                 />
               </div>
             </div>
@@ -549,10 +579,10 @@ export default function SaaSAdminPermissionsPage() {
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center justify-between border-b border-border pb-2">
                 <div className="flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-brand" />
+                  <Shield className="w-4 h-4 text-[#CCA43B]" />
                   <span>Attribution Initiale par Rôle</span>
                 </div>
-                <span className="text-xs text-brand font-semibold">
+                <span className="text-xs text-[#CCA43B] font-semibold">
                   {formData.roles.length} rôle(s)
                 </span>
               </h3>
@@ -566,7 +596,7 @@ export default function SaaSAdminPermissionsPage() {
                       onClick={() => toggleRoleInForm(r.code)}
                       className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                         isChecked
-                          ? 'border-brand bg-brand/5 shadow-2xs'
+                          ? 'border-[#CCA43B] bg-[#CCA43B]/10 shadow-2xs'
                           : 'border-border bg-background hover:bg-surface-hover'
                       }`}
                     >
@@ -576,7 +606,7 @@ export default function SaaSAdminPermissionsPage() {
                       </div>
                       <div
                         className={`w-5 h-5 rounded-md border flex items-center justify-center ${
-                          isChecked ? 'bg-brand border-brand text-white' : 'border-border bg-surface'
+                          isChecked ? 'bg-[#CCA43B] border-[#CCA43B] text-[#242F40]' : 'border-border bg-surface'
                         }`}
                       >
                         {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}

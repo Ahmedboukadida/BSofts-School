@@ -30,4 +30,12 @@ export class SystemLogsController {
   clearOldLogs(@Param('days', ParseIntPipe) days: number) {
     return this.service.clearOldLogs(days);
   }
+
+  @Delete(':id')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Delete a single system error log' })
+  @ApiResponse({ status: 200, description: 'System log deleted successfully' })
+  remove(@Param('id') id: string) {
+    return this.service.remove(id);
+  }
 }

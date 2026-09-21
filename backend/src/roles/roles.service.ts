@@ -114,17 +114,32 @@ export class RolesService {
       },
     });
 
-    return role;
+    if (dto.selectedPermissions && Array.isArray(dto.selectedPermissions) && dto.selectedPermissions.length > 0) {
+      const perms = await this.prisma.saaSPermission.findMany({
+        where: { code: { in: dto.selectedPermissions } },
+      });
+      if (perms.length > 0) {
+        await this.prisma.rolePermission.createMany({
+          data: perms.map((p) => ({
+            roleId: role.id,
+            permissionId: p.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    return this.findOne(role.id);
   }
 
-  async update(id: string, dto: UpdateRoleDto) {
+  async update(id: string, dto: any) {
     const role = await this.prisma.role.findUnique({ where: { id } });
     if (!role) {
       throw new NotFoundException(`Role with ID ${id} not found`);
     }
 
-    if (role.isSystem) {
-      throw new ConflictException('Cannot modify system roles');
+    if (role.isSystem && (dto.name || dto.code)) {
+      throw new ConflictException('Cannot modify system roles core properties');
     }
 
     if (dto.name && dto.name !== role.name) {
@@ -136,15 +151,42 @@ export class RolesService {
       }
     }
 
-    const updatedRole = await this.prisma.role.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        description: dto.description,
-      },
-    });
+    const dataToUpdate: any = {};
+    if (dto.name) dataToUpdate.name = dto.name;
+    if (dto.description !== undefined) dataToUpdate.description = dto.description;
 
-    return updatedRole;
+    if (Object.keys(dataToUpdate).length > 0) {
+      await this.prisma.role.update({
+        where: { id },
+        data: dataToUpdate,
+      });
+    }
+
+    if (dto.selectedPermissions && Array.isArray(dto.selectedPermissions)) {
+      await this.prisma.rolePermission.deleteMany({ where: { roleId: id } });
+      const perms = await this.prisma.saaSPermission.findMany({
+        where: { code: { in: dto.selectedPermissions } },
+      });
+      if (perms.length > 0) {
+        await this.prisma.rolePermission.createMany({
+          data: perms.map((p) => ({
+            roleId: id,
+            permissionId: p.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    return this.findOne(id);
+  }
+
+  async restore(id: string) {
+    const role = await this.prisma.role.findUnique({ where: { id } });
+    if (!role) {
+      throw new NotFoundException(`Role with ID ${id} not found`);
+    }
+    return this.findOne(id);
   }
 
   async remove(id: string) {
@@ -171,8 +213,10 @@ export class RolesService {
       throw new ConflictException('Cannot delete role with assigned users');
     }
 
+    await this.prisma.rolePermission.deleteMany({ where: { roleId: id } });
     await this.prisma.role.delete({ where: { id } });
 
     return { message: 'Role deleted successfully' };
   }
 }
+

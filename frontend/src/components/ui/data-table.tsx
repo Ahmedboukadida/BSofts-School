@@ -108,6 +108,7 @@ export interface DataTableProps<T extends AuditFields = AuditFields> {
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => Promise<void> | void;
   onPermanentDelete?: (row: T) => Promise<void> | void;
+  onRestore?: (row: T) => Promise<void> | void;
   onToggleStatus?: (row: T) => Promise<void> | void;
   onToggleVisibility?: (row: T) => Promise<void> | void;
   onPrintSingle?: (row: T) => void;
@@ -306,6 +307,7 @@ export function DataTable<T extends AuditFields = AuditFields>({
   onEdit,
   onDelete,
   onPermanentDelete,
+  onRestore,
   onToggleStatus,
   onToggleVisibility,
   onPrintSingle,
@@ -350,7 +352,7 @@ export function DataTable<T extends AuditFields = AuditFields>({
   const effectiveOnEdit = actionHandlers?.onEdit || onEdit;
   const effectiveOnDelete = actionHandlers?.onDelete || onDelete;
   const effectiveOnPermanentDelete = actionHandlers?.onPermanentDelete || onPermanentDelete;
-  const effectiveOnRestore = actionHandlers?.onRestore;
+  const effectiveOnRestore = actionHandlers?.onRestore || onRestore;
   const rawToggleStatus = actionHandlers?.onToggleStatus;
   const effectiveOnToggleStatus = useMemo(() => {
     if (rawToggleStatus) {

@@ -58,6 +58,15 @@ export class TeachersController {
     return this.service.update(id, dto);
   }
 
+  @Post(':id/restore')
+  @Permissions('teachers:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Restore a deactivated teacher' })
+  @ApiResponse({ status: 200, description: 'Teacher restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: any) {
+    return this.service.restore(id, user);
+  }
+
   @Delete(':id')
   @Permissions('teachers:delete')
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')

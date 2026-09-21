@@ -270,7 +270,7 @@ export default function SchedulePage() {
       case 'CANCELLED':
         return <span className="inline-flex items-center gap-1 text-[11px] font-medium text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full"><XCircle className="w-3 h-3" /> {t('schedule.status.cancelled')}</span>;
       default:
-        return <span className="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">{t('schedule.status.scheduled')}</span>;
+        return <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[#242F40] bg-[#242F40]/10 px-2 py-0.5 rounded-full">{t('schedule.status.scheduled')}</span>;
     }
   };
 
@@ -281,8 +281,8 @@ export default function SchedulePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <CalendarIcon className="w-6 h-6 text-indigo-600" />
+          <h1 className="text-2xl font-bold text-[#242F40] flex items-center gap-2">
+            <CalendarIcon className="w-6 h-6 text-[#CCA43B]" />
             {t('schedule.title')}
           </h1>
           <p className="text-sm text-gray-500">
@@ -296,7 +296,7 @@ export default function SchedulePage() {
             <button
               onClick={() => setViewMode('grid')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                viewMode === 'grid' ? 'bg-[#242F40] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -305,7 +305,7 @@ export default function SchedulePage() {
             <button
               onClick={() => setViewMode('list')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                viewMode === 'list' ? 'bg-[#242F40] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <List className="w-3.5 h-3.5" />
@@ -313,7 +313,7 @@ export default function SchedulePage() {
             </button>
           </div>
 
-          <Button onClick={() => openCreateForm()} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          <Button onClick={() => openCreateForm()} className="bg-[#242F40] hover:bg-[#363636] text-white">
             <Plus className="w-4 h-4 mr-1.5" />
             {t('schedule.newSession')}
           </Button>
@@ -332,7 +332,7 @@ export default function SchedulePage() {
                 placeholder={t('schedule.searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
+                className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800"
               />
             </div>
 
@@ -340,7 +340,7 @@ export default function SchedulePage() {
             <select
               value={selectedClassId}
               onChange={(e) => setSelectedClassId(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800 bg-white"
             >
               <option value="">{t('schedule.allClasses')}</option>
               {classes.map((c) => (
@@ -354,7 +354,7 @@ export default function SchedulePage() {
             <select
               value={selectedTeacherId}
               onChange={(e) => setSelectedTeacherId(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800 bg-white"
             >
               <option value="">{t('schedule.allTeachers')}</option>
               {teachers.map((tItem) => (
@@ -368,7 +368,7 @@ export default function SchedulePage() {
             <select
               value={selectedRoomId}
               onChange={(e) => setSelectedRoomId(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 bg-white"
+              className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800 bg-white"
             >
               <option value="">{t('schedule.allRooms')}</option>
               {rooms.map((r) => (
@@ -400,7 +400,7 @@ export default function SchedulePage() {
 
               <div className="flex items-center gap-4 text-xs text-gray-500">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-indigo-500"></span> {t('schedule.scheduledCourse')}
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#242F40]"></span> {t('schedule.scheduledCourse')}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> {t('schedule.completedCourse')}
@@ -433,13 +433,13 @@ export default function SchedulePage() {
                     <div
                       key={day.dayIndex}
                       className={`p-3 text-center border-r border-gray-200 last:border-r-0 ${
-                        isToday ? 'bg-indigo-50/60' : ''
+                        isToday ? 'bg-[#242F40]/5' : ''
                       }`}
                     >
-                      <div className={`text-xs font-bold ${isToday ? 'text-indigo-600' : 'text-gray-900'}`}>
+                      <div className={`text-xs font-bold ${isToday ? 'text-[#CCA43B]' : 'text-gray-900'}`}>
                         {t(`schedule.days.${day.key}`)}
                       </div>
-                      <div className={`text-[11px] ${isToday ? 'font-semibold text-indigo-500' : 'text-gray-400'}`}>
+                      <div className={`text-[11px] ${isToday ? 'font-semibold text-[#CCA43B]' : 'text-gray-400'}`}>
                         {day.date.toLocaleDateString(undefined, { day: '2-digit', month: 'short' })}
                       </div>
                     </div>
@@ -480,7 +480,7 @@ export default function SchedulePage() {
                           {matchingSessions.length === 0 ? (
                             <button
                               onClick={() => openCreateForm(day.isoDate, slotHour)}
-                              className="w-full h-full min-h-[68px] rounded-lg border border-dashed border-transparent group-hover:border-gray-300 flex items-center justify-center text-gray-300 hover:text-indigo-600 transition-all opacity-0 group-hover:opacity-100"
+                              className="w-full h-full min-h-[68px] rounded-lg border border-dashed border-transparent group-hover:border-gray-300 flex items-center justify-center text-gray-300 hover:text-[#CCA43B] transition-all opacity-0 group-hover:opacity-100"
                               title={t('schedule.clickToAdd')}
                             >
                               <Plus className="w-4 h-4" />
@@ -499,7 +499,7 @@ export default function SchedulePage() {
                                       ? 'bg-rose-50/60 border-rose-200 text-rose-800 line-through opacity-75'
                                       : session.status === 'COMPLETED'
                                       ? 'bg-emerald-50/70 border-emerald-200 text-emerald-900'
-                                      : 'bg-indigo-50/80 border-indigo-200 text-indigo-950 hover:border-indigo-400'
+                                      : 'bg-[#242F40]/5 border-[#E5E5E5] text-[#242F40] hover:border-[#CCA43B]'
                                   }`}
                                 >
                                   <div>
@@ -513,7 +513,7 @@ export default function SchedulePage() {
                                     </div>
 
                                     <div className="space-y-0.5 text-[10px] text-gray-600">
-                                      <div className="font-medium text-indigo-700 truncate">
+                                      <div className="font-medium text-[#CCA43B] truncate">
                                         🏫 {session.class?.name}
                                       </div>
                                       {session.room && (
@@ -531,12 +531,12 @@ export default function SchedulePage() {
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-indigo-100/60">
+                                  <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-[#E5E5E5]">
                                     {getStatusBadge(session.status)}
                                     <div className="flex items-center gap-1">
                                       <button
                                         onClick={() => openEditForm(session)}
-                                        className="p-1 hover:bg-white rounded text-gray-500 hover:text-indigo-600 transition-colors"
+                                        className="p-1 hover:bg-white rounded text-gray-500 hover:text-[#CCA43B] transition-colors"
                                         title={t('common.edit')}
                                       >
                                         <Edit className="w-3 h-3" />
@@ -614,7 +614,7 @@ export default function SchedulePage() {
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => openEditForm(session)}
-                              className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600 hover:text-indigo-600 transition-colors"
+                              className="p-1.5 hover:bg-gray-100 rounded-md text-gray-600 hover:text-[#CCA43B] transition-colors"
                               title={t('common.edit')}
                             >
                               <Edit className="w-3.5 h-3.5" />
@@ -726,7 +726,7 @@ export default function SchedulePage() {
             <Button variant="secondary" onClick={() => setShowForm(false)}>
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleFormSubmit} isLoading={formLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button onClick={handleFormSubmit} isLoading={formLoading} className="bg-[#242F40] hover:bg-[#363636] text-white">
               {editingId ? t('schedule.saveChanges') : t('schedule.planCourse')}
             </Button>
           </div>

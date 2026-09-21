@@ -9,11 +9,11 @@ export class HolidaysService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryHolidayDto) {
-    const { page = 1, limit = 10, search, establishmentId, sortBy, sortOrder } = query;
+    const { page = 1, limit = 50, search, establishmentId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL') where.establishmentId = establishmentId;
     if (search) where.name = { contains: search, mode: 'insensitive' };
 
     const orderBy: any = sortBy ? { [sortBy]: sortOrder || 'asc' } : { startDate: 'desc' };
@@ -197,5 +197,11 @@ export class HolidaysService {
       });
       throw err;
     }
+  }
+
+  async restore(id: string, user?: any) {
+    const holiday = await this.prisma.holiday.findUnique({ where: { id } });
+    if (!holiday) throw new NotFoundException(`Holiday with ID ${id} not found`);
+    return { message: 'Holiday restored successfully', id };
   }
 }

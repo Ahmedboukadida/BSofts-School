@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showApiErrorToast } from '@/components/ui/toast';
 import type { AuditLogItem } from '@/types';
 
 export default function SaaSAdminAuditLogsPage() {
@@ -25,7 +26,7 @@ export default function SaaSAdminAuditLogsPage() {
           action: actionFilter || undefined,
           entity: entityFilter || undefined,
         },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -45,7 +46,8 @@ export default function SaaSAdminAuditLogsPage() {
         createdBy: l.createdBy || l.userId || '',
       }));
       setLogs(mapped);
-    } catch {
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors du chargement des journaux d’audit');
       setLogs([]);
     } finally {
       setIsLoading(false);
@@ -82,7 +84,7 @@ export default function SaaSAdminAuditLogsPage() {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-bold text-text-primary text-xs">{row.actorName}</span>
-              <span className="text-[10px] font-mono text-brand">(@{row.actorEmail.split('@')[0]})</span>
+              <span className="text-[10px] font-mono text-[#CCA43B]">(@{row.actorEmail.split('@')[0]})</span>
             </div>
             <span className="text-[10px] px-1.5 py-0.2 rounded bg-surface border border-border-subtle font-mono text-text-secondary">
               [{row.actorRole}]
@@ -138,14 +140,14 @@ export default function SaaSAdminAuditLogsPage() {
           <div className="p-4 rounded-xl bg-surface border border-border space-y-2 text-xs">
             <span className="text-text-tertiary block">Opérateur Connecté</span>
             <p className="text-sm font-bold text-text-primary">
-              {item.actorName} <span className="font-mono text-brand">(@{item.actorEmail})</span>
+              {item.actorName} <span className="font-mono text-[#CCA43B]">(@{item.actorEmail})</span>
             </p>
             <p className="text-text-secondary">Rôle de sécurité : <span className="font-mono font-bold text-text-primary">[{item.actorRole}]</span></p>
             <div className="mt-2">{getActionBadge(item.action)}</div>
           </div>
           <div className="p-4 rounded-xl bg-surface border border-border space-y-2 text-xs font-mono">
             <span className="text-text-tertiary block font-sans">Empreinte Système</span>
-            <p>Adresse IP : <span className="text-brand font-bold">{item.ipAddress || 'Non capturée'}</span></p>
+            <p>Adresse IP : <span className="text-[#CCA43B] font-bold">{item.ipAddress || 'Non capturée'}</span></p>
             <p className="text-[11px] text-text-secondary leading-relaxed break-all">Agent : {item.userAgent}</p>
             <p className="text-text-tertiary font-sans pt-1">Horodatage UTC : {new Date(item.createdAt).toISOString()}</p>
           </div>
@@ -191,7 +193,7 @@ export default function SaaSAdminAuditLogsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-slate-800 text-white">
+            <div className="p-2.5 rounded-xl bg-[#242F40] text-[#CCA43B] border border-[#363636]">
               <ShieldAlert className="w-6 h-6" />
             </div>
             <div>
@@ -227,7 +229,7 @@ export default function SaaSAdminAuditLogsPage() {
               value={actionFilter}
               onChange={(e) => setActionFilter(e.target.value)}
               aria-label="Filtrer par action"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Toutes les Actions</option>
               <option value="CREATE">Créations (CREATE)</option>
@@ -241,7 +243,7 @@ export default function SaaSAdminAuditLogsPage() {
               value={entityFilter}
               onChange={(e) => setEntityFilter(e.target.value)}
               aria-label="Filtrer par entité"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Toutes les Entités</option>
               <option value="Student">Élèves (Student)</option>

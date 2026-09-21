@@ -3,9 +3,15 @@ import { ApiProperty } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 export class CreatePermissionDto {
-  @ApiProperty({ description: 'Module ID' })
+  @ApiProperty({ description: 'Module ID', required: false })
+  @IsOptional()
   @IsString()
-  moduleId: string;
+  moduleId?: string;
+
+  @ApiProperty({ description: 'Module Name or Code', required: false })
+  @IsOptional()
+  @IsString()
+  module?: string;
 
   @ApiProperty()
   @IsString()
@@ -21,6 +27,10 @@ export class CreatePermissionDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  roles?: string[];
 }
 
 export class UpdatePermissionDto {
@@ -33,6 +43,15 @@ export class UpdatePermissionDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  module?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  roles?: string[];
 }
 
 export class QueryPermissionDto extends PaginationQueryDto {

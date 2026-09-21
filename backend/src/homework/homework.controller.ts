@@ -75,6 +75,7 @@ export class HomeworkController {
   }
 
   @Patch(':id/restore')
+  @Post(':id/restore')
   @Permissions('homework:update')
   @ApiOperation({ summary: 'Restore a homework assignment from trash' })
   @ApiResponse({ status: 200, description: 'Homework restored successfully' })

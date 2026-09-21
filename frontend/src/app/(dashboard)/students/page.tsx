@@ -21,12 +21,14 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
+import { useToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
 import api from '@/lib/api';
 import type { StudentItem } from '@/types';
 
 export default function StudentsPage() {
+  const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
   const { currentEstablishmentId, establishments } = useEstablishmentStore();
   const [students, setStudents] = useState<StudentItem[]>([]);
@@ -73,10 +75,11 @@ export default function StudentsPage() {
 
       const res = await api.get('/students', {
         params: {
+          limit: 100,
           includeDeleted: isTrashMode,
           establishmentId: activeEst,
         },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -196,12 +199,16 @@ export default function StudentsPage() {
         establishmentId: formData.establishmentId || (currentEstablishmentId && currentEstablishmentId !== 'ALL' ? currentEstablishmentId : (establishments[0]?.id || user?.establishmentId)),
       };
       if (editingItem) {
-        await api.put(`/students/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/students/${editingItem.id}`, payload);
+        showToast('Élève mis à jour avec succès', 'success');
       } else {
-        await api.post('/students', payload).catch(() => {});
+        await api.post('/students', payload);
+        showToast('Élève inscrit avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchStudents();
+      await fetchStudents();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement de l'élève");
     } finally {
       setIsSubmitting(false);
     }
@@ -218,49 +225,29 @@ export default function StudentsPage() {
     try {
       await api.delete(`/students/${row.id}`, {
         params: { permanent: permanent && isRoot },
-      }).catch(() => {});
-
-      if (permanent) {
-        setStudents((prev) => prev.filter((s) => s.id !== row.id));
-      } else {
-        setStudents((prev) =>
-          prev.map((s) =>
-            s.id === row.id
-              ? {
-                  ...s,
-                  isDeleted: true,
-                  deletedAt: new Date().toISOString(),
-                  deletedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : s
-          )
-        );
-      }
-    } catch {
-      // Handled
+      });
+      showToast(permanent ? 'Élève supprimé définitivement' : 'Élève placé dans la corbeille', 'success');
+      await fetchStudents();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression');
     }
   };
 
   const handleRestore = async (row: StudentItem) => {
     if (!window.confirm(`Restaurer l'élève ${row.firstName} ${row.lastName} ?`)) return;
     try {
-      await api.post(`/students/${row.id}/restore`).catch(() => {});
-      setStudents((prev) =>
-        prev.map((s) =>
-          s.id === row.id
-            ? { ...s, isDeleted: false, deletedAt: null, deletedByName: undefined }
-            : s
-        )
-      );
-    } catch {
-      // Handled
+      await api.post(`/students/${row.id}/restore`);
+      showToast('Élève restauré avec succès', 'success');
+      await fetchStudents();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
     }
   };
 
   // Filtered dataset
   const filteredStudents = students.filter((s) => {
-    if (!isTrashMode && s.isDeleted) return false;
-    if (isTrashMode && !s.isDeleted) return false;
+    if (!isTrashMode && s.isActive === false) return false;
+    if (isTrashMode && s.isActive !== false) return false;
     if (classFilter && s.className !== classFilter) return false;
     if (paymentFilter && s.paymentStatus !== paymentFilter) return false;
     if (statusFilter && (statusFilter === 'active' ? !s.isActive : s.isActive)) return false;

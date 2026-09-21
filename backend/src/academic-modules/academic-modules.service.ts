@@ -157,4 +157,33 @@ export class AcademicModulesService {
       throw err;
     }
   }
+
+  async restore(id: string, user?: any) {
+    const module = await this.prisma.academicModule.findUnique({ where: { id } });
+    if (!module) throw new NotFoundException(`Academic Module with ID ${id} not found`);
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    await this.prisma.academicModule.update({
+      where: { id },
+      data: { isActive: true },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'RESTORE',
+        entity: 'AcademicModule',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: { isActive: false },
+        newValues: { isActive: true },
+      },
+    });
+
+    return { message: 'Academic Module restored successfully' };
+  }
 }

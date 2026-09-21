@@ -1,6 +1,7 @@
 'use client';
 
 import { useTranslation } from '@/components/providers/i18n-provider';
+import { Auth3DScene } from '@/components/ui/auth-3d-scene';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
@@ -9,16 +10,18 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     <div className="min-h-screen flex bg-background">
       <div className="hidden lg:flex lg:w-[55%] items-center justify-center p-12 relative overflow-hidden bg-[#242F40]">
         <div className="absolute inset-0 bg-[#242F40]" />
-        <div className="absolute top-[15%] left-[10%] w-4 h-4 bg-[#CCA43B]/25 rounded-full animate-float" />
+        {/* Interactive Three.js 3D Armillary & Knowledge Sphere */}
+        <Auth3DScene />
+        <div className="absolute top-[15%] left-[10%] w-4 h-4 bg-[#CCA43B]/25 rounded-full animate-float pointer-events-none" />
         <div
-          className="absolute top-[60%] right-[15%] w-3 h-3 bg-white/15 rounded-full animate-float"
+          className="absolute top-[60%] right-[15%] w-3 h-3 bg-white/15 rounded-full animate-float pointer-events-none"
           style={{ animationDelay: '1s' }}
         />
         <div
-          className="absolute bottom-[20%] left-[25%] w-2 h-2 bg-[#CCA43B]/30 rounded-full animate-float"
+          className="absolute bottom-[20%] left-[25%] w-2 h-2 bg-[#CCA43B]/30 rounded-full animate-float pointer-events-none"
           style={{ animationDelay: '2s' }}
         />
-        <div className="relative z-10 max-w-md text-white">
+        <div className="relative z-10 max-w-md text-white pointer-events-auto">
           <div className="flex items-center gap-3.5 mb-10">
             <div className="w-12 h-12 bg-[#CCA43B] rounded-2xl flex items-center justify-center shadow-xl shadow-[#CCA43B]/20">
               <svg

@@ -71,4 +71,14 @@ export class EstablishmentsController {
   ) {
     return this.establishmentsService.remove(id, permanent === 'true');
   }
+
+  @Post(':id/restore')
+  @Permissions('establishments:update')
+  @Roles('ROOT', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Restore a deactivated establishment' })
+  @ApiResponse({ status: 200, description: 'Establishment restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.establishmentsService.restore(id);
+  }
 }
+

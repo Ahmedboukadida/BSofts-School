@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { RoleItem } from '@/types';
 
@@ -59,8 +60,8 @@ export default function SaaSAdminRolesPage() {
     setIsLoading(true);
     try {
       const res = await api.get('/roles', {
-        params: { includeDeleted: isTrashMode },
-      }).catch(() => ({ data: { data: [] } }));
+        params: { includeDeleted: isTrashMode, limit: 100 },
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -86,7 +87,8 @@ export default function SaaSAdminRolesPage() {
         };
       });
       setRoles(mapped);
-    } catch {
+    } catch (err) {
+      console.error('Failed to fetch roles:', err);
       setRoles([]);
     } finally {
       setIsLoading(false);
@@ -141,39 +143,74 @@ export default function SaaSAdminRolesPage() {
         code: formData.code.toUpperCase().replace(/\s+/g, '_'),
       };
       if (editingItem) {
-        await api.put(`/roles/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/roles/${editingItem.id}`, payload);
+        showToast('Rôle mis à jour avec succès', 'success');
       } else {
-        await api.post('/roles', payload).catch(() => {});
+        await api.post('/roles', payload);
+        showToast('Rôle créé avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchRoles();
-    } catch {
-      setIsFormModalOpen(false);
+      await fetchRoles();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement du rôle');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: RoleItem) => {
-    if (item.isSystem) return;
-    await api.delete(`/roles/${item.id}`).catch(() => {});
-    setRoles((prev) => prev.filter((r) => r.id !== item.id));
+    if (item.isSystem) {
+      showToast('Impossible de supprimer un rôle système', 'error');
+      return;
+    }
+    try {
+      await api.delete(`/roles/${item.id}`);
+      showToast('Rôle supprimé avec succès', 'success');
+      await fetchRoles();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression du rôle');
+    }
   };
 
   const handlePermanentDelete = async (item: RoleItem) => {
-    if (item.isSystem) return;
-    await api.delete(`/roles/${item.id}?permanent=true`).catch(() => {});
-    setRoles((prev) => prev.filter((r) => r.id !== item.id));
+    if (item.isSystem) {
+      showToast('Impossible de supprimer définitivement un rôle système', 'error');
+      return;
+    }
+    try {
+      await api.delete(`/roles/${item.id}?permanent=true`);
+      showToast('Rôle définitivement supprimé', 'success');
+      await fetchRoles();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive du rôle');
+    }
+  };
+
+  const handleRestore = async (item: RoleItem) => {
+    try {
+      await api.post(`/roles/${item.id}/restore`);
+      showToast('Rôle restauré avec succès', 'success');
+      await fetchRoles();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration du rôle');
+    }
   };
 
   const handleToggleStatus = async (item: RoleItem) => {
-    if (item.isSystem) return;
-    const updated = !item.isActive;
-    await api.put(`/roles/${item.id}`, { isActive: updated }).catch(() => {});
-    setRoles((prev) =>
-      prev.map((r) => (r.id === item.id ? { ...r, isActive: updated } : r))
-    );
+    if (item.isSystem) {
+      showToast('Impossible de modifier le statut d’un rôle système', 'error');
+      return;
+    }
+    try {
+      const updated = !item.isActive;
+      await api.put(`/roles/${item.id}`, { isActive: updated });
+      showToast(updated ? 'Rôle activé avec succès' : 'Rôle désactivé avec succès', 'success');
+      await fetchRoles();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la mise à jour du statut');
+    }
   };
+
 
   const filteredRoles = roles.filter((r) => {
     if (typeFilter && (typeFilter === 'system' ? !r.isSystem : r.isSystem)) return false;
@@ -193,7 +230,7 @@ export default function SaaSAdminRolesPage() {
           <div>
             <span className="font-bold text-text-primary block">{row.name}</span>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono px-1.5 py-0.5 bg-surface rounded text-brand font-semibold">
+              <span className="text-[11px] font-mono px-1.5 py-0.5 bg-surface rounded text-[#CCA43B] font-semibold">
                 {row.code}
               </span>
               {row.isSystem && (
@@ -211,7 +248,7 @@ export default function SaaSAdminRolesPage() {
       header: 'Membres Assignés',
       render: (row) => (
         <div className="flex items-center gap-1.5 text-xs font-semibold text-text-primary">
-          <Users className="w-4 h-4 text-brand" />
+          <Users className="w-4 h-4 text-[#CCA43B]" />
           <span>{Number(row.usersCount || 0)} utilisateurs</span>
         </div>
       ),
@@ -224,7 +261,7 @@ export default function SaaSAdminRolesPage() {
         return (
           <div className="space-y-1">
             <span className="text-xs font-semibold text-text-primary flex items-center gap-1">
-              <Key className="w-3.5 h-3.5 text-purple-600" />
+              <Key className="w-3.5 h-3.5 text-[#CCA43B]" />
               {row.permissionsCount ?? perms.length} permissions accordées
             </span>
             <div className="flex flex-wrap gap-1 max-w-[240px]">
@@ -270,7 +307,7 @@ export default function SaaSAdminRolesPage() {
             <span className="text-xs text-text-tertiary block mb-1">Identifiant & Scope</span>
             <p className="text-base font-bold text-text-primary">{item.name}</p>
             <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs font-mono font-bold px-2 py-0.5 bg-brand/10 text-brand rounded">
+              <span className="text-xs font-mono font-bold px-2 py-0.5 bg-[#242F40] text-[#CCA43B] rounded">
                 Code : {item.code}
               </span>
               {item.isSystem ? (
@@ -278,7 +315,7 @@ export default function SaaSAdminRolesPage() {
                   Rôle Système Intouchable
                 </span>
               ) : (
-                <span className="px-2 py-0.5 text-xs font-semibold bg-blue-500/10 text-blue-600 border border-blue-200 rounded-md">
+                <span className="px-2 py-0.5 text-xs font-semibold bg-[#242F40] text-[#CCA43B] border border-[#363636] rounded-md">
                   Rôle Personnalisé Campus
                 </span>
               )}
@@ -287,7 +324,7 @@ export default function SaaSAdminRolesPage() {
           <div className="p-4 rounded-xl bg-surface border border-border">
             <span className="text-xs text-text-tertiary block mb-1">Membres Actifs</span>
             <p className="text-sm font-semibold text-text-primary flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-brand" /> {item.usersCount} utilisateurs détiennent ce rôle
+              <Users className="w-4 h-4 text-[#CCA43B]" /> {item.usersCount} utilisateurs détiennent ce rôle
             </p>
             <p className="text-xs text-text-secondary mt-1">
               {item.permissionsCount} permissions actives sur l’ensemble des modules applicatifs.
@@ -296,6 +333,7 @@ export default function SaaSAdminRolesPage() {
         </div>
       ),
     },
+
     {
       title: 'Détail des Droits Associés à ce Rôle',
       content: (
@@ -306,7 +344,7 @@ export default function SaaSAdminRolesPage() {
                 key={p}
                 className="p-2.5 bg-surface rounded-xl border border-border flex items-center gap-2 shadow-2xs"
               >
-                <div className="p-1 rounded bg-brand/10 text-brand">
+                <div className="p-1 rounded bg-[#CCA43B]/10 text-[#CCA43B]">
                   <Check className="w-3 h-3 stroke-[3]" />
                 </div>
                 <span className="text-xs font-mono font-semibold text-text-primary">{p}</span>
@@ -330,7 +368,7 @@ export default function SaaSAdminRolesPage() {
       <Card className="p-5 border border-border overflow-hidden">
         <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
           <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-brand" />
+            <Shield className="w-5 h-5 text-[#CCA43B]" />
             <h3 className="font-bold text-base text-text-primary">Matrice de Déploiement : Rôles vs Droits</h3>
           </div>
           <span className="text-xs font-semibold text-text-secondary">
@@ -356,7 +394,7 @@ export default function SaaSAdminRolesPage() {
               {ALL_SYSTEM_PERMISSIONS.map((perm) => (
                 <tr key={perm.code} className="hover:bg-surface-hover transition-colors">
                   <td className="py-2.5 px-3">
-                    <span className="font-mono font-bold text-brand block">{perm.code}</span>
+                    <span className="font-mono font-bold text-[#CCA43B] block">{perm.code}</span>
                     <span className="text-[11px] text-text-secondary">{perm.name}</span>
                   </td>
                   {roles.map((r) => {
@@ -389,7 +427,7 @@ export default function SaaSAdminRolesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-600">
+            <div className="p-2.5 rounded-xl bg-[#242F40] text-[#CCA43B]">
               <Shield className="w-6 h-6" />
             </div>
             <div>
@@ -408,6 +446,7 @@ export default function SaaSAdminRolesPage() {
         </div>
       </div>
 
+
       <DataTable<RoleItem>
         title="Registre des Profils de Rôles"
         data={filteredRoles}
@@ -423,6 +462,7 @@ export default function SaaSAdminRolesPage() {
           onEdit: handleOpenEdit,
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
+          onRestore: handleRestore,
           onToggleStatus: handleToggleStatus,
         }}
         showTrashToggle={true}
@@ -435,7 +475,7 @@ export default function SaaSAdminRolesPage() {
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
               aria-label="Filtrer par type de rôle"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Tous les types de rôles</option>
               <option value="system">Rôles Système uniquement</option>
@@ -446,7 +486,7 @@ export default function SaaSAdminRolesPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filtrer par statut"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Tous les statuts</option>
               <option value="active">Actifs uniquement</option>
@@ -467,7 +507,7 @@ export default function SaaSAdminRolesPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border pb-2">
-                <Shield className="w-4 h-4 text-brand" />
+                <Shield className="w-4 h-4 text-[#CCA43B]" />
                 Définition du Profil
               </h3>
 
@@ -497,7 +537,7 @@ export default function SaaSAdminRolesPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Précisez les prérogatives accordées aux titulaires de ce rôle..."
                   rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand resize-none"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B] resize-none"
                 />
               </div>
             </div>
@@ -505,10 +545,10 @@ export default function SaaSAdminRolesPage() {
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center justify-between border-b border-border pb-2">
                 <div className="flex items-center gap-2">
-                  <Key className="w-4 h-4 text-brand" />
+                  <Key className="w-4 h-4 text-[#CCA43B]" />
                   <span>Droits & Permissions Inclus</span>
                 </div>
-                <span className="text-xs text-brand font-semibold">
+                <span className="text-xs text-[#CCA43B] font-semibold">
                   {formData.selectedPermissions.length} droit(s)
                 </span>
               </h3>
@@ -522,7 +562,7 @@ export default function SaaSAdminRolesPage() {
                       onClick={() => togglePermissionInForm(perm.code)}
                       className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between ${
                         isChecked
-                          ? 'border-brand bg-brand/5 shadow-2xs'
+                          ? 'border-[#CCA43B] bg-[#CCA43B]/5 shadow-2xs'
                           : 'border-border bg-background hover:bg-surface-hover'
                       }`}
                     >
@@ -538,7 +578,7 @@ export default function SaaSAdminRolesPage() {
 
                       <div
                         className={`w-5 h-5 rounded-md border flex items-center justify-center ${
-                          isChecked ? 'bg-brand border-brand text-white' : 'border-border bg-surface'
+                          isChecked ? 'bg-[#CCA43B] border-[#CCA43B] text-[#242F40]' : 'border-border bg-surface'
                         }`}
                       >
                         {isChecked && <Check className="w-3.5 h-3.5 stroke-[3]" />}
@@ -549,6 +589,7 @@ export default function SaaSAdminRolesPage() {
               </div>
             </div>
           </div>
+
 
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
             <Button

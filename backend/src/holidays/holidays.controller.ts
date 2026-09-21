@@ -68,4 +68,16 @@ export class HolidaysController {
     const isPermanent = permanent === 'true';
     return this.service.remove(id, isPermanent, user);
   }
+
+  @Post(':id/restore')
+  @Permissions('calendar:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Restore a holiday' })
+  @ApiResponse({ status: 200, description: 'Holiday restored successfully' })
+  restore(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user?: any,
+  ) {
+    return this.service.restore(id, user);
+  }
 }

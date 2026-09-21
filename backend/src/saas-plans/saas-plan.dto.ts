@@ -35,6 +35,25 @@ export class CreateSaaSPlanDto {
   @IsOptional()
   @IsNumber()
   sortOrder?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxStudents?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxTeachers?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxStorageGb?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  features?: any;
 }
 
 export class UpdateSaaSPlanDto {
@@ -72,11 +91,30 @@ export class UpdateSaaSPlanDto {
   @IsOptional()
   @IsNumber()
   sortOrder?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxStudents?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxTeachers?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxStorageGb?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  features?: any;
 }
 
 export class QuerySaaSPlanDto extends PaginationQueryDto {
   @ApiProperty({ required: false })
   @IsOptional()
-  @IsBoolean()
-  isActive?: boolean;
+  isActive?: boolean | string;
 }
+

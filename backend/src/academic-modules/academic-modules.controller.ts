@@ -64,4 +64,16 @@ export class AcademicModulesController {
     const isPermanent = permanent === 'true';
     return this.service.remove(id, isPermanent, user);
   }
+
+  @Post(':id/restore')
+  @Permissions('academic-modules:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Restore an academic module' })
+  @ApiResponse({ status: 200, description: 'Academic module restored successfully' })
+  restore(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user?: any,
+  ) {
+    return this.service.restore(id, user);
+  }
 }

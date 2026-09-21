@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
 import api from '@/lib/api';
@@ -53,7 +54,9 @@ export default function EstablishmentsPage() {
           name: t.user ? `${t.user.firstName || ''} ${t.user.lastName || ''}`.trim() || t.id : t.id,
         }));
         setTenants(list);
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error('Failed to load tenants:', err);
+      });
     }
   }, [user?.isRoot, tenants.length, setTenants]);
 
@@ -70,7 +73,7 @@ export default function EstablishmentsPage() {
           limit: 100,
           ...(activeTenant ? { tenantId: activeTenant } : {}),
         },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -147,50 +150,76 @@ export default function EstablishmentsPage() {
 
       if (editingItem) {
         await api.put(`/establishments/${editingItem.id}`, payload);
+        showToast('Établissement modifié avec succès', 'success');
       } else {
         await api.post('/establishments', payload);
+        showToast('Établissement créé avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchEstablishments();
+      await fetchEstablishments();
     } catch (err: any) {
-      console.error('Failed to save establishment:', err?.response?.data || err?.message);
-      alert(err?.response?.data?.message || 'Erreur lors de la sauvegarde de l’établissement');
+      showApiErrorToast(err, 'Erreur lors de la sauvegarde de l’établissement');
     }
   };
 
   // Soft Delete handler
   const handleDelete = async (item: EstablishmentItem) => {
-    await api.delete(`/establishments/${item.id}`).catch(() => {});
-    setEstablishments((prev) => prev.filter((e) => e.id !== item.id));
+    try {
+      await api.delete(`/establishments/${item.id}`);
+      showToast('Établissement désactivé avec succès', 'success');
+      await fetchEstablishments();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la désactivation');
+    }
   };
 
   // Hard Delete handler (Root only)
   const handlePermanentDelete = async (item: EstablishmentItem) => {
-    await api.delete(`/establishments/${item.id}?permanent=true`).catch(() => {});
-    setEstablishments((prev) => prev.filter((e) => e.id !== item.id));
+    try {
+      await api.delete(`/establishments/${item.id}?permanent=true`);
+      showToast('Établissement définitivement supprimé', 'success');
+      await fetchEstablishments();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  // Restore handler
+  const handleRestore = async (item: EstablishmentItem) => {
+    try {
+      await api.post(`/establishments/${item.id}/restore`);
+      showToast('Établissement restauré avec succès', 'success');
+      await fetchEstablishments();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   // Toggle Status
   const handleToggleStatus = async (item: EstablishmentItem) => {
-    const updated = !item.isActive;
-    await api.put(`/establishments/${item.id}`, { isActive: updated }).catch(() => {});
-    setEstablishments((prev) =>
-      prev.map((e) => (e.id === item.id ? { ...e, isActive: updated } : e))
-    );
+    try {
+      const updated = !item.isActive;
+      await api.put(`/establishments/${item.id}`, { isActive: updated });
+      showToast(updated ? 'Établissement activé' : 'Établissement désactivé', 'success');
+      await fetchEstablishments();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la mise à jour du statut');
+    }
   };
 
-  // Category labels helper
+  // Category labels helper (5-color palette compliant)
   const getCategoryBadge = (cat: EstablishmentItem['category']) => {
-    const map = {
-      DAYCARE: { label: 'Crèche / Jardin d’enfants', color: 'bg-rose-500/10 text-rose-600 border-rose-200' },
-      PRIMARY: { label: 'École Primaire', color: 'bg-amber-500/10 text-amber-600 border-amber-200' },
-      MIDDLE_SCHOOL: { label: 'Collège', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-200' },
-      HIGH_SCHOOL: { label: 'Lycée', color: 'bg-blue-500/10 text-blue-600 border-blue-200' },
-      UNIVERSITY: { label: 'Enseignement Supérieur', color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
+    const map: Record<string, { label: string; color: string }> = {
+      DAYCARE: { label: 'Crèche / Jardin d’enfants', color: 'bg-[#242F40]/10 text-[#242F40] dark:text-[#E5E5E5] border-[#242F40]/20' },
+      PRIMARY: { label: 'École Primaire', color: 'bg-[#CCA43B]/10 text-[#CCA43B] border-[#CCA43B]/30' },
+      MIDDLE_SCHOOL: { label: 'Collège', color: 'bg-[#363636]/10 text-[#363636] dark:text-[#E5E5E5] border-[#363636]/20' },
+      HIGH_SCHOOL: { label: 'Lycée', color: 'bg-[#242F40] text-[#CCA43B] border-[#363636]' },
+      UNIVERSITY: { label: 'Enseignement Supérieur', color: 'bg-[#CCA43B] text-[#242F40] border-[#CCA43B]' },
     };
     const c = map[cat] || { label: cat, color: 'bg-surface-hover text-text-secondary border-border' };
     return <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${c.color}`}>{c.label}</span>;
   };
+
 
   // Filtered dataset
   const filteredEstablishments = establishments.filter((item) => {
@@ -441,11 +470,12 @@ export default function EstablishmentsPage() {
         onEdit={handleOpenEdit}
         onDelete={handleDelete}
         onPermanentDelete={user?.isRoot ? handlePermanentDelete : undefined}
+        onRestore={handleRestore}
         onToggleStatus={handleToggleStatus}
         corbeilleToggle={{
           isTrash: isTrashMode,
           onToggle: () => setIsTrashMode(!isTrashMode),
-          count: 0,
+          count: establishments.filter((e) => !e.isActive).length,
         }}
         modalSize="6xl"
       />

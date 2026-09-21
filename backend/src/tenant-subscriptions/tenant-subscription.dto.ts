@@ -54,3 +54,25 @@ export class QueryTenantSubscriptionDto extends PaginationQueryDto {
   @IsEnum(['ACTIVE', 'SUSPENDED', 'CANCELLED', 'EXPIRED'])
   status?: string;
 }
+
+export class RenewTenantSubscriptionDto {
+  @ApiProperty({ description: 'Number of months to add' })
+  @IsOptional()
+  months?: number;
+
+  @ApiProperty({ required: false, description: 'New price' })
+  @IsOptional()
+  price?: number;
+
+  @ApiProperty({ required: false, description: 'New end date' })
+  @IsOptional()
+  @IsDateString()
+  newEndDate?: string;
+}
+
+export class ApproveTenantSubscriptionDto {
+  @ApiProperty({ required: false, description: 'Approver name/identity' })
+  @IsOptional()
+  @IsString()
+  approvedBy?: string;
+}

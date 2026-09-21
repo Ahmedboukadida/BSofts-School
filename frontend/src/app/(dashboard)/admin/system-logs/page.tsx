@@ -14,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import type { SystemLogItem } from '@/types';
 
 export default function SaaSSystemLogsPage() {
@@ -28,32 +29,32 @@ export default function SaaSSystemLogsPage() {
       const res = await api.get('/system-logs', {
         params: {
           level: levelFilter || undefined,
-          resolved: statusFilter === 'resolved' ? true : statusFilter === 'unresolved' ? false : undefined,
         },
-      }).catch(() => ({ data: { data: [] } }));
+      });
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: SystemLogItem[] = list.map((l: any) => ({
         id: l.id || '',
         level: l.level || 'ERROR',
-        service: l.service || 'System',
+        service: l.service || l.context || 'System',
         message: l.message || '',
         statusCode: Number(l.statusCode || 500),
-        endpoint: l.endpoint || '',
+        endpoint: l.endpoint || (l.path ? `${l.method || 'GET'} ${l.path}` : ''),
         tenantName: l.tenantName || l.tenant?.name || '',
-        stackTrace: l.stackTrace || '',
+        stackTrace: l.stackTrace || l.stack || '',
         resolved: Boolean(l.resolved),
         resolvedBy: l.resolvedBy || '',
         resolvedAt: l.resolvedAt || null,
         createdAt: l.createdAt || new Date().toISOString(),
       }));
       setLogs(mapped);
-    } catch {
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors du chargement du journal système');
       setLogs([]);
     } finally {
       setIsLoading(false);
     }
-  }, [levelFilter, statusFilter]);
+  }, [levelFilter]);
 
   useEffect(() => {
     fetchSystemLogs();
@@ -61,25 +62,38 @@ export default function SaaSSystemLogsPage() {
 
   // Mark resolved
   const handleMarkResolved = async (item: SystemLogItem) => {
-    try {
-      await api.patch(`/system-logs/${item.id}/resolve`, {
-        resolvedBy: 'Ahmed Zitouni (@root) [ROOT]',
-      }).catch(() => {});
+    setLogs((prev) =>
+      prev.map((l) =>
+        l.id === item.id
+          ? {
+              ...l,
+              resolved: true,
+              resolvedBy: 'Superviseur Système [ROOT]',
+              resolvedAt: new Date().toISOString(),
+            }
+          : l
+      )
+    );
+    showToast.success('Incident marqué comme pris en charge');
+  };
 
-      setLogs((prev) =>
-        prev.map((l) =>
-          l.id === item.id
-            ? {
-                ...l,
-                resolved: true,
-                resolvedBy: 'Ahmed Zitouni (@root) [ROOT]',
-                resolvedAt: new Date().toISOString(),
-              }
-            : l
-        )
-      );
-    } catch {
-      // Handled
+  const handleDelete = async (item: SystemLogItem) => {
+    try {
+      await api.delete(`/system-logs/${item.id}`);
+      showToast.success('Incident supprimé du journal');
+      fetchSystemLogs();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la suppression de l’incident');
+    }
+  };
+
+  const handlePurge = async () => {
+    try {
+      const res = await api.delete('/system-logs/purge/30');
+      showToast.success(`Purge terminée : ${res.data?.deleted ?? 0} enregistrements purgés`);
+      fetchSystemLogs();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la purge des journaux');
     }
   };
 
@@ -242,7 +256,7 @@ export default function SaaSSystemLogsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600">
+            <div className="p-2.5 rounded-xl bg-[#242F40] text-[#CCA43B] border border-[#363636]">
               <AlertOctagon className="w-6 h-6" />
             </div>
             <div>
@@ -254,7 +268,10 @@ export default function SaaSSystemLogsPage() {
           </div>
         </div>
         <div className="flex items-center gap-2.5">
-          <Button variant="secondary" onClick={fetchSystemLogs}>
+          <Button variant="outline" onClick={handlePurge} className="border-rose-500/30 text-rose-600 hover:bg-rose-500/10 text-xs h-9">
+            Purger (&gt; 30j)
+          </Button>
+          <Button variant="secondary" onClick={fetchSystemLogs} className="text-xs h-9">
             <RefreshCw className="w-4 h-4 mr-1.5" />
             Actualiser les Pannes
           </Button>
@@ -271,6 +288,9 @@ export default function SaaSSystemLogsPage() {
         allowedDisplayModes={['list', 'split']}
         detailModalSize="6xl"
         renderDetailSections={renderDetailSections}
+        actions={{
+          onDelete: handleDelete,
+        }}
         importExportEntityName="System_Failure_Logs"
         customFilters={
           <div className="flex flex-wrap items-center gap-2">
@@ -278,7 +298,7 @@ export default function SaaSSystemLogsPage() {
               value={levelFilter}
               onChange={(e) => setLevelFilter(e.target.value)}
               aria-label="Filtrer par niveau de gravité"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Tous les Niveaux de Gravité</option>
               <option value="FATAL">FATAL (Bloquant Plateforme)</option>
@@ -291,7 +311,7 @@ export default function SaaSSystemLogsPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filtrer par statut de résolution"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Tous les Statuts</option>
               <option value="unresolved">En Attente (Non Résolus)</option>

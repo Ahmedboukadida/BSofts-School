@@ -21,7 +21,17 @@ export class CreateParentDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  cin?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   phone?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  phoneSecondary?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -36,7 +46,32 @@ export class CreateParentDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  city?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  profession?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   occupation?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  emergencyContact?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  portalAccess?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -58,7 +93,17 @@ export class UpdateParentDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  cin?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   phone?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  phoneSecondary?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -73,7 +118,27 @@ export class UpdateParentDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  city?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  profession?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   occupation?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  emergencyContact?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  portalAccess?: boolean;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -106,23 +171,36 @@ export class JustifyAbsenceDto {
 
   @ApiProperty()
   @IsString()
-  @MinLength(3)
   reason: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  documentUrl?: string;
 }
 
 export class ParentSendMessageDto {
+  @ApiProperty()
+  @IsString()
+  subject: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  content?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  message?: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   studentId?: string;
 
-  @ApiProperty()
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsString()
-  @MinLength(2)
-  subject: string;
-
-  @ApiProperty()
-  @IsString()
-  @MinLength(5)
-  message: string;
+  recipientRole?: string;
 }

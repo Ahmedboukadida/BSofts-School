@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
+import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { MatiereItem, AcademicModuleItem } from '@/types';
 
@@ -51,8 +52,8 @@ export default function AcademicModulesPage() {
     setIsLoading(true);
     try {
       const res = await api.get('/academic-modules', {
-        params: { includeDeleted: isTrashMode },
-      }).catch(() => ({ data: { data: [] } }));
+        params: { limit: 100 },
+      });
 
       const rawData = res.data?.data || res.data || [];
       const formatted = (Array.isArray(rawData) ? rawData : []).map((m: any) => ({
@@ -62,10 +63,13 @@ export default function AcademicModulesPage() {
         totalCoefficient: (m.matieres || []).reduce((acc: number, cur: any) => acc + Number(cur.coefficient || 0), 0) || m.totalCoefficient || 1,
       }));
       setModules(formatted);
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement des modules académiques');
+      setModules([]);
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode]);
+  }, []);
 
   useEffect(() => {
     fetchModules();
@@ -146,36 +150,66 @@ export default function AcademicModulesPage() {
       };
 
       if (editingItem) {
-        await api.put(`/academic-modules/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/academic-modules/${editingItem.id}`, payload);
+        showToast('Pôle académique mis à jour avec succès', 'success');
       } else {
-        await api.post('/academic-modules', payload).catch(() => {});
+        await api.post('/academic-modules', payload);
+        showToast('Pôle académique créé avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchModules();
+      await fetchModules();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement du pôle académique");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: AcademicModuleItem) => {
-    await api.delete(`/academic-modules/${item.id}`).catch(() => {});
-    setModules((prev) => prev.filter((m) => m.id !== item.id));
+    try {
+      await api.delete(`/academic-modules/${item.id}`);
+      showToast('Pôle académique placé dans la corbeille', 'success');
+      await fetchModules();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la désactivation');
+    }
   };
 
   const handlePermanentDelete = async (item: AcademicModuleItem) => {
-    await api.delete(`/academic-modules/${item.id}?permanent=true`).catch(() => {});
-    setModules((prev) => prev.filter((m) => m.id !== item.id));
+    if (!window.confirm(`Suppression DÉFINITIVE du pôle ${item.name} (${item.code}) ? Cette action est irréversible.`)) return;
+    try {
+      await api.delete(`/academic-modules/${item.id}?permanent=true`);
+      showToast('Pôle académique supprimé définitivement', 'success');
+      await fetchModules();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  const handleRestore = async (item: AcademicModuleItem) => {
+    try {
+      await api.post(`/academic-modules/${item.id}/restore`);
+      showToast('Pôle académique restauré avec succès', 'success');
+      await fetchModules();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   const handleToggleStatus = async (item: AcademicModuleItem) => {
     const updated = !item.isActive;
-    await api.put(`/academic-modules/${item.id}`, { isActive: updated }).catch(() => {});
-    setModules((prev) =>
-      prev.map((m) => (m.id === item.id ? { ...m, isActive: updated } : m))
-    );
+    try {
+      await api.put(`/academic-modules/${item.id}`, { isActive: updated });
+      showToast(`Statut mis à jour (${updated ? 'Actif' : 'Inactif'})`, 'success');
+      await fetchModules();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la modification du statut');
+    }
   };
 
   const filteredModules = modules.filter((m) => {
+    if (!isTrashMode && m.isActive === false) return false;
+    if (isTrashMode && m.isActive !== false) return false;
     if (filiereFilter && m.filiere !== filiereFilter) return false;
     if (statusFilter && (statusFilter === 'active' ? !m.isActive : m.isActive)) return false;
     return true;
@@ -391,7 +425,7 @@ export default function AcademicModulesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-600">
+            <div className="p-2.5 rounded-xl bg-[#242F40]/10 text-[#CCA43B]">
               <BookOpen className="w-6 h-6" />
             </div>
             <div>
@@ -425,6 +459,7 @@ export default function AcademicModulesPage() {
           onEdit: handleOpenEdit,
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
+          onRestore: handleRestore,
           onToggleStatus: handleToggleStatus,
         }}
         showTrashToggle={true}

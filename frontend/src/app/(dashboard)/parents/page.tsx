@@ -19,10 +19,12 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
+import { useToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { ParentItem } from '@/types';
 
 export default function ParentsPage() {
+  const { showToast, showApiErrorToast } = useToast();
   const [parents, setParents] = useState<ParentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrashMode, setIsTrashMode] = useState(false);
@@ -52,11 +54,11 @@ export default function ParentsPage() {
     setIsLoading(true);
     try {
       const res = await api.get('/parents', {
-        params: { includeDeleted: isTrashMode },
-      }).catch(() => ({ data: { data: [] } }));
+        params: { limit: 100, includeDeleted: isTrashMode },
+      });
 
-      const rawData = res.data.data || res.data || [];
-      if (Array.isArray(rawData) && rawData.length > 0) {
+      const rawData = res.data?.data || res.data || [];
+      if (Array.isArray(rawData)) {
         const formatted: ParentItem[] = rawData.map((item: any) => ({
           ...item,
           cin: item.cin || 'N/A',
@@ -68,6 +70,7 @@ export default function ParentsPage() {
           emergencyContact: item.emergencyContact || item.emergencyPhone || item.phone || 'N/A',
           portalAccess: item.portalAccess ?? !!item.userId,
           isActive: item.isActive ?? true,
+          establishmentName: item.establishment?.name || 'Lycée Pilote Bourguiba',
           linkedStudents: Array.isArray(item.linkedStudents)
             ? item.linkedStudents
             : Array.isArray(item.students)
@@ -75,173 +78,17 @@ export default function ParentsPage() {
                 id: s.student?.id || s.id || `stu-${Math.random()}`,
                 name: `${s.student?.firstName || ''} ${s.student?.lastName || ''}`.trim() || 'Élève',
                 matricule: s.student?.registrationNumber || 'N/A',
-                className: s.relation || s.relationship || 'Enfant',
+                className: s.student?.classAssignments?.[0]?.class?.name || s.relation || s.relationship || 'Enfant',
               }))
             : [],
         }));
         setParents(formatted);
       } else {
-        // High quality Tunisian parents dataset
-        setParents([
-          {
-            id: 'par-1',
-            cin: '08456123',
-            firstName: 'Moncef',
-            lastName: 'Trabelsi',
-            profession: 'Professeur d’Enseignement Supérieur',
-            phone: '+216 98 456 123',
-            phoneSecondary: '+216 20 456 123',
-            email: 'm.trabelsi@ecole.tn',
-            address: 'Avenue Habib Bourguiba, Carthage',
-            city: 'Tunis',
-            linkedStudents: [
-              {
-                id: 'stu-1',
-                name: 'Amine Trabelsi',
-                matricule: 'ELEV-2024-001',
-                className: '4-MATH (Bac)',
-              },
-            ],
-            emergencyContact: '+216 98 111 222 (Mère)',
-            portalAccess: true,
-            isActive: true,
-            establishmentName: 'Lycée Pilote Bourguiba',
-            createdAt: '2024-09-01T08:00:00.000Z',
-            createdBy: 'u-root',
-            createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-            updatedAt: '2026-02-10T10:30:00.000Z',
-            updatedBy: 'u-admin1',
-            updatedByName: 'Karim Gharbi (@admin1) [ADMIN]',
-            isDeleted: false,
-          },
-          {
-            id: 'par-2',
-            cin: '09124890',
-            firstName: 'Faouzi',
-            lastName: 'Ben Ammar',
-            profession: 'Médecin Chef de Service (CHU Charles Nicolle)',
-            phone: '+216 98 222 333',
-            phoneSecondary: '+216 55 222 333',
-            email: 'faouzi.ammar@topnet.tn',
-            address: 'Résidence Les Jasmins, Ennasr 2',
-            city: 'Ariana',
-            linkedStudents: [
-              {
-                id: 'stu-2',
-                name: 'Sarra Ben Ammar',
-                matricule: 'ELEV-2024-042',
-                className: '4-SC-EXP (Bac)',
-              },
-            ],
-            emergencyContact: '+216 22 333 444 (Conjoint)',
-            portalAccess: true,
-            isActive: true,
-            establishmentName: 'Lycée Pilote Bourguiba',
-            createdAt: '2024-09-02T09:15:00.000Z',
-            createdBy: 'u-root',
-            createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-            updatedAt: '2026-01-18T14:20:00.000Z',
-            updatedBy: 'u-admin1',
-            updatedByName: 'Karim Gharbi (@admin1) [ADMIN]',
-            isDeleted: false,
-          },
-          {
-            id: 'par-3',
-            cin: '07890123',
-            firstName: 'Hichem',
-            lastName: 'Gharbi',
-            profession: 'Ingénieur en Chef Télécom',
-            phone: '+216 29 888 999',
-            phoneSecondary: '+216 98 888 999',
-            email: 'hichem.gharbi@gnet.tn',
-            address: 'Rue de la Plage, Gammarth',
-            city: 'Tunis',
-            linkedStudents: [
-              {
-                id: 'stu-3',
-                name: 'Yassine Gharbi',
-                matricule: 'ELEV-2024-089',
-                className: '3-INFO',
-              },
-            ],
-            emergencyContact: '+216 55 666 777 (Mère)',
-            portalAccess: true,
-            isActive: true,
-            establishmentName: 'Lycée Pilote Bourguiba',
-            createdAt: '2024-09-03T11:00:00.000Z',
-            createdBy: 'u-root',
-            createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-            updatedAt: '2026-02-01T16:00:00.000Z',
-            updatedBy: 'u-admin1',
-            updatedByName: 'Karim Gharbi (@admin1) [ADMIN]',
-            isDeleted: false,
-          },
-          {
-            id: 'par-4',
-            cin: '06543210',
-            firstName: 'Tarek',
-            lastName: 'Mejri',
-            profession: 'Chef d’Entreprise Industrielle',
-            phone: '+216 98 777 666',
-            phoneSecondary: '+216 24 777 666',
-            email: 'tarek.mejri@gmail.com',
-            address: 'Avenue Habib Thameur',
-            city: 'Bizerte',
-            linkedStudents: [
-              {
-                id: 'stu-4',
-                name: 'Nour Mejri',
-                matricule: 'ELEV-2025-015',
-                className: '3-MATH-A',
-              },
-            ],
-            emergencyContact: '+216 94 555 111 (Secrétariat)',
-            portalAccess: true,
-            isActive: true,
-            establishmentName: 'Lycée Pilote Bourguiba',
-            createdAt: '2025-09-01T08:30:00.000Z',
-            createdBy: 'u-root',
-            createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-            updatedAt: '2026-02-14T09:00:00.000Z',
-            updatedBy: 'u-admin1',
-            updatedByName: 'Karim Gharbi (@admin1) [ADMIN]',
-            isDeleted: false,
-          },
-          {
-            id: 'par-5',
-            cin: '05432198',
-            firstName: 'Lotfi',
-            lastName: 'Bouazizi',
-            profession: 'Avocat à la Cour de Cassation',
-            phone: '+216 97 333 222',
-            phoneSecondary: '+216 52 333 222',
-            email: 'lotfi.bouazizi@tunet.tn',
-            address: 'Cité Olympique',
-            city: 'Tunis',
-            linkedStudents: [
-              {
-                id: 'stu-5',
-                name: 'Kais Bouazizi',
-                matricule: 'ELEV-2025-088',
-                className: '2-SC-1',
-              },
-            ],
-            emergencyContact: '+216 23 444 888 (Cabinet)',
-            portalAccess: false,
-            isActive: true,
-            establishmentName: 'Lycée Pilote Bourguiba',
-            createdAt: '2025-09-02T10:00:00.000Z',
-            createdBy: 'u-root',
-            createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-            updatedAt: '2026-01-10T12:00:00.000Z',
-            updatedBy: 'u-admin1',
-            updatedByName: 'Karim Gharbi (@admin1) [ADMIN]',
-            isDeleted: false,
-          },
-        ]);
+        setParents([]);
       }
-    } catch {
+    } catch (err: any) {
       setParents([]);
+      showApiErrorToast(err, 'Impossible de charger la liste des parents');
     } finally {
       setIsLoading(false);
     }
@@ -294,35 +141,16 @@ export default function ParentsPage() {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        await api.put(`/parents/${editingItem.id}`, formData).catch(() => {});
-        setParents((prev) =>
-          prev.map((p) =>
-            p.id === editingItem.id
-              ? {
-                  ...p,
-                  ...formData,
-                  updatedAt: new Date().toISOString(),
-                  updatedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : p
-          )
-        );
+        await api.put(`/parents/${editingItem.id}`, formData);
+        showToast('Parent mis à jour avec succès', 'success');
       } else {
-        await api.post('/parents', formData).catch(() => {});
-        const newItem: ParentItem = {
-          id: `par-${Date.now()}`,
-          ...formData,
-          linkedStudents: [],
-          establishmentName: 'Lycée Pilote Bourguiba',
-          createdAt: new Date().toISOString(),
-          createdBy: 'u-root',
-          createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-          updatedAt: new Date().toISOString(),
-          isDeleted: false,
-        };
-        setParents((prev) => [newItem, ...prev]);
+        await api.post('/parents', formData);
+        showToast('Parent créé avec succès', 'success');
       }
       setIsFormModalOpen(false);
+      await fetchParents();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement du parent");
     } finally {
       setIsSubmitting(false);
     }
@@ -339,49 +167,29 @@ export default function ParentsPage() {
     try {
       await api.delete(`/parents/${row.id}`, {
         params: { permanent: permanent && isRoot },
-      }).catch(() => {});
-
-      if (permanent) {
-        setParents((prev) => prev.filter((p) => p.id !== row.id));
-      } else {
-        setParents((prev) =>
-          prev.map((p) =>
-            p.id === row.id
-              ? {
-                  ...p,
-                  isDeleted: true,
-                  deletedAt: new Date().toISOString(),
-                  deletedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : p
-          )
-        );
-      }
-    } catch {
-      // Handled
+      });
+      showToast(permanent ? 'Parent supprimé définitivement' : 'Parent placé dans la corbeille', 'success');
+      await fetchParents();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression');
     }
   };
 
   const handleRestore = async (row: ParentItem) => {
     if (!window.confirm(`Restaurer le dossier de ${row.firstName} ${row.lastName} ?`)) return;
     try {
-      await api.post(`/parents/${row.id}/restore`).catch(() => {});
-      setParents((prev) =>
-        prev.map((p) =>
-          p.id === row.id
-            ? { ...p, isDeleted: false, deletedAt: null, deletedByName: undefined }
-            : p
-        )
-      );
-    } catch {
-      // Handled
+      await api.post(`/parents/${row.id}/restore`);
+      showToast('Parent restauré avec succès', 'success');
+      await fetchParents();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
     }
   };
 
   const filteredParents = parents.filter((p) => {
-    if (!isTrashMode && p.isDeleted) return false;
-    if (isTrashMode && !p.isDeleted) return false;
-    if (professionFilter && !p.profession.toLowerCase().includes(professionFilter.toLowerCase())) return false;
+    if (!isTrashMode && p.isActive === false) return false;
+    if (isTrashMode && p.isActive !== false) return false;
+    if (professionFilter && !p.profession?.toLowerCase().includes(professionFilter.toLowerCase())) return false;
     if (statusFilter && (statusFilter === 'active' ? !p.isActive : p.isActive)) return false;
     return true;
   });

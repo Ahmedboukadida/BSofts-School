@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useTranslation } from '@/components/providers/i18n-provider';
-import { useToast } from '@/components/ui/toast';
+import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
 import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
@@ -74,11 +74,11 @@ export default function PaymentsPage() {
   const fetchStudentPayments = useCallback(async () => {
     try {
       setIsStudentLoading(true);
-      const res = await api.get('/student-payments?limit=100').catch(() => ({ data: { data: [] } }));
+      const res = await api.get('/student-payments?limit=100');
       const list = res.data?.data || res.data || [];
       setStudentPayments(Array.isArray(list) ? list : []);
-    } catch (err) {
-      console.error('Failed to fetch student payments:', err);
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement des paiements étudiants');
     } finally {
       setIsStudentLoading(false);
     }
@@ -89,15 +89,15 @@ export default function PaymentsPage() {
     try {
       setIsCaisseLoading(true);
       const [caisseRes, txRes] = await Promise.all([
-        api.get('/caisses').catch(() => ({ data: { data: [] } })),
-        api.get('/financial-transactions?limit=50').catch(() => ({ data: { data: [] } })),
+        api.get('/caisses?limit=100'),
+        api.get('/financial-transactions?limit=100'),
       ]);
       const cList = caisseRes.data?.data || caisseRes.data || [];
       const txList = txRes.data?.data || txRes.data || [];
       setCaisses(Array.isArray(cList) ? cList : []);
       setTransactions(Array.isArray(txList) ? txList : []);
-    } catch (err) {
-      console.error('Failed to fetch caisses/transactions:', err);
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement des caisses');
     } finally {
       setIsCaisseLoading(false);
     }
@@ -107,11 +107,11 @@ export default function PaymentsPage() {
   const fetchTeacherPayments = useCallback(async () => {
     try {
       setIsTeacherLoading(true);
-      const res = await api.get(`/teacher-payments?period=${payrollPeriod}&limit=100`).catch(() => ({ data: { data: [] } }));
+      const res = await api.get(`/teacher-payments?period=${payrollPeriod}&limit=100`);
       const list = res.data?.data || res.data || [];
       setTeacherPayments(Array.isArray(list) ? list : []);
-    } catch (err) {
-      console.error('Failed to fetch teacher payments:', err);
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement de la paie enseignants');
     } finally {
       setIsTeacherLoading(false);
     }

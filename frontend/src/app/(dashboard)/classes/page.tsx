@@ -17,12 +17,14 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
+import { useToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
 import api from '@/lib/api';
 import type { ClassItem } from '@/types';
 
 export default function ClassesPage() {
+  const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
   const { currentEstablishmentId, establishments } = useEstablishmentStore();
   const [classes, setClasses] = useState<ClassItem[]>([]);
@@ -56,10 +58,11 @@ export default function ClassesPage() {
 
       const res = await api.get('/classes', {
         params: {
+          limit: 100,
           includeDeleted: isTrashMode,
           establishmentId: activeEst,
         },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -85,18 +88,19 @@ export default function ClassesPage() {
           isActive: c.isActive !== false,
           createdAt: c.createdAt || new Date().toISOString(),
           updatedAt: c.updatedAt || new Date().toISOString(),
-          isDeleted: Boolean(c.isDeleted),
+          isDeleted: c.isActive === false,
           establishmentName: c.establishment?.name || c.establishmentName || '',
           establishmentId: c.establishmentId || '',
         } as ClassItem;
       });
       setClasses(mapped);
-    } catch {
+    } catch (err: any) {
       setClasses([]);
+      showApiErrorToast(err, 'Impossible de charger les classes');
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, currentEstablishmentId]);
+  }, [isTrashMode, currentEstablishmentId, showApiErrorToast]);
 
   useEffect(() => {
     fetchClasses();
@@ -147,36 +151,66 @@ export default function ClassesPage() {
         establishmentId: formData.establishmentId || (currentEstablishmentId && currentEstablishmentId !== 'ALL' ? currentEstablishmentId : (establishments[0]?.id || user?.establishmentId)),
       };
       if (editingItem) {
-        await api.put(`/classes/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/classes/${editingItem.id}`, payload);
+        showToast('Classe mise à jour avec succès', 'success');
       } else {
-        await api.post('/classes', payload).catch(() => {});
+        await api.post('/classes', payload);
+        showToast('Classe créée avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchClasses();
+      await fetchClasses();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement de la classe");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: ClassItem) => {
-    await api.delete(`/classes/${item.id}`).catch(() => {});
-    setClasses((prev) => prev.filter((c) => c.id !== item.id));
+    try {
+      await api.delete(`/classes/${item.id}`);
+      showToast('Classe placée dans la corbeille', 'success');
+      await fetchClasses();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la désactivation');
+    }
   };
 
   const handlePermanentDelete = async (item: ClassItem) => {
-    await api.delete(`/classes/${item.id}?permanent=true`).catch(() => {});
-    setClasses((prev) => prev.filter((c) => c.id !== item.id));
+    if (!window.confirm(`Suppression DÉFINITIVE de la classe ${item.name} ? Cette action est irréversible.`)) return;
+    try {
+      await api.delete(`/classes/${item.id}?permanent=true`);
+      showToast('Classe supprimée définitivement', 'success');
+      await fetchClasses();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  const handleRestore = async (item: ClassItem) => {
+    try {
+      await api.post(`/classes/${item.id}/restore`);
+      showToast('Classe restaurée avec succès', 'success');
+      await fetchClasses();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   const handleToggleStatus = async (item: ClassItem) => {
     const updated = !item.isActive;
-    await api.put(`/classes/${item.id}`, { isActive: updated }).catch(() => {});
-    setClasses((prev) =>
-      prev.map((c) => (c.id === item.id ? { ...c, isActive: updated } : c))
-    );
+    try {
+      await api.put(`/classes/${item.id}`, { isActive: updated });
+      showToast(`Statut mis à jour (${updated ? 'Actif' : 'Inactif'})`, 'success');
+      await fetchClasses();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la mise à jour du statut');
+    }
   };
 
   const filteredClasses = classes.filter((c) => {
+    if (!isTrashMode && c.isActive === false) return false;
+    if (isTrashMode && c.isActive !== false) return false;
     if (levelFilter && c.level !== levelFilter) return false;
     if (statusFilter && (statusFilter === 'active' ? !c.isActive : c.isActive)) return false;
     return true;
@@ -418,6 +452,7 @@ export default function ClassesPage() {
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
           onToggleStatus: handleToggleStatus,
+          onRestore: handleRestore,
         }}
         showTrashToggle={true}
         isTrashActive={isTrashMode}

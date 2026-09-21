@@ -51,6 +51,15 @@ export class EmployeesController {
     return this.service.update(id, dto);
   }
 
+  @Post(':id/restore')
+  @Permissions('employees:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Restore a deactivated employee' })
+  @ApiResponse({ status: 200, description: 'Employee restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: any) {
+    return this.service.restore(id, user);
+  }
+
   @Delete(':id')
   @Permissions('employees:delete')
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')

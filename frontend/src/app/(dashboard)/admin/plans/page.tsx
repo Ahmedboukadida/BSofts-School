@@ -19,6 +19,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import type { PlanItem } from '@/types';
 
 const DEFAULT_PLAN_FEATURES = [
@@ -63,12 +64,13 @@ export default function SaaSAdminPlansPage() {
     try {
       const res = await api.get('/saas-plans', {
         params: { includeDeleted: isTrashMode },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
       if (Array.isArray(rawData)) {
         const formatted: PlanItem[] = rawData.map((p: any) => ({
           ...p,
+          code: p.code || p.name.toUpperCase().replace(/[^A-Z0-9]/g, '_'),
           price: Number(p.price ?? 350),
           currency: 'TND',
           interval: p.interval || 'MONTHLY',
@@ -91,6 +93,9 @@ export default function SaaSAdminPlansPage() {
       } else {
         setPlans([]);
       }
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors du chargement des forfaits SaaS');
+      setPlans([]);
     } finally {
       setIsLoading(false);
     }
@@ -157,44 +162,74 @@ export default function SaaSAdminPlansPage() {
       }));
 
       const payload = {
-        ...formData,
+        name: formData.name,
+        description: formData.description,
         price: Number(formData.price),
+        currency: 'TND',
+        interval: formData.interval,
         maxStudents: Number(formData.maxStudents),
         maxTeachers: Number(formData.maxTeachers),
         maxStorageGb: Number(formData.maxStorageGb),
+        isPopular: formData.isPopular,
+        isActive: formData.isActive,
         features: formattedFeatures,
       };
 
       if (editingItem) {
-        await api.put(`/saas-plans/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/saas-plans/${editingItem.id}`, payload);
+        showToast.success('Forfait modifié avec succès');
       } else {
-        await api.post('/saas-plans', payload).catch(() => {});
+        await api.post('/saas-plans', payload);
+        showToast.success('Nouveau forfait créé avec succès');
       }
       setIsFormModalOpen(false);
       fetchPlans();
-    } catch {
-      setIsFormModalOpen(false);
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement du forfait');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: PlanItem) => {
-    await api.delete(`/saas-plans/${item.id}`).catch(() => {});
-    setPlans((prev) => prev.filter((p) => p.id !== item.id));
+    try {
+      await api.delete(`/saas-plans/${item.id}`);
+      showToast.success('Forfait archivé et déplacé dans la corbeille');
+      fetchPlans();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la suppression');
+    }
   };
 
   const handlePermanentDelete = async (item: PlanItem) => {
-    await api.delete(`/saas-plans/${item.id}?permanent=true`).catch(() => {});
-    setPlans((prev) => prev.filter((p) => p.id !== item.id));
+    try {
+      await api.delete(`/saas-plans/${item.id}?permanent=true`);
+      showToast.success('Forfait supprimé définitivement');
+      fetchPlans();
+    } catch (err) {
+      showApiErrorToast(err, 'Impossible de supprimer définitivement ce forfait');
+    }
+  };
+
+  const handleRestore = async (item: PlanItem) => {
+    try {
+      await api.post(`/saas-plans/${item.id}/restore`);
+      showToast.success('Forfait restauré avec succès');
+      fetchPlans();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   const handleToggleStatus = async (item: PlanItem) => {
     const updated = !item.isActive;
-    await api.put(`/saas-plans/${item.id}`, { isActive: updated }).catch(() => {});
-    setPlans((prev) =>
-      prev.map((p) => (p.id === item.id ? { ...p, isActive: updated } : p))
-    );
+    try {
+      await api.put(`/saas-plans/${item.id}`, { isActive: updated });
+      showToast.success(updated ? 'Forfait activé' : 'Forfait archivé');
+      fetchPlans();
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la modification du statut');
+    }
   };
 
   const filteredPlans = plans.filter((p) => {
@@ -215,11 +250,11 @@ export default function SaaSAdminPlansPage() {
           <div>
             <span className="font-bold text-text-primary block">{row.name}</span>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono px-1.5 py-0.5 bg-surface rounded text-brand font-semibold">
+              <span className="text-[11px] font-mono px-1.5 py-0.5 bg-surface rounded text-[#CCA43B] font-semibold border border-border">
                 {row.code}
               </span>
               {row.isPopular && (
-                <span className="px-1.5 py-0.2 text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-200 rounded">
+                <span className="px-1.5 py-0.2 text-[10px] font-bold bg-[#CCA43B]/10 text-[#CCA43B] border border-[#CCA43B]/30 rounded">
                   Recommandé
                 </span>
               )}
@@ -248,7 +283,7 @@ export default function SaaSAdminPlansPage() {
       render: (row) => (
         <div className="space-y-0.5 text-xs">
           <p className="font-medium text-text-primary flex items-center gap-1">
-            <Users className="w-3.5 h-3.5 text-brand" /> {row.maxStudents} élèves max
+            <Users className="w-3.5 h-3.5 text-[#CCA43B]" /> {row.maxStudents} élèves max
           </p>
           <p className="text-[11px] text-text-secondary flex items-center gap-1">
             <HardDrive className="w-3 h-3 text-text-tertiary" /> {row.maxStorageGb} Go stockage
@@ -361,12 +396,12 @@ export default function SaaSAdminPlansPage() {
     <Card
       key={item.id}
       className={`p-6 hover:shadow-lg transition-all duration-200 border relative group flex flex-col justify-between ${
-        item.isPopular ? 'border-brand ring-2 ring-brand/20 shadow-md' : 'border-border'
+        item.isPopular ? 'border-[#CCA43B] ring-2 ring-[#CCA43B]/20 shadow-md' : 'border-border'
       }`}
     >
       <div>
         {item.isPopular && (
-          <div className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-brand text-white text-[10px] font-bold tracking-wide uppercase shadow-xs">
+          <div className="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-[#CCA43B] text-[#242F40] text-[10px] font-bold tracking-wide uppercase shadow-xs">
             Recommandé
           </div>
         )}
@@ -380,7 +415,7 @@ export default function SaaSAdminPlansPage() {
           </span>
         </div>
 
-        <h3 className="font-bold text-lg text-text-primary group-hover:text-brand transition-colors mb-1">
+        <h3 className="font-bold text-lg text-text-primary group-hover:text-[#CCA43B] transition-colors mb-1">
           {item.name}
         </h3>
 
@@ -393,7 +428,7 @@ export default function SaaSAdminPlansPage() {
             <span className="text-3xl font-black text-text-primary">
               {item.price.toLocaleString('fr-TN')}
             </span>
-            <span className="text-sm font-extrabold text-brand">TND</span>
+            <span className="text-sm font-extrabold text-[#CCA43B]">TND</span>
             <span className="text-xs text-text-tertiary ml-1">
               {item.interval === 'MONTHLY' ? '/ mois' : '/ an'}
             </span>
@@ -403,13 +438,13 @@ export default function SaaSAdminPlansPage() {
         <div className="space-y-2 mb-6">
           <div className="flex items-center justify-between text-xs py-1 border-b border-border-subtle">
             <span className="text-text-secondary flex items-center gap-1.5">
-              <Users className="w-3.5 h-3.5 text-brand" /> Capacité élèves
+              <Users className="w-3.5 h-3.5 text-[#CCA43B]" /> Capacité élèves
             </span>
             <span className="font-bold text-text-primary">{item.maxStudents} max</span>
           </div>
           <div className="flex items-center justify-between text-xs py-1 border-b border-border-subtle">
             <span className="text-text-secondary flex items-center gap-1.5">
-              <HardDrive className="w-3.5 h-3.5 text-brand" /> Stockage fichiers
+              <HardDrive className="w-3.5 h-3.5 text-[#CCA43B]" /> Stockage fichiers
             </span>
             <span className="font-bold text-text-primary">{item.maxStorageGb} Go</span>
           </div>
@@ -484,6 +519,7 @@ export default function SaaSAdminPlansPage() {
           onEdit: handleOpenEdit,
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
+          onRestore: handleRestore,
           onToggleStatus: handleToggleStatus,
         }}
         showTrashToggle={true}
@@ -496,7 +532,7 @@ export default function SaaSAdminPlansPage() {
               value={intervalFilter}
               onChange={(e) => setIntervalFilter(e.target.value)}
               aria-label="Filtrer par fréquence"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Toutes les fréquences</option>
               <option value="MONTHLY">Facturation Mensuelle</option>
@@ -507,7 +543,7 @@ export default function SaaSAdminPlansPage() {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               aria-label="Filtrer par disponibilité"
-              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+              className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
             >
               <option value="">Toutes les disponibilités</option>
               <option value="active">Actifs uniquement</option>
@@ -528,7 +564,7 @@ export default function SaaSAdminPlansPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border pb-2">
-                <Award className="w-4 h-4 text-brand" />
+                <Award className="w-4 h-4 text-[#CCA43B]" />
                 Désignation & Tarification (TND)
               </h3>
 
@@ -568,7 +604,7 @@ export default function SaaSAdminPlansPage() {
                     value={formData.interval}
                     onChange={(e) => setFormData({ ...formData, interval: e.target.value as PlanItem['interval'] })}
                     aria-label="Périodicité de facturation"
-                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                    className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                     required
                   >
                     <option value="MONTHLY">Mensuelle (/ mois)</option>
@@ -582,7 +618,7 @@ export default function SaaSAdminPlansPage() {
                       type="checkbox"
                       checked={formData.isPopular}
                       onChange={(e) => setFormData({ ...formData, isPopular: e.target.checked })}
-                      className="rounded text-brand focus:ring-brand"
+                      className="rounded text-[#CCA43B] focus:ring-[#CCA43B]"
                     />
                     <span className="text-xs font-semibold text-text-primary">
                       Marquer comme Recommandé
@@ -600,7 +636,7 @@ export default function SaaSAdminPlansPage() {
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Décrivez les cibles pédagogiques de cette formule..."
                   rows={3}
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand resize-none"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B] resize-none"
                 />
               </div>
             </div>
@@ -608,7 +644,7 @@ export default function SaaSAdminPlansPage() {
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center justify-between border-b border-border pb-2">
                 <div className="flex items-center gap-2">
-                  <HardDrive className="w-4 h-4 text-brand" />
+                  <HardDrive className="w-4 h-4 text-[#CCA43B]" />
                   <span>Quotas & Fonctionnalités Incluses</span>
                 </div>
               </h3>

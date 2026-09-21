@@ -9,11 +9,13 @@ export class ClassesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryClassDto) {
-    const { page = 1, limit = 10, search, establishmentId, academicYearId, classLevelId, sortBy, sortOrder } = query;
+    const { page = 1, limit = 50, search, establishmentId, academicYearId, classLevelId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.establishmentId = establishmentId;
+    }
     if (academicYearId) where.academicYearId = academicYearId;
     if (classLevelId) where.classLevelId = classLevelId;
     if (!query.includeDeleted) {
@@ -32,6 +34,7 @@ export class ClassesService {
       this.prisma.class.findMany({
         where, skip, take: limit, orderBy,
         include: {
+          establishment: { select: { id: true, name: true, slug: true } },
           classLevel: { select: { id: true, name: true } },
           academicYear: { select: { id: true, name: true } },
           _count: { select: { studentClassAssignments: true, sessions: true } },
@@ -183,6 +186,40 @@ export class ClassesService {
       });
       throw err;
     }
+  }
+
+  async restore(id: string, user?: any) {
+    const cls = await this.prisma.class.findUnique({ where: { id } });
+    if (!cls) throw new NotFoundException(`Classe avec ID ${id} introuvable`);
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    const restored = await this.prisma.class.update({
+      where: { id },
+      data: { isActive: true },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+        classLevel: { select: { id: true, name: true } },
+        academicYear: { select: { id: true, name: true } },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'RESTORE',
+        entity: 'Class',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: { isActive: false },
+        newValues: { isActive: true },
+      },
+    });
+
+    return { message: 'Classe restaurée avec succès', class: restored };
   }
 
   async promoteClass(

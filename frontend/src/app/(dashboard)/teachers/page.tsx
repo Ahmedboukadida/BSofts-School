@@ -15,12 +15,14 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
+import { useToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
 import type { TeacherItem } from '@/types';
 
 export default function TeachersPage() {
+  const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
   const { currentEstablishmentId, establishments, fetchEstablishments } = useEstablishmentStore();
 
@@ -65,10 +67,11 @@ export default function TeachersPage() {
 
       const res = await api.get('/teachers', {
         params: {
+          limit: 100,
           includeDeleted: isTrashMode,
           ...(activeEstId ? { establishmentId: activeEstId } : {}),
         },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -96,16 +99,17 @@ export default function TeachersPage() {
           establishmentName: t.establishment?.name || t.establishmentName || 'Établissement Principal',
           createdAt: t.createdAt || new Date().toISOString(),
           updatedAt: t.updatedAt || new Date().toISOString(),
-          isDeleted: Boolean(t.isDeleted),
+          isDeleted: t.isActive === false,
         };
       });
       setTeachers(mapped);
-    } catch {
+    } catch (err: any) {
       setTeachers([]);
+      showApiErrorToast(err, 'Impossible de charger la liste des enseignants');
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, currentEstablishmentId]);
+  }, [isTrashMode, currentEstablishmentId, showApiErrorToast]);
 
   useEffect(() => {
     fetchTeachers();
@@ -158,38 +162,69 @@ export default function TeachersPage() {
       const payload = {
         ...formData,
         weeklyHours: Number(formData.weeklyHours),
+        establishmentId: formData.establishmentId || (currentEstablishmentId && currentEstablishmentId !== 'ALL' ? currentEstablishmentId : (establishments[0]?.id || user?.establishmentId)),
       };
       if (editingItem) {
-        await api.put(`/teachers/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/teachers/${editingItem.id}`, payload);
+        showToast('Enseignant mis à jour avec succès', 'success');
       } else {
-        await api.post('/teachers', payload).catch(() => {});
+        await api.post('/teachers', payload);
+        showToast('Enseignant ajouté avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchTeachers();
+      await fetchTeachers();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement de l'enseignant");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: TeacherItem) => {
-    await api.delete(`/teachers/${item.id}`).catch(() => {});
-    setTeachers((prev) => prev.filter((t) => t.id !== item.id));
+    try {
+      await api.delete(`/teachers/${item.id}`);
+      showToast('Enseignant placé dans la corbeille', 'success');
+      await fetchTeachers();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la désactivation');
+    }
   };
 
   const handlePermanentDelete = async (item: TeacherItem) => {
-    await api.delete(`/teachers/${item.id}?permanent=true`).catch(() => {});
-    setTeachers((prev) => prev.filter((t) => t.id !== item.id));
+    if (!window.confirm(`Suppression DÉFINITIVE de ${item.firstName} ${item.lastName} ? Cette action est irréversible.`)) return;
+    try {
+      await api.delete(`/teachers/${item.id}?permanent=true`);
+      showToast('Enseignant supprimé définitivement', 'success');
+      await fetchTeachers();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  const handleRestore = async (item: TeacherItem) => {
+    try {
+      await api.post(`/teachers/${item.id}/restore`);
+      showToast('Enseignant restauré avec succès', 'success');
+      await fetchTeachers();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   const handleToggleStatus = async (item: TeacherItem) => {
     const updated = !item.isActive;
-    await api.put(`/teachers/${item.id}`, { isActive: updated }).catch(() => {});
-    setTeachers((prev) =>
-      prev.map((t) => (t.id === item.id ? { ...t, isActive: updated } : t))
-    );
+    try {
+      await api.put(`/teachers/${item.id}`, { isActive: updated });
+      showToast(`Statut mis à jour (${updated ? 'Actif' : 'Inactif'})`, 'success');
+      await fetchTeachers();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la mise à jour du statut');
+    }
   };
 
   const filteredTeachers = teachers.filter((t) => {
+    if (!isTrashMode && t.isActive === false) return false;
+    if (isTrashMode && t.isActive !== false) return false;
     if (specFilter && t.specialization !== specFilter) return false;
     if (statusFilter && (statusFilter === 'active' ? !t.isActive : t.isActive)) return false;
     return true;
@@ -422,6 +457,7 @@ export default function TeachersPage() {
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
           onToggleStatus: handleToggleStatus,
+          onRestore: handleRestore,
         }}
         showTrashToggle={true}
         isTrashActive={isTrashMode}

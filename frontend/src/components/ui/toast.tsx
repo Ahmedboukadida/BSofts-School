@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, createContext, useContext, useCallback } from 'react';
+import { useState, createContext, useContext, useCallback, useEffect } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { clsx } from 'clsx';
 
@@ -27,10 +27,69 @@ export interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+let globalShowToast: ((message: string, type?: ToastType, options?: ToastOptions) => void) | null = null;
+let globalShowStatusToast: ((status: number, message: string, options?: Omit<ToastOptions, 'status'>) => void) | null = null;
+let globalShowApiResponseToast: ((res: { status?: number; data?: any; message?: any }, fallbackSuccess?: string) => void) | null = null;
+let globalShowApiErrorToast: ((err: any, fallbackError?: string) => void) | null = null;
+
+export interface ShowToastFunction {
+  (message: string, type?: ToastType, options?: ToastOptions): void;
+  success: (message: string, options?: ToastOptions) => void;
+  error: (message: string, options?: ToastOptions) => void;
+  info: (message: string, options?: ToastOptions) => void;
+  warning: (message: string, options?: ToastOptions) => void;
+}
+
+const baseShowToast = (message: string, type?: ToastType, options?: ToastOptions) => {
+  if (globalShowToast) {
+    globalShowToast(message, type, options);
+  } else if (typeof window !== 'undefined') {
+    console.info(`[Toast ${type || 'info'}]: ${message}`);
+  }
+};
+
+export const showToast: ShowToastFunction = Object.assign(baseShowToast, {
+  success: (message: string, options?: ToastOptions) => baseShowToast(message, 'success', options),
+  error: (message: string, options?: ToastOptions) => baseShowToast(message, 'error', options),
+  info: (message: string, options?: ToastOptions) => baseShowToast(message, 'info', options),
+  warning: (message: string, options?: ToastOptions) => baseShowToast(message, 'warning', options),
+});
+
+export const toast = showToast;
+
+export const showStatusToast = (status: number, message: string, options?: Omit<ToastOptions, 'status'>) => {
+  if (globalShowStatusToast) {
+    globalShowStatusToast(status, message, options);
+  } else if (typeof window !== 'undefined') {
+    console.info(`[Toast ${status}]: ${message}`);
+  }
+};
+
+export const showApiResponseToast = (res: { status?: number; data?: any; message?: any }, fallbackSuccess?: string) => {
+  if (globalShowApiResponseToast) {
+    globalShowApiResponseToast(res, fallbackSuccess);
+  } else if (typeof window !== 'undefined') {
+    console.info(`[Toast Success]: ${fallbackSuccess || 'Success'}`);
+  }
+};
+
+export const showApiErrorToast = (err: any, fallbackError?: string) => {
+  if (globalShowApiErrorToast) {
+    globalShowApiErrorToast(err, fallbackError);
+  } else if (typeof window !== 'undefined') {
+    console.error(`[Toast Error]: ${fallbackError || 'Error'}`, err);
+  }
+};
+
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
+    return {
+      showToast,
+      showStatusToast,
+      showApiResponseToast,
+      showApiErrorToast,
+    };
   }
   return context;
 }
@@ -107,6 +166,19 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     },
     [showStatusToast]
   );
+
+  useEffect(() => {
+    globalShowToast = showToast;
+    globalShowStatusToast = showStatusToast;
+    globalShowApiResponseToast = showApiResponseToast;
+    globalShowApiErrorToast = showApiErrorToast;
+    return () => {
+      globalShowToast = null;
+      globalShowStatusToast = null;
+      globalShowApiResponseToast = null;
+      globalShowApiErrorToast = null;
+    };
+  }, [showToast, showStatusToast, showApiResponseToast, showApiErrorToast]);
 
   const getStatusBadge = (status?: number) => {
     if (!status) return null;

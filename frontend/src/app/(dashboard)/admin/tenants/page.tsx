@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { TenantItem } from '@/types';
 
@@ -42,8 +43,8 @@ export default function SaaSAdminTenantsPage() {
     setIsLoading(true);
     try {
       const res = await api.get('/tenants', {
-        params: { includeDeleted: isTrashMode },
-      }).catch(() => ({ data: { data: [] } }));
+        params: { includeDeleted: isTrashMode, limit: 100 },
+      });
 
       const rawData = res.data?.data || res.data || [];
       if (Array.isArray(rawData)) {
@@ -62,13 +63,16 @@ export default function SaaSAdminTenantsPage() {
             activePlanName: t.activePlanName || plan?.name || 'Pack Établissement Pro',
             activePlanPrice: Number(t.activePlanPrice ?? plan?.price ?? 350),
             currency: 'TND',
-            isActive: t.isActive ?? true,
+            isActive: t.isActive ?? t.user?.isActive ?? true,
           };
         });
         setTenants(formatted);
       } else {
         setTenants([]);
       }
+    } catch (err) {
+      console.error('Failed to fetch tenants:', err);
+      setTenants([]);
     } finally {
       setIsLoading(false);
     }
@@ -111,34 +115,62 @@ export default function SaaSAdminTenantsPage() {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        await api.put(`/tenants/${editingItem.id}`, formData).catch(() => {});
+        await api.put(`/tenants/${editingItem.id}`, formData);
+        showToast('Organisation mise à jour avec succès', 'success');
       } else {
-        await api.post('/tenants', formData).catch(() => {});
+        await api.post('/tenants', formData);
+        showToast('Organisation créée avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchTenants();
+      await fetchTenants();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement de l’organisation');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: TenantItem) => {
-    await api.delete(`/tenants/${item.id}`).catch(() => {});
-    setTenants((prev) => prev.filter((t) => t.id !== item.id));
+    try {
+      await api.delete(`/tenants/${item.id}`);
+      showToast('Organisation suspendue avec succès', 'success');
+      await fetchTenants();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suspension de l’organisation');
+    }
   };
 
   const handlePermanentDelete = async (item: TenantItem) => {
-    await api.delete(`/tenants/${item.id}?permanent=true`).catch(() => {});
-    setTenants((prev) => prev.filter((t) => t.id !== item.id));
+    try {
+      await api.delete(`/tenants/${item.id}?permanent=true`);
+      showToast('Organisation définitivement supprimée', 'success');
+      await fetchTenants();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  const handleRestore = async (item: TenantItem) => {
+    try {
+      await api.post(`/tenants/${item.id}/restore`);
+      showToast('Organisation restaurée avec succès', 'success');
+      await fetchTenants();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   const handleToggleStatus = async (item: TenantItem) => {
-    const updated = !item.isActive;
-    await api.put(`/tenants/${item.id}`, { isActive: updated }).catch(() => {});
-    setTenants((prev) =>
-      prev.map((t) => (t.id === item.id ? { ...t, isActive: updated } : t))
-    );
+    try {
+      const updated = !item.isActive;
+      await api.put(`/tenants/${item.id}`, { isActive: updated });
+      showToast(updated ? 'Organisation activée' : 'Organisation suspendue', 'success');
+      await fetchTenants();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la modification du statut');
+    }
   };
+
 
   const filteredTenants = tenants.filter((t) => {
     if (statusFilter && (statusFilter === 'active' ? !t.isActive : t.isActive)) return false;
@@ -157,7 +189,7 @@ export default function SaaSAdminTenantsPage() {
           <div>
             <span className="font-bold text-text-primary block">{row.name}</span>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] font-mono text-brand font-semibold">
+              <span className="text-[11px] font-mono text-[#CCA43B] font-semibold">
                 /{row.slug}
               </span>
               {row.domain && (
@@ -185,7 +217,7 @@ export default function SaaSAdminTenantsPage() {
       header: 'Campus Rattachés',
       render: (row) => (
         <div className="flex items-center gap-1.5 text-xs font-semibold text-text-primary">
-          <School className="w-4 h-4 text-brand" />
+          <School className="w-4 h-4 text-[#CCA43B]" />
           <span>{row.establishmentsCount} établissement(s)</span>
         </div>
       ),
@@ -228,10 +260,10 @@ export default function SaaSAdminTenantsPage() {
           <div className="p-4 rounded-xl bg-surface border border-border">
             <span className="text-xs text-text-tertiary block mb-1">Raison Sociale</span>
             <p className="text-base font-bold text-text-primary flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-brand" /> {item.name}
+              <Building2 className="w-4 h-4 text-[#CCA43B]" /> {item.name}
             </p>
             <div className="mt-2 space-y-1 text-xs text-text-secondary">
-              <p>Slug système : <span className="font-mono font-bold text-brand">{item.slug}</span></p>
+              <p>Slug système : <span className="font-mono font-bold text-[#CCA43B]">{item.slug}</span></p>
               <p>Domaine personnalisé : <span className="font-semibold text-text-primary">{item.domain || 'Par défaut'}</span></p>
             </div>
           </div>
@@ -257,7 +289,7 @@ export default function SaaSAdminTenantsPage() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-text-secondary">Email Administratif :</span>
-            <span className="font-mono text-brand font-semibold">{item.ownerEmail}</span>
+            <span className="font-mono text-[#242F40] dark:text-[#E5E5E5] font-semibold">{item.ownerEmail}</span>
           </div>
           <div className="flex items-center justify-between pt-2 border-t border-border">
             <span className="text-text-secondary">Devise de Facturation :</span>
@@ -289,7 +321,7 @@ export default function SaaSAdminTenantsPage() {
           </div>
         </div>
 
-        <h3 className="font-bold text-base text-text-primary group-hover:text-brand transition-colors line-clamp-1 mb-1">
+        <h3 className="font-bold text-base text-text-primary group-hover:text-[#CCA43B] transition-colors line-clamp-1 mb-1">
           {item.name}
         </h3>
 
@@ -300,7 +332,7 @@ export default function SaaSAdminTenantsPage() {
 
         <div className="p-3 bg-surface rounded-xl border border-border-subtle mb-3 flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-text-secondary">
-            <School className="w-4 h-4 text-brand" />
+            <School className="w-4 h-4 text-[#CCA43B]" />
             <span>Campus</span>
           </div>
           <span className="text-sm font-bold text-text-primary">{item.establishmentsCount} sites</span>
@@ -346,7 +378,7 @@ export default function SaaSAdminTenantsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <div className="p-2.5 rounded-xl bg-brand/10 text-brand">
+            <div className="p-2.5 rounded-xl bg-[#242F40] text-[#CCA43B]">
               <Building2 className="w-6 h-6" />
             </div>
             <div>
@@ -380,6 +412,7 @@ export default function SaaSAdminTenantsPage() {
           onEdit: handleOpenEdit,
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
+          onRestore: handleRestore,
           onToggleStatus: handleToggleStatus,
         }}
         showTrashToggle={true}
@@ -391,7 +424,7 @@ export default function SaaSAdminTenantsPage() {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             aria-label="Filtrer par statut"
-            className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
+            className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-[#CCA43B]"
           >
             <option value="">Tous les statuts</option>
             <option value="active">Actifs uniquement</option>
@@ -399,6 +432,7 @@ export default function SaaSAdminTenantsPage() {
           </select>
         }
       />
+
 
       {/* Form Modal (Extra Large Size "6xl") */}
       <Modal
@@ -411,7 +445,7 @@ export default function SaaSAdminTenantsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border pb-2">
-                <Building2 className="w-4 h-4 text-brand" />
+                <Building2 className="w-4 h-4 text-[#CCA43B]" />
                 Identité de l’Organisation
               </h3>
 
@@ -449,7 +483,7 @@ export default function SaaSAdminTenantsPage() {
 
             <div className="p-4 rounded-xl border border-border bg-surface space-y-4">
               <h3 className="text-sm font-bold text-text-primary flex items-center gap-2 border-b border-border pb-2">
-                <Users className="w-4 h-4 text-brand" />
+                <Users className="w-4 h-4 text-[#CCA43B]" />
                 Administrateur & Abonnement
               </h3>
 
@@ -479,8 +513,9 @@ export default function SaaSAdminTenantsPage() {
                   value={formData.activePlanName}
                   onChange={(e) => setFormData({ ...formData, activePlanName: e.target.value })}
                   aria-label="Formule souscrite"
-                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
+                  className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-[#CCA43B]"
                 >
+
                   <option value="Pack Scolarité Essentielle">Pack Scolarité Essentielle (280 TND)</option>
                   <option value="Pack Établissement Pro">Pack Établissement Pro (650 TND)</option>
                   <option value="Campus Groupe Scolaire & Université">Campus Groupe Scolaire (1400 TND)</option>

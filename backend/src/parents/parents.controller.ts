@@ -68,8 +68,21 @@ export class ParentsController {
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   @ApiOperation({ summary: 'Update a parent' })
   @ApiResponse({ status: 200, description: 'Parent updated successfully' })
-  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateParentDto) {
-    return this.service.update(id, dto);
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateParentDto,
+    @CurrentUser() user?: any,
+  ) {
+    return this.service.update(id, dto, user);
+  }
+
+  @Post(':id/restore')
+  @Permissions('parents:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Restore a deactivated parent' })
+  @ApiResponse({ status: 200, description: 'Parent restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: any) {
+    return this.service.restore(id, user);
   }
 
   @Delete(':id')

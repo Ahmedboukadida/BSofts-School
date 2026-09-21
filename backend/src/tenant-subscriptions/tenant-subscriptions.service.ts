@@ -12,8 +12,12 @@ export class TenantSubscriptionsService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    if (query.includeDeleted) {
+      where.status = { in: ['CANCELLED', 'EXPIRED'] };
+    } else if (status) {
+      where.status = status;
+    }
     if (tenantId) where.tenantId = tenantId;
-    if (status) where.status = status;
     if (search) {
       where.OR = [
         { tenant: { user: { firstName: { contains: search, mode: 'insensitive' } } } },
@@ -153,6 +157,82 @@ export class TenantSubscriptionsService {
       where: { id },
       data: { status: 'CANCELLED', endDate: new Date() },
     });
+  }
+
+  async approve(id: string, approvedBy?: string) {
+    const subscription = await this.prisma.tenantSubscription.findUnique({ where: { id } });
+    if (!subscription) throw new NotFoundException(`Subscription with ID ${id} not found`);
+
+    return this.prisma.tenantSubscription.update({
+      where: { id },
+      data: { status: 'ACTIVE' },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            user: { select: { firstName: true, lastName: true, email: true } },
+          },
+        },
+        plan: { select: { id: true, name: true, price: true, currency: true } },
+      },
+    });
+  }
+
+  async renew(id: string, months: number = 12, newEndDate?: string) {
+    const subscription = await this.prisma.tenantSubscription.findUnique({ where: { id } });
+    if (!subscription) throw new NotFoundException(`Subscription with ID ${id} not found`);
+
+    let end: Date;
+    if (newEndDate) {
+      end = new Date(newEndDate);
+    } else {
+      end = subscription.endDate ? new Date(subscription.endDate) : new Date();
+      end.setMonth(end.getMonth() + months);
+    }
+
+    return this.prisma.tenantSubscription.update({
+      where: { id },
+      data: {
+        status: 'ACTIVE',
+        endDate: end,
+      },
+      include: {
+        tenant: {
+          select: {
+            id: true,
+            user: { select: { firstName: true, lastName: true, email: true } },
+          },
+        },
+        plan: { select: { id: true, name: true, price: true, currency: true } },
+      },
+    });
+  }
+
+  async remove(id: string, permanent: boolean = false) {
+    const subscription = await this.prisma.tenantSubscription.findUnique({ where: { id } });
+    if (!subscription) throw new NotFoundException(`Subscription with ID ${id} not found`);
+
+    if (permanent) {
+      await this.prisma.tenantSubscription.delete({ where: { id } });
+      return { message: 'Abonnement supprimé définitivement' };
+    }
+
+    await this.prisma.tenantSubscription.update({
+      where: { id },
+      data: { status: 'CANCELLED', endDate: new Date() },
+    });
+    return { message: 'Abonnement résilié et déplacé dans la corbeille' };
+  }
+
+  async restore(id: string) {
+    const subscription = await this.prisma.tenantSubscription.findUnique({ where: { id } });
+    if (!subscription) throw new NotFoundException(`Subscription with ID ${id} not found`);
+
+    await this.prisma.tenantSubscription.update({
+      where: { id },
+      data: { status: 'ACTIVE' },
+    });
+    return { message: 'Abonnement réactivé avec succès' };
   }
 
   async getTenantSubscription(tenantId: string) {

@@ -63,6 +63,15 @@ export class ClassesController {
     return this.service.update(id, dto);
   }
 
+  @Post(':id/restore')
+  @Permissions('classes:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Restore a deactivated class' })
+  @ApiResponse({ status: 200, description: 'Class restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user?: any) {
+    return this.service.restore(id, user);
+  }
+
   @Delete(':id')
   @Permissions('classes:delete')
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')

@@ -75,4 +75,14 @@ export class PermissionsController {
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.permissionsService.remove(id);
   }
+
+  @Post(':id/restore')
+  @Permissions('permissions:update')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Restore a permission' })
+  @ApiResponse({ status: 200, description: 'Permission restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.permissionsService.restore(id);
+  }
 }
+

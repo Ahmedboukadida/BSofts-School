@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useTranslation } from '@/components/providers/i18n-provider';
-import { useToast } from '@/components/ui/toast';
+import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
 import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
@@ -62,7 +62,7 @@ export default function ExamsAndBulletinsPage() {
       const [classesRes, matieresRes, periodsRes] = await Promise.all([
         api.get('/classes?limit=100'),
         api.get('/matieres?limit=100'),
-        api.get('/periods?limit=50').catch(() => ({ data: { data: [] } })),
+        api.get('/academic-periods?limit=50').catch(() => ({ data: { data: [] } })),
       ]);
       const classList = classesRes.data?.data || [];
       setClasses(classList);
@@ -76,8 +76,8 @@ export default function ExamsAndBulletinsPage() {
       if (periodList.length > 0 && !selectedPeriodId) {
         setSelectedPeriodId(periodList[0].id);
       }
-    } catch (err) {
-      console.error('Failed to load dropdowns:', err);
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement des classes et matières');
     }
   }, [selectedClassId, selectedPeriodId]);
 
@@ -91,13 +91,12 @@ export default function ExamsAndBulletinsPage() {
       setIsLoading(true);
       const res = await api.get('/exams?limit=100');
       setExams(res.data?.data || []);
-    } catch (error) {
-      console.error('Failed to fetch exams:', error);
-      toast.showToast(t('common.error') || 'Erreur de chargement', 'error');
+    } catch (error: any) {
+      showApiErrorToast(error, 'Erreur lors du chargement des examens');
     } finally {
       setIsLoading(false);
     }
-  }, [t, toast]);
+  }, []);
 
   // Load Bulletins for selected class and period
   const fetchBulletins = useCallback(async () => {
@@ -108,8 +107,8 @@ export default function ExamsAndBulletinsPage() {
       if (selectedPeriodId) params.periodId = selectedPeriodId;
       const res = await api.get('/bulletins', { params });
       setBulletins(res.data?.data || []);
-    } catch (error) {
-      console.error('Failed to fetch bulletins:', error);
+    } catch (error: any) {
+      showApiErrorToast(error, 'Erreur lors du chargement des bulletins');
     } finally {
       setIsLoading(false);
     }
@@ -159,9 +158,8 @@ export default function ExamsAndBulletinsPage() {
     try {
       const res = await api.get(`/bulletins/${bulletinId}/detailed`);
       setSelectedDetailedBulletin(res.data);
-    } catch (err) {
-      console.error('Failed to load detailed bulletin:', err);
-      toast.showToast(t('common.error'), 'error');
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement du bulletin détaillé');
       setShowPrintModal(false);
     } finally {
       setLoadingDetail(false);
@@ -197,7 +195,7 @@ export default function ExamsAndBulletinsPage() {
 
   const handleExamSubmit = async () => {
     if (!examFormData.title) {
-      toast.showToast(t('exams.fillExamTitleError'), 'error');
+      showToast(t('exams.fillExamTitleError') || 'Veuillez saisir un titre', 'warning');
       return;
     }
     setExamFormLoading(true);
@@ -212,16 +210,15 @@ export default function ExamsAndBulletinsPage() {
       };
       if (editingId) {
         await api.put(`/exams/${editingId}`, payload);
-        toast.showToast(t('exams.examUpdatedSuccess'), 'success');
+        showToast(t('exams.examUpdatedSuccess') || 'Examen mis à jour avec succès', 'success');
       } else {
         await api.post('/exams', payload);
-        toast.showToast(t('exams.examCreatedSuccess'), 'success');
+        showToast(t('exams.examCreatedSuccess') || 'Examen créé avec succès', 'success');
       }
       setShowExamForm(false);
-      fetchExams();
-    } catch (error) {
-      console.error('Failed to save exam:', error);
-      toast.showToast(t('common.error'), 'error');
+      await fetchExams();
+    } catch (error: any) {
+      showApiErrorToast(error, "Erreur lors de l'enregistrement de l'examen");
     } finally {
       setExamFormLoading(false);
     }
@@ -233,11 +230,10 @@ export default function ExamsAndBulletinsPage() {
     try {
       await api.delete(`/exams/${confirmDelete.id}`);
       setConfirmDelete({ show: false, id: null });
-      fetchExams();
-      toast.showToast(t('exams.examDeletedSuccess'), 'success');
-    } catch (error) {
-      console.error('Failed to delete exam:', error);
-      toast.showToast(t('common.error'), 'error');
+      showToast(t('exams.examDeletedSuccess') || 'Examen supprimé avec succès', 'success');
+      await fetchExams();
+    } catch (error: any) {
+      showApiErrorToast(error, "Erreur lors de la suppression de l'examen");
     } finally {
       setDeleteLoading(false);
     }
@@ -267,8 +263,8 @@ export default function ExamsAndBulletinsPage() {
       {/* Header with Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <Award className="w-6 h-6 text-indigo-600" />
+          <h1 className="text-2xl font-bold text-[#242F40] flex items-center gap-2">
+            <Award className="w-6 h-6 text-[#CCA43B]" />
             {t('exams.title')}
           </h1>
           <p className="text-sm text-gray-500">
@@ -281,7 +277,7 @@ export default function ExamsAndBulletinsPage() {
             <button
               onClick={() => setActiveTab('exams')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                activeTab === 'exams' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                activeTab === 'exams' ? 'bg-[#242F40] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <FileText className="w-3.5 h-3.5" />
@@ -290,7 +286,7 @@ export default function ExamsAndBulletinsPage() {
             <button
               onClick={() => setActiveTab('bulletins')}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                activeTab === 'bulletins' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
+                activeTab === 'bulletins' ? 'bg-[#242F40] text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <GraduationCap className="w-3.5 h-3.5" />
@@ -299,7 +295,7 @@ export default function ExamsAndBulletinsPage() {
           </div>
 
           {activeTab === 'exams' && (
-            <Button onClick={openAddExamForm} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button onClick={openAddExamForm} className="bg-[#242F40] hover:bg-[#363636] text-white">
               <Plus className="w-4 h-4 mr-1.5" />
               {t('exams.newExam')}
             </Button>
@@ -318,7 +314,7 @@ export default function ExamsAndBulletinsPage() {
                   <input
                     type="text"
                     placeholder={t('exams.searchPlaceholder')}
-                    className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800"
+                    className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                   />
@@ -337,17 +333,17 @@ export default function ExamsAndBulletinsPage() {
                   {paginatedExams.map((exam) => (
                     <div
                       key={exam.id}
-                      className="p-4 border border-gray-200 rounded-xl hover:border-indigo-200 hover:shadow-xs transition-all bg-white flex flex-col justify-between"
+                      className="p-4 border border-gray-200 rounded-xl hover:border-[#CCA43B]/40 hover:shadow-xs transition-all bg-white flex flex-col justify-between"
                     >
                       <div>
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex items-center gap-2.5">
-                            <div className="p-2 bg-indigo-50 rounded-lg text-indigo-600">
+                            <div className="p-2 bg-[#242F40]/5 rounded-lg text-[#242F40]">
                               <FileText className="w-5 h-5" />
                             </div>
                             <div>
                               <h3 className="font-bold text-sm text-gray-900">{exam.title}</h3>
-                              <p className="text-xs text-indigo-600 font-medium">
+                              <p className="text-xs text-[#CCA43B] font-medium">
                                 {exam.matiere?.name || t('exams.generalSubject')}
                               </p>
                             </div>
@@ -355,7 +351,7 @@ export default function ExamsAndBulletinsPage() {
                           <div className="flex items-center gap-1">
                             <button
                               onClick={() => openEditExamForm(exam)}
-                              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-indigo-600 transition-colors"
+                              className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-[#CCA43B] transition-colors"
                               title={t('common.edit')}
                             >
                               <Edit className="w-3.5 h-3.5" />
@@ -417,7 +413,7 @@ export default function ExamsAndBulletinsPage() {
                     <select
                       value={selectedClassId}
                       onChange={(e) => setSelectedClassId(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 bg-white"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800 bg-white"
                     >
                       {classes.map((c) => (
                         <option key={c.id} value={c.id}>
@@ -432,7 +428,7 @@ export default function ExamsAndBulletinsPage() {
                     <select
                       value={selectedPeriodId}
                       onChange={(e) => setSelectedPeriodId(e.target.value)}
-                      className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-800 bg-white"
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800 bg-white"
                     >
                       <option value="">{t('exams.currentPeriod')}</option>
                       {periods.map((p) => (
@@ -447,7 +443,7 @@ export default function ExamsAndBulletinsPage() {
                 <Button
                   onClick={handleCalculateBulletins}
                   isLoading={isCalculating}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs shrink-0"
+                  className="bg-[#242F40] hover:bg-[#363636] text-white text-xs shrink-0"
                 >
                   <Calculator className="w-4 h-4 mr-1.5" />
                   {t('exams.calculateBulletins')}
@@ -573,7 +569,7 @@ export default function ExamsAndBulletinsPage() {
                                 variant="secondary"
                                 size="sm"
                                 onClick={() => handleViewDetailedBulletin(b.id)}
-                                className="h-7 text-xs font-medium text-indigo-700 hover:text-indigo-800 hover:bg-indigo-50"
+                                className="h-7 text-xs font-medium text-[#242F40] hover:text-[#CCA43B] hover:bg-[#242F40]/5"
                               >
                                 <Printer className="w-3 h-3 mr-1" />
                                 {t('exams.printBulletin')}
@@ -621,7 +617,7 @@ export default function ExamsAndBulletinsPage() {
                       {t('exams.republicOfTunisia')}
                     </p>
                     <p className="text-[10px] text-gray-600">{t('exams.ministryOfEducation')}</p>
-                    <p className="text-xs font-extrabold text-indigo-900">
+                    <p className="text-xs font-extrabold text-[#242F40]">
                       {t('exams.schoolManagement')}
                     </p>
                   </div>
@@ -629,7 +625,7 @@ export default function ExamsAndBulletinsPage() {
                     <h2 className="text-base font-black uppercase text-gray-900 tracking-wider">
                       {t('exams.reportCardHeader')}
                     </h2>
-                    <p className="text-xs font-semibold text-indigo-700">
+                    <p className="text-xs font-semibold text-[#CCA43B]">
                       {selectedDetailedBulletin.period?.name || 'Trimestre 1'}
                     </p>
                   </div>
@@ -709,9 +705,9 @@ export default function ExamsAndBulletinsPage() {
                 </div>
 
                 {/* Overall Calculation Summary */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-indigo-50/50 rounded-xl border border-indigo-100">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[#242F40]/5 rounded-xl border border-[#E5E5E5]">
                   <div className="space-y-1 text-xs">
-                    <p className="font-semibold text-indigo-950">{t('exams.classStats')}</p>
+                    <p className="font-semibold text-[#242F40]">{t('exams.classStats')}</p>
                     <div className="flex gap-4 text-gray-600">
                       <span>{t('exams.classAvg')}: <b>{selectedDetailedBulletin.classStatistics?.classAverage.toFixed(2)}</b></span>
                       <span>{t('exams.max')}: <b>{selectedDetailedBulletin.classStatistics?.maxAverage.toFixed(2)}</b></span>
@@ -723,10 +719,10 @@ export default function ExamsAndBulletinsPage() {
                     <p className="text-xs text-gray-600">
                       {t('exams.totalPoints')}: <b className="font-mono text-gray-900">{Number(selectedDetailedBulletin.totalScore).toFixed(2)}</b>
                     </p>
-                    <p className="text-base font-extrabold text-indigo-900">
+                    <p className="text-base font-extrabold text-[#242F40]">
                       {t('exams.generalAverage')} : <span className="font-mono text-lg">{Number(selectedDetailedBulletin.averageScore).toFixed(2)}</span> / 20
                     </p>
-                    <p className="text-xs font-semibold text-indigo-700">
+                    <p className="text-xs font-semibold text-[#CCA43B]">
                       {t('exams.councilDecisionLabel')}: {selectedDetailedBulletin.comments || (selectedDetailedBulletin.isPromoted ? t('exams.admitted') : t('exams.adjourned'))}
                     </p>
                   </div>
@@ -754,7 +750,7 @@ export default function ExamsAndBulletinsPage() {
                 </Button>
                 <Button
                   onClick={() => window.print()}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
+                  className="bg-[#242F40] hover:bg-[#363636] text-white"
                 >
                   <Printer className="w-4 h-4 mr-1.5" />
                   {t('exams.printThisBulletin')}
@@ -819,7 +815,7 @@ export default function ExamsAndBulletinsPage() {
             <Button variant="secondary" onClick={() => setShowExamForm(false)}>
               {t('common.cancel')}
             </Button>
-            <Button onClick={handleExamSubmit} isLoading={examFormLoading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Button onClick={handleExamSubmit} isLoading={examFormLoading} className="bg-[#242F40] hover:bg-[#363636] text-white">
               {t('common.save')}
             </Button>
           </div>

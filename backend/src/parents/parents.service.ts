@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateParentDto, UpdateParentDto, QueryParentDto } from './parent.dto';
+import { CreateParentDto, UpdateParentDto, QueryParentDto, ParentSendMessageDto } from './parent.dto';
 import { PaginatedDto } from '../common/pagination.dto';
 import { ParentEntity } from './parent.entity';
 import * as bcrypt from 'bcrypt';
@@ -10,11 +10,13 @@ export class ParentsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryParentDto) {
-    const { page = 1, limit = 10, search, establishmentId, sortBy, sortOrder } = query;
+    const { page = 1, limit = 50, search, establishmentId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.establishmentId = establishmentId;
+    }
     if (!query.includeDeleted) {
       where.isActive = true;
     }
@@ -32,7 +34,20 @@ export class ParentsService {
       this.prisma.parent.findMany({
         where, skip, take: limit, orderBy,
         include: {
-          students: { include: { student: { select: { id: true, firstName: true, lastName: true } } } },
+          establishment: { select: { id: true, name: true, slug: true } },
+          students: {
+            include: {
+              student: {
+                include: {
+                  classAssignments: {
+                    include: { class: { select: { id: true, name: true } } },
+                    orderBy: { assignedAt: 'desc' },
+                    take: 1,
+                  },
+                },
+              },
+            },
+          },
         },
       }),
       this.prisma.parent.count({ where }),
@@ -279,8 +294,9 @@ export class ParentsService {
     };
   }
 
-  async sendMessage(dto: { subject: string; message: string; studentId?: string }, user: any) {
-    if (!dto.subject || !dto.message) {
+  async sendMessage(dto: ParentSendMessageDto, user: any) {
+    const messageText = dto.message || dto.content;
+    if (!dto.subject || !messageText) {
       throw new BadRequestException('Le sujet et le message sont requis');
     }
 
@@ -315,7 +331,7 @@ export class ParentsService {
         data: {
           userId: admin.id,
           title: `Message Parent: ${dto.subject}`,
-          content: `${user.firstName || ''} ${user.lastName || ''}: ${dto.message}`,
+          content: `${user.firstName || ''} ${user.lastName || ''}: ${messageText}`,
           type: 'IN_APP',
         },
       });
@@ -330,7 +346,7 @@ export class ParentsService {
   async create(dto: CreateParentDto, user?: any) {
     const establishmentId = dto.establishmentId || user?.establishmentId;
     if (!establishmentId) {
-      throw new Error('establishmentId is required (provide in body or ensure user has an establishment)');
+      throw new BadRequestException('establishmentId is required (provide in body or ensure user has an establishment)');
     }
 
     let userId = dto.userId || null;
@@ -370,36 +386,165 @@ export class ParentsService {
       }
     }
 
-    return this.prisma.parent.create({
+    const formattedAddress = dto.address
+      ? dto.city
+        ? `${dto.address}, ${dto.city}`
+        : dto.address
+      : dto.city || null;
+
+    const parent = await this.prisma.parent.create({
       data: {
         establishmentId,
         firstName: dto.firstName,
         lastName: dto.lastName,
         phone: dto.phone,
         email: dto.email,
-        address: dto.address,
-        occupation: dto.occupation,
+        address: formattedAddress,
+        occupation: dto.profession || dto.occupation || null,
         userId,
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
+      },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+        students: {
+          include: {
+            student: {
+              include: {
+                classAssignments: {
+                  include: { class: { select: { id: true, name: true } } },
+                  orderBy: { assignedAt: 'desc' },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
       },
     });
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'CREATE',
+        entity: 'Parent',
+        entityId: parent.id,
+        status: 'SUCCESS',
+        newValues: parent as any,
+      },
+    });
+
+    return parent;
   }
 
-  async update(id: string, dto: UpdateParentDto) {
+  async update(id: string, dto: UpdateParentDto, user?: any) {
     const parent = await this.prisma.parent.findUnique({ where: { id } });
     if (!parent) throw new NotFoundException(`Parent with ID ${id} not found`);
 
-    return this.prisma.parent.update({
+    const formattedAddress = dto.address !== undefined || dto.city !== undefined
+      ? dto.address
+        ? dto.city
+          ? `${dto.address}, ${dto.city}`
+          : dto.address
+        : dto.city || null
+      : undefined;
+
+    const updated = await this.prisma.parent.update({
       where: { id },
       data: {
         firstName: dto.firstName,
         lastName: dto.lastName,
         phone: dto.phone,
         email: dto.email,
-        address: dto.address,
-        occupation: dto.occupation,
+        address: formattedAddress,
+        occupation: dto.profession !== undefined ? dto.profession : dto.occupation,
         isActive: dto.isActive,
       },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+        students: {
+          include: {
+            student: {
+              include: {
+                classAssignments: {
+                  include: { class: { select: { id: true, name: true } } },
+                  orderBy: { assignedAt: 'desc' },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+      },
     });
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'UPDATE',
+        entity: 'Parent',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: parent as any,
+        newValues: updated as any,
+      },
+    });
+
+    return updated;
+  }
+
+  async restore(id: string, user?: any) {
+    const parent = await this.prisma.parent.findUnique({ where: { id } });
+    if (!parent) throw new NotFoundException(`Parent with ID ${id} not found`);
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    const restored = await this.prisma.parent.update({
+      where: { id },
+      data: { isActive: true },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+        students: {
+          include: {
+            student: {
+              include: {
+                classAssignments: {
+                  include: { class: { select: { id: true, name: true } } },
+                  orderBy: { assignedAt: 'desc' },
+                  take: 1,
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'RESTORE',
+        entity: 'Parent',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: { isActive: false },
+        newValues: { isActive: true },
+      },
+    });
+
+    return { message: 'Parent restauré avec succès', parent: restored };
   }
 
   async remove(id: string, isPermanent = false, user?: any) {

@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Put,
+  Delete,
   Body,
   Param,
   Query,
@@ -11,7 +12,13 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { TenantSubscriptionsService } from './tenant-subscriptions.service';
-import { CreateTenantSubscriptionDto, UpdateTenantSubscriptionDto, QueryTenantSubscriptionDto } from './tenant-subscription.dto';
+import {
+  CreateTenantSubscriptionDto,
+  UpdateTenantSubscriptionDto,
+  QueryTenantSubscriptionDto,
+  RenewTenantSubscriptionDto,
+  ApproveTenantSubscriptionDto,
+} from './tenant-subscription.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Permissions } from '../common/decorators/permissions.decorator';
@@ -73,5 +80,50 @@ export class TenantSubscriptionsController {
   @ApiResponse({ status: 200, description: 'Subscription cancelled successfully' })
   cancel(@Param('id', ParseUUIDPipe) id: string) {
     return this.tenantSubscriptionsService.cancel(id);
+  }
+
+  @Post(':id/approve')
+  @Permissions('billing:update')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Approve a subscription request' })
+  @ApiResponse({ status: 200, description: 'Subscription approved successfully' })
+  approve(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ApproveTenantSubscriptionDto,
+  ) {
+    return this.tenantSubscriptionsService.approve(id, dto?.approvedBy);
+  }
+
+  @Post(':id/renew')
+  @Permissions('billing:update')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Renew a subscription' })
+  @ApiResponse({ status: 200, description: 'Subscription renewed successfully' })
+  renew(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RenewTenantSubscriptionDto,
+  ) {
+    return this.tenantSubscriptionsService.renew(id, dto?.months, dto?.newEndDate);
+  }
+
+  @Delete(':id')
+  @Permissions('billing:delete')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Cancel or permanently delete a subscription' })
+  @ApiResponse({ status: 200, description: 'Subscription deleted or cancelled successfully' })
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('permanent') permanent?: string,
+  ) {
+    return this.tenantSubscriptionsService.remove(id, permanent === 'true');
+  }
+
+  @Post(':id/restore')
+  @Permissions('billing:update')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Restore a cancelled subscription' })
+  @ApiResponse({ status: 200, description: 'Subscription restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tenantSubscriptionsService.restore(id);
   }
 }

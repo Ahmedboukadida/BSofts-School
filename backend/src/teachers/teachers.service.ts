@@ -10,11 +10,13 @@ export class TeachersService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryTeacherDto) {
-    const { page = 1, limit = 10, search, establishmentId, sortBy, sortOrder } = query;
+    const { page = 1, limit = 50, search, establishmentId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.establishmentId = establishmentId;
+    }
     if (!query.includeDeleted) {
       where.isActive = true;
     }
@@ -32,8 +34,9 @@ export class TeachersService {
       this.prisma.teacher.findMany({
         where, skip, take: limit, orderBy,
         include: {
-          matieres: { include: { matiere: { select: { id: true, name: true } } } },
-          contracts: { where: { isActive: true }, take: 1 },
+          matieres: { include: { matiere: { select: { id: true, name: true, code: true } } } },
+          contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
+          establishment: { select: { id: true, name: true, slug: true } },
         },
       }),
       this.prisma.teacher.count({ where }),
@@ -162,7 +165,7 @@ export class TeachersService {
       }
     }
 
-    return this.prisma.teacher.create({
+    const teacher = await this.prisma.teacher.create({
       data: {
         establishmentId,
         firstName: dto.firstName,
@@ -174,8 +177,40 @@ export class TeachersService {
         specialization: dto.specialization,
         hireDate: dto.hireDate ? new Date(dto.hireDate) : new Date(),
         userId,
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
       },
     });
+
+    if (dto.weeklyHours && dto.weeklyHours > 0) {
+      await this.prisma.teacherContract.create({
+        data: {
+          teacherId: teacher.id,
+          monthlyHours: Math.round(dto.weeklyHours * 4),
+          salary: dto.weeklyHours * 4 * 25.0,
+          contractType: 'HOURLY',
+          hourlyRate: 25.0,
+          currency: 'TND',
+          startDate: dto.hireDate ? new Date(dto.hireDate) : new Date(),
+          isActive: true,
+        },
+      }).catch(() => {});
+    }
+
+    if (dto.specialization) {
+      const matiere = await this.prisma.matiere.findFirst({
+        where: { name: { contains: dto.specialization, mode: 'insensitive' } },
+      });
+      if (matiere) {
+        await this.prisma.teacherMatiere.create({
+          data: {
+            teacherId: teacher.id,
+            matiereId: matiere.id,
+          },
+        }).catch(() => {});
+      }
+    }
+
+    return teacher;
   }
 
   async update(id: string, dto: UpdateTeacherDto) {
@@ -268,5 +303,39 @@ export class TeachersService {
       });
       throw err;
     }
+  }
+
+  async restore(id: string, user?: any) {
+    const teacher = await this.prisma.teacher.findUnique({ where: { id } });
+    if (!teacher) throw new NotFoundException(`Teacher with ID ${id} not found`);
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    const restored = await this.prisma.teacher.update({
+      where: { id },
+      data: { isActive: true },
+      include: {
+        matieres: { include: { matiere: { select: { id: true, name: true, code: true } } } },
+        contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
+        establishment: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'RESTORE',
+        entity: 'Teacher',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: { isActive: false },
+        newValues: { isActive: true },
+      },
+    });
+
+    return { message: 'Enseignant restauré avec succès', teacher: restored };
   }
 }

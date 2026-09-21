@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useTranslation } from '@/components/providers/i18n-provider';
+import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
@@ -51,7 +52,7 @@ export default function CaissePage() {
       const caisseUrl = activeEstId
         ? `/caisses?limit=50&establishmentId=${activeEstId}`
         : '/caisses?limit=50';
-      const caissesRes = await api.get(caisseUrl).catch(() => ({ data: { data: [] } }));
+      const caissesRes = await api.get(caisseUrl);
       const caisseList: Caisse[] = caissesRes.data?.data || caissesRes.data || [];
       setCaisses(caisseList);
 
@@ -65,7 +66,7 @@ export default function CaissePage() {
         : activeEstId
         ? `/financial-transactions?establishmentId=${activeEstId}&limit=50`
         : '/financial-transactions?limit=50';
-      const txRes = await api.get(txUrl).catch(() => ({ data: { data: [] } }));
+      const txRes = await api.get(txUrl);
       const txList = txRes.data?.data || txRes.data || [];
 
       if (Array.isArray(txList)) {
@@ -87,8 +88,8 @@ export default function CaissePage() {
       } else {
         setTransactions([]);
       }
-    } catch (err) {
-      console.error('Failed to load caisse data:', err);
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement des données de caisse');
       setTransactions([]);
     } finally {
       setIsLoading(false);
@@ -110,12 +111,12 @@ export default function CaissePage() {
         amount: parseFloat(transferForm.amount),
         description: transferForm.description || 'Transfert inter-caisses',
       });
+      showToast('Transfert inter-caisses exécuté avec succès', 'success');
       setTransferModalOpen(false);
       setTransferForm({ toCaisseId: '', amount: '', description: '' });
       await loadData();
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { message?: string } } };
-      alert(e.response?.data?.message || 'Erreur lors du transfert');
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du transfert');
     } finally {
       setIsTransferring(false);
     }

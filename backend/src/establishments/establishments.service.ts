@@ -175,4 +175,20 @@ export class EstablishmentsService {
 
     return { message: 'Establishment deactivated successfully' };
   }
+
+  async restore(id: string) {
+    const establishment = await this.prisma.establishment.findUnique({ where: { id } });
+    if (!establishment) {
+      throw new NotFoundException(`Establishment with ID ${id} not found`);
+    }
+
+    return this.prisma.establishment.update({
+      where: { id },
+      data: { isActive: true },
+      include: {
+        tenant: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
+      },
+    });
+  }
 }
+

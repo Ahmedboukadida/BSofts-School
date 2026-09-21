@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Delete,
   Body,
   Param,
@@ -44,8 +45,26 @@ export class TenantsController {
   @Roles('ROOT')
   @ApiOperation({ summary: 'Create a new tenant' })
   @ApiResponse({ status: 201, description: 'Tenant created successfully' })
-  create(@Body('userId') userId: string) {
-    return this.tenantsService.create(userId);
+  create(@Body() dto: any) {
+    return this.tenantsService.create(dto);
+  }
+
+  @Put(':id')
+  @Permissions('establishments:update')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Update a tenant' })
+  @ApiResponse({ status: 200, description: 'Tenant updated successfully' })
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: any) {
+    return this.tenantsService.update(id, dto);
+  }
+
+  @Post(':id/restore')
+  @Permissions('establishments:update')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Restore a deactivated tenant' })
+  @ApiResponse({ status: 200, description: 'Tenant restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tenantsService.restore(id);
   }
 
   @Delete(':id')
@@ -53,7 +72,11 @@ export class TenantsController {
   @Roles('ROOT')
   @ApiOperation({ summary: 'Delete a tenant' })
   @ApiResponse({ status: 200, description: 'Tenant deleted successfully' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.tenantsService.remove(id);
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('permanent') permanent?: string,
+  ) {
+    return this.tenantsService.remove(id, permanent === 'true');
   }
 }
+

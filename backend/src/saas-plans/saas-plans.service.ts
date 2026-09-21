@@ -12,7 +12,14 @@ export class SaaSPlansService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (isActive !== undefined) where.isActive = isActive;
+    if (query.includeDeleted) {
+      where.isActive = false;
+    } else if (isActive !== undefined) {
+      where.isActive = isActive === 'true' || isActive === true;
+    } else {
+      where.isActive = true;
+    }
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -41,6 +48,7 @@ export class SaaSPlansService {
               },
             },
           },
+          features: true,
           _count: {
             select: { subscriptions: true },
           },
@@ -49,7 +57,19 @@ export class SaaSPlansService {
       this.prisma.saaSPlan.count({ where }),
     ]);
 
-    return new PaginatedDto(data, total, page, limit);
+    const formatted = data.map((plan) => {
+      const maxStudentsFeat = plan.features?.find((f) => f.code === 'maxStudents');
+      const maxTeachersFeat = plan.features?.find((f) => f.code === 'maxTeachers');
+      const maxStorageGbFeat = plan.features?.find((f) => f.code === 'maxStorageGb');
+      return {
+        ...plan,
+        maxStudents: maxStudentsFeat ? parseInt(maxStudentsFeat.value, 10) : 500,
+        maxTeachers: maxTeachersFeat ? parseInt(maxTeachersFeat.value, 10) : 40,
+        maxStorageGb: maxStorageGbFeat ? parseInt(maxStorageGbFeat.value, 10) : 50,
+      };
+    });
+
+    return new PaginatedDto(formatted, total, page, limit);
   }
 
   async findOne(id: string) {
@@ -89,7 +109,16 @@ export class SaaSPlansService {
       throw new NotFoundException(`SaaS Plan with ID ${id} not found`);
     }
 
-    return plan;
+    const maxStudentsFeat = plan.features?.find((f) => f.code === 'maxStudents');
+    const maxTeachersFeat = plan.features?.find((f) => f.code === 'maxTeachers');
+    const maxStorageGbFeat = plan.features?.find((f) => f.code === 'maxStorageGb');
+
+    return {
+      ...plan,
+      maxStudents: maxStudentsFeat ? parseInt(maxStudentsFeat.value, 10) : 500,
+      maxTeachers: maxTeachersFeat ? parseInt(maxTeachersFeat.value, 10) : 40,
+      maxStorageGb: maxStorageGbFeat ? parseInt(maxStorageGbFeat.value, 10) : 50,
+    };
   }
 
   async create(dto: CreateSaaSPlanDto) {
@@ -101,17 +130,43 @@ export class SaaSPlansService {
       throw new ConflictException('Plan name already exists');
     }
 
-    return this.prisma.saaSPlan.create({
+    const plan = await this.prisma.saaSPlan.create({
       data: {
         name: dto.name,
         description: dto.description,
         price: dto.price,
-        currency: dto.currency,
+        currency: dto.currency || 'TND',
         interval: dto.interval as any,
         isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
       },
     });
+
+    const featureData: { planId: string; code: string; value: string; description?: string }[] = [];
+    if (dto.maxStudents) featureData.push({ planId: plan.id, code: 'maxStudents', value: String(dto.maxStudents) });
+    if (dto.maxTeachers) featureData.push({ planId: plan.id, code: 'maxTeachers', value: String(dto.maxTeachers) });
+    if (dto.maxStorageGb) featureData.push({ planId: plan.id, code: 'maxStorageGb', value: String(dto.maxStorageGb) });
+
+    if (Array.isArray(dto.features)) {
+      for (const f of dto.features) {
+        if (typeof f === 'string') {
+          featureData.push({ planId: plan.id, code: f, value: 'true' });
+        } else if (f && f.code) {
+          featureData.push({
+            planId: plan.id,
+            code: f.code,
+            value: String(f.included ?? f.value ?? 'true'),
+            description: f.name || f.description,
+          });
+        }
+      }
+    }
+
+    if (featureData.length > 0) {
+      await this.prisma.saaSPlanFeature.createMany({ data: featureData });
+    }
+
+    return this.findOne(plan.id);
   }
 
   async update(id: string, dto: UpdateSaaSPlanDto) {
@@ -129,20 +184,50 @@ export class SaaSPlansService {
       }
     }
 
-    return this.prisma.saaSPlan.update({
+    await this.prisma.saaSPlan.update({
       where: { id },
       data: {
         name: dto.name,
         description: dto.description,
-        price: dto.price,
+        price: dto.price !== undefined ? dto.price : undefined,
+        currency: dto.currency,
         interval: dto.interval as any,
-        isActive: dto.isActive,
-        sortOrder: dto.sortOrder,
+        isActive: dto.isActive !== undefined ? dto.isActive : undefined,
+        sortOrder: dto.sortOrder !== undefined ? dto.sortOrder : undefined,
       },
     });
+
+    if (dto.maxStudents !== undefined || dto.maxTeachers !== undefined || dto.maxStorageGb !== undefined || dto.features !== undefined) {
+      await this.prisma.saaSPlanFeature.deleteMany({ where: { planId: id } });
+      const featureData: { planId: string; code: string; value: string; description?: string }[] = [];
+      if (dto.maxStudents) featureData.push({ planId: id, code: 'maxStudents', value: String(dto.maxStudents) });
+      if (dto.maxTeachers) featureData.push({ planId: id, code: 'maxTeachers', value: String(dto.maxTeachers) });
+      if (dto.maxStorageGb) featureData.push({ planId: id, code: 'maxStorageGb', value: String(dto.maxStorageGb) });
+
+      if (Array.isArray(dto.features)) {
+        for (const f of dto.features) {
+          if (typeof f === 'string') {
+            featureData.push({ planId: id, code: f, value: 'true' });
+          } else if (f && f.code) {
+            featureData.push({
+              planId: id,
+              code: f.code,
+              value: String(f.included ?? f.value ?? 'true'),
+              description: f.name || f.description,
+            });
+          }
+        }
+      }
+
+      if (featureData.length > 0) {
+        await this.prisma.saaSPlanFeature.createMany({ data: featureData });
+      }
+    }
+
+    return this.findOne(id);
   }
 
-  async remove(id: string) {
+  async remove(id: string, permanent: boolean = false) {
     const plan = await this.prisma.saaSPlan.findUnique({
       where: { id },
       include: {
@@ -154,12 +239,34 @@ export class SaaSPlansService {
       throw new NotFoundException(`SaaS Plan with ID ${id} not found`);
     }
 
-    if (plan._count.subscriptions > 0) {
-      throw new ConflictException('Cannot delete plan with active subscriptions');
+    if (permanent) {
+      if (plan._count.subscriptions > 0) {
+        throw new ConflictException('Impossible de supprimer définitivement un forfait avec des abonnements existants.');
+      }
+      await this.prisma.saaSPlanFeature.deleteMany({ where: { planId: id } });
+      await this.prisma.saaSPlanModule.deleteMany({ where: { planId: id } });
+      await this.prisma.saaSPlan.delete({ where: { id } });
+      return { message: 'Forfait supprimé définitivement avec succès' };
     }
 
-    await this.prisma.saaSPlan.delete({ where: { id } });
-    return { message: 'Plan deleted successfully' };
+    await this.prisma.saaSPlan.update({
+      where: { id },
+      data: { isActive: false },
+    });
+    return { message: 'Forfait archivé et déplacé dans la corbeille' };
+  }
+
+  async restore(id: string) {
+    const plan = await this.prisma.saaSPlan.findUnique({ where: { id } });
+    if (!plan) {
+      throw new NotFoundException(`SaaS Plan with ID ${id} not found`);
+    }
+
+    await this.prisma.saaSPlan.update({
+      where: { id },
+      data: { isActive: true },
+    });
+    return { message: 'Forfait restauré avec succès' };
   }
 
   async assignModules(planId: string, moduleIds: string[]) {

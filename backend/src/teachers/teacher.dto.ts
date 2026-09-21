@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsDateString, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsDateString, IsNumber, IsArray, MinLength } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
@@ -21,6 +21,11 @@ export class CreateTeacherDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  matricule?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @ApiProperty({ required: false })
@@ -45,8 +50,28 @@ export class CreateTeacherDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @IsString()
+  diploma?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  weeklyHours?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  assignedClasses?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsDateString()
   hireDate?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -68,6 +93,11 @@ export class UpdateTeacherDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  matricule?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   phone?: string;
 
   @ApiProperty({ required: false })
@@ -89,6 +119,26 @@ export class UpdateTeacherDto {
   @IsOptional()
   @IsString()
   specialization?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  diploma?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  weeklyHours?: number;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  assignedClasses?: string[];
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  hireDate?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

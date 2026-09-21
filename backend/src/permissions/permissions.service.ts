@@ -91,18 +91,32 @@ export class PermissionsService {
       throw new ConflictException('Permission code already exists');
     }
 
-    // Verify module exists
-    const module = await this.prisma.saaSModule.findUnique({
-      where: { id: dto.moduleId },
-    });
+    // Find or verify module
+    let moduleId = dto.moduleId;
+    if (!moduleId && dto.module) {
+      const mod = await this.prisma.saaSModule.findFirst({
+        where: {
+          OR: [
+            { name: { contains: dto.module, mode: 'insensitive' } },
+            { code: { contains: dto.module.toLowerCase().replace(/[^a-z0-9]/g, '_'), mode: 'insensitive' } },
+          ],
+        },
+      });
+      if (mod) {
+        moduleId = mod.id;
+      } else {
+        const fallback = await this.prisma.saaSModule.findFirst();
+        moduleId = fallback?.id || '';
+      }
+    }
 
-    if (!module) {
-      throw new NotFoundException(`Module with ID ${dto.moduleId} not found`);
+    if (!moduleId) {
+      throw new NotFoundException('Valid moduleId or module name is required');
     }
 
     const permission = await this.prisma.saaSPermission.create({
       data: {
-        moduleId: dto.moduleId,
+        moduleId: moduleId as string,
         name: dto.name,
         code: dto.code,
         description: dto.description,
@@ -112,28 +126,68 @@ export class PermissionsService {
       },
     });
 
-    return permission;
+    if (dto.roles && Array.isArray(dto.roles) && dto.roles.length > 0) {
+      const roles = await this.prisma.role.findMany({
+        where: { code: { in: dto.roles } },
+      });
+      if (roles.length > 0) {
+        await this.prisma.rolePermission.createMany({
+          data: roles.map((r) => ({
+            roleId: r.id,
+            permissionId: permission.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    return this.findOne(permission.id);
   }
 
-  async update(id: string, dto: UpdatePermissionDto) {
+  async update(id: string, dto: any) {
     const permission = await this.prisma.saaSPermission.findUnique({ where: { id } });
     if (!permission) {
       throw new NotFoundException(`Permission with ID ${id} not found`);
     }
 
-    const updatedPermission = await this.prisma.saaSPermission.update({
-      where: { id },
-      data: {
-        name: dto.name,
-        description: dto.description,
-      },
-      include: {
-        module: true,
-      },
-    });
+    const dataToUpdate: any = {};
+    if (dto.name) dataToUpdate.name = dto.name;
+    if (dto.description !== undefined) dataToUpdate.description = dto.description;
 
-    return updatedPermission;
+    if (Object.keys(dataToUpdate).length > 0) {
+      await this.prisma.saaSPermission.update({
+        where: { id },
+        data: dataToUpdate,
+      });
+    }
+
+    if (dto.roles && Array.isArray(dto.roles)) {
+      await this.prisma.rolePermission.deleteMany({ where: { permissionId: id } });
+      const roles = await this.prisma.role.findMany({
+        where: { code: { in: dto.roles } },
+      });
+      if (roles.length > 0) {
+        await this.prisma.rolePermission.createMany({
+          data: roles.map((r) => ({
+            roleId: r.id,
+            permissionId: id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    }
+
+    return this.findOne(id);
   }
+
+  async restore(id: string) {
+    const permission = await this.prisma.saaSPermission.findUnique({ where: { id } });
+    if (!permission) {
+      throw new NotFoundException(`Permission with ID ${id} not found`);
+    }
+    return this.findOne(id);
+  }
+
 
   async remove(id: string) {
     const permission = await this.prisma.saaSPermission.findUnique({

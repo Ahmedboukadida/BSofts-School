@@ -17,10 +17,12 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
+import { useToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { EmployeeItem } from '@/types';
 
 export default function EmployeesPage() {
+  const { showToast, showApiErrorToast } = useToast();
   const [employees, setEmployees] = useState<EmployeeItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrashMode, setIsTrashMode] = useState(false);
@@ -48,7 +50,12 @@ export default function EmployeesPage() {
   const fetchEmployees = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/employees').catch(() => ({ data: { data: [] } }));
+      const res = await api.get('/employees', {
+        params: {
+          limit: 100,
+          includeDeleted: isTrashMode,
+        },
+      });
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: EmployeeItem[] = list.map((e: any) => ({
@@ -67,15 +74,16 @@ export default function EmployeesPage() {
         establishmentName: e.establishmentName || e.establishment?.name || 'Établissement Principal',
         createdAt: e.createdAt || new Date().toISOString(),
         updatedAt: e.updatedAt || new Date().toISOString(),
-        isDeleted: Boolean(e.isDeleted),
+        isDeleted: e.isActive === false,
       }));
       setEmployees(mapped);
-    } catch {
+    } catch (err: any) {
       setEmployees([]);
+      showApiErrorToast(err, 'Impossible de charger la liste des employés');
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode]);
+  }, [isTrashMode, showApiErrorToast]);
 
   useEffect(() => {
     fetchEmployees();
@@ -126,36 +134,66 @@ export default function EmployeesPage() {
         salaryTnd: Number(formData.salaryTnd),
       };
       if (editingItem) {
-        await api.put(`/employees/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/employees/${editingItem.id}`, payload);
+        showToast('Collaborateur mis à jour avec succès', 'success');
       } else {
-        await api.post('/employees', payload).catch(() => {});
+        await api.post('/employees', payload);
+        showToast('Collaborateur ajouté avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchEmployees();
+      await fetchEmployees();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement du collaborateur");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: EmployeeItem) => {
-    await api.delete(`/employees/${item.id}`).catch(() => {});
-    setEmployees((prev) => prev.filter((e) => e.id !== item.id));
+    try {
+      await api.delete(`/employees/${item.id}`);
+      showToast('Collaborateur placé dans la corbeille', 'success');
+      await fetchEmployees();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la désactivation');
+    }
   };
 
   const handlePermanentDelete = async (item: EmployeeItem) => {
-    await api.delete(`/employees/${item.id}?permanent=true`).catch(() => {});
-    setEmployees((prev) => prev.filter((e) => e.id !== item.id));
+    if (!window.confirm(`Suppression DÉFINITIVE de ${item.firstName} ${item.lastName} ? Cette action est irréversible.`)) return;
+    try {
+      await api.delete(`/employees/${item.id}?permanent=true`);
+      showToast('Collaborateur supprimé définitivement', 'success');
+      await fetchEmployees();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  const handleRestore = async (item: EmployeeItem) => {
+    try {
+      await api.post(`/employees/${item.id}/restore`);
+      showToast('Collaborateur restauré avec succès', 'success');
+      await fetchEmployees();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   const handleToggleStatus = async (item: EmployeeItem) => {
     const updated = !item.isActive;
-    await api.put(`/employees/${item.id}`, { isActive: updated }).catch(() => {});
-    setEmployees((prev) =>
-      prev.map((e) => (e.id === item.id ? { ...e, isActive: updated } : e))
-    );
+    try {
+      await api.put(`/employees/${item.id}`, { isActive: updated });
+      showToast(`Statut mis à jour (${updated ? 'Actif' : 'Inactif'})`, 'success');
+      await fetchEmployees();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la modification du statut');
+    }
   };
 
   const filteredEmployees = employees.filter((e) => {
+    if (!isTrashMode && e.isActive === false) return false;
+    if (isTrashMode && e.isActive !== false) return false;
     if (departmentFilter && e.department !== departmentFilter) return false;
     if (statusFilter && (statusFilter === 'active' ? !e.isActive : e.isActive)) return false;
     return true;
@@ -373,6 +411,7 @@ export default function EmployeesPage() {
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
           onToggleStatus: handleToggleStatus,
+          onRestore: handleRestore,
         }}
         showTrashToggle={true}
         isTrashActive={isTrashMode}

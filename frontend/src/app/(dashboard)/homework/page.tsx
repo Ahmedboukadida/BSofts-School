@@ -19,6 +19,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
+import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { HomeworkItem } from '@/types';
 
@@ -47,7 +48,7 @@ export default function HomeworkPage() {
   const fetchHomework = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/homework').catch(() => ({ data: { data: [] } }));
+      const res = await api.get('/homework', { params: { limit: 100, isDeleted: isTrashMode } });
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: HomeworkItem[] = list.map((h: any) => ({
@@ -66,7 +67,8 @@ export default function HomeworkPage() {
         isDeleted: Boolean(h.isDeleted),
       }));
       setHomeworkList(mapped);
-    } catch {
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement des devoirs');
       setHomeworkList([]);
     } finally {
       setIsLoading(false);
@@ -112,34 +114,16 @@ export default function HomeworkPage() {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        await api.put(`/homework/${editingItem.id}`, formData).catch(() => {});
-        setHomeworkList((prev) =>
-          prev.map((hw) =>
-            hw.id === editingItem.id
-              ? {
-                  ...hw,
-                  ...formData,
-                  updatedAt: new Date().toISOString(),
-                  updatedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : hw
-          )
-        );
+        await api.put(`/homework/${editingItem.id}`, formData);
+        showToast('Devoir mis à jour avec succès', 'success');
       } else {
-        await api.post('/homework', formData).catch(() => {});
-        const newItem: HomeworkItem = {
-          id: `hw-${Date.now()}`,
-          ...formData,
-          submissionsCount: 0,
-          createdAt: new Date().toISOString(),
-          createdBy: 'u-root',
-          createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-          updatedAt: new Date().toISOString(),
-          isDeleted: false,
-        };
-        setHomeworkList((prev) => [newItem, ...prev]);
+        await api.post('/homework', formData);
+        showToast('Devoir créé avec succès', 'success');
       }
       setIsFormModalOpen(false);
+      await fetchHomework();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement du devoir");
     } finally {
       setIsSubmitting(false);
     }
@@ -156,42 +140,22 @@ export default function HomeworkPage() {
     try {
       await api.delete(`/homework/${row.id}`, {
         params: { permanent: permanent && isRoot },
-      }).catch(() => {});
-
-      if (permanent) {
-        setHomeworkList((prev) => prev.filter((hw) => hw.id !== row.id));
-      } else {
-        setHomeworkList((prev) =>
-          prev.map((hw) =>
-            hw.id === row.id
-              ? {
-                  ...hw,
-                  isDeleted: true,
-                  deletedAt: new Date().toISOString(),
-                  deletedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : hw
-          )
-        );
-      }
-    } catch {
-      // Handled
+      });
+      showToast(permanent ? 'Devoir supprimé définitivement' : 'Devoir placé dans la corbeille', 'success');
+      await fetchHomework();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression du devoir');
     }
   };
 
   const handleRestore = async (row: HomeworkItem) => {
     if (!window.confirm(`Restaurer le devoir "${row.title}" ?`)) return;
     try {
-      await api.post(`/homework/${row.id}/restore`).catch(() => {});
-      setHomeworkList((prev) =>
-        prev.map((hw) =>
-          hw.id === row.id
-            ? { ...hw, isDeleted: false, deletedAt: null, deletedByName: undefined }
-            : hw
-        )
-      );
-    } catch {
-      // Handled
+      await api.post(`/homework/${row.id}/restore`);
+      showToast('Devoir restauré avec succès', 'success');
+      await fetchHomework();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration du devoir');
     }
   };
 

@@ -15,12 +15,14 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
+import { useToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
 import type { RoomItem } from '@/types';
 
 export default function RoomsPage() {
+  const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
   const { currentEstablishmentId, establishments, fetchEstablishments } = useEstablishmentStore();
 
@@ -63,10 +65,11 @@ export default function RoomsPage() {
 
       const res = await api.get('/rooms', {
         params: {
+          limit: 100,
           includeDeleted: isTrashMode,
           ...(activeEstId ? { establishmentId: activeEstId } : {}),
         },
-      }).catch(() => ({ data: { data: [] } }));
+      });
 
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
@@ -74,14 +77,16 @@ export default function RoomsPage() {
         ...r,
         establishmentId: r.establishmentId || r.establishment?.id || '',
         establishmentName: r.establishment?.name || r.establishmentName || 'Principal',
+        isDeleted: r.isActive === false,
       }));
       setRooms(mapped);
-    } catch {
+    } catch (err: any) {
       setRooms([]);
+      showApiErrorToast(err, 'Impossible de charger les salles et espaces');
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, currentEstablishmentId]);
+  }, [isTrashMode, currentEstablishmentId, showApiErrorToast]);
 
   useEffect(() => {
     fetchRooms();
@@ -143,37 +148,64 @@ export default function RoomsPage() {
         ...formData,
         capacity: Number(formData.capacity) || 30,
         floor: Number(formData.floor) || 0,
+        establishmentId: formData.establishmentId || (currentEstablishmentId && currentEstablishmentId !== 'ALL' ? currentEstablishmentId : (establishments[0]?.id || user?.establishmentId)),
       };
       if (editingItem) {
-        await api.put(`/rooms/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/rooms/${editingItem.id}`, payload);
+        showToast('Salle mise à jour avec succès', 'success');
       } else {
-        await api.post('/rooms', payload).catch(() => {});
+        await api.post('/rooms', payload);
+        showToast('Salle ajoutée avec succès', 'success');
       }
       setIsFormModalOpen(false);
-      fetchRooms();
-    } catch {
-      setIsFormModalOpen(false);
+      await fetchRooms();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement de la salle");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: RoomItem) => {
-    await api.delete(`/rooms/${item.id}`).catch(() => {});
-    setRooms((prev) => prev.filter((r) => r.id !== item.id));
+    try {
+      await api.delete(`/rooms/${item.id}`);
+      showToast('Salle placée dans la corbeille', 'success');
+      await fetchRooms();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la désactivation');
+    }
   };
 
   const handlePermanentDelete = async (item: RoomItem) => {
-    await api.delete(`/rooms/${item.id}?permanent=true`).catch(() => {});
-    setRooms((prev) => prev.filter((r) => r.id !== item.id));
+    if (!window.confirm(`Suppression DÉFINITIVE de la salle ${item.name} (${item.code}) ? Cette action est irréversible.`)) return;
+    try {
+      await api.delete(`/rooms/${item.id}?permanent=true`);
+      showToast('Salle supprimée définitivement', 'success');
+      await fetchRooms();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
+  };
+
+  const handleRestore = async (item: RoomItem) => {
+    try {
+      await api.post(`/rooms/${item.id}/restore`);
+      showToast('Salle restaurée avec succès', 'success');
+      await fetchRooms();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration');
+    }
   };
 
   const handleToggleStatus = async (item: RoomItem) => {
     const updated = !item.isActive;
-    await api.put(`/rooms/${item.id}`, { isActive: updated }).catch(() => {});
-    setRooms((prev) =>
-      prev.map((r) => (r.id === item.id ? { ...r, isActive: updated } : r))
-    );
+    try {
+      await api.put(`/rooms/${item.id}`, { isActive: updated });
+      showToast(`Statut mis à jour (${updated ? 'Disponible' : 'Indisponible'})`, 'success');
+      await fetchRooms();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la modification du statut');
+    }
   };
 
   const getTypeBadge = (type: RoomItem['type']) => {
@@ -193,6 +225,8 @@ export default function RoomsPage() {
   };
 
   const filteredRooms = rooms.filter((r) => {
+    if (!isTrashMode && r.isActive === false) return false;
+    if (isTrashMode && r.isActive !== false) return false;
     if (statusFilter && (statusFilter === 'active' ? !r.isActive : r.isActive)) return false;
     if (typeFilter && r.type !== typeFilter) return false;
     return true;
@@ -477,6 +511,7 @@ export default function RoomsPage() {
           onEdit: handleOpenEdit,
           onDelete: handleDelete,
           onPermanentDelete: handlePermanentDelete,
+          onRestore: handleRestore,
           onToggleStatus: handleToggleStatus,
         }}
         showTrashToggle={true}

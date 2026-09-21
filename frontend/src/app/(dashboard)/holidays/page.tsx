@@ -19,6 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
+import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { HolidayItem } from '@/types';
 
@@ -48,15 +49,15 @@ export default function HolidaysPage() {
   const fetchHolidays = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/holidays').catch(() => ({ data: { data: [] } }));
+      const res = await api.get('/holidays', { params: { limit: 100 } });
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: HolidayItem[] = list.map((h: any) => ({
         id: h.id || '',
         name: h.name || 'Jour férié',
         type: (h.type as any) || 'NATIONAL',
-        startDate: h.startDate || new Date().toISOString().split('T')[0],
-        endDate: h.endDate || h.startDate || new Date().toISOString().split('T')[0],
+        startDate: h.startDate ? h.startDate.split('T')[0] : new Date().toISOString().split('T')[0],
+        endDate: h.endDate ? h.endDate.split('T')[0] : new Date().toISOString().split('T')[0],
         durationDays: Number(h.durationDays || 1),
         academicYear: h.academicYear || '2025/2026',
         isClosedForStudents: h.isClosedForStudents !== false,
@@ -67,12 +68,13 @@ export default function HolidaysPage() {
         isDeleted: Boolean(h.isDeleted),
       }));
       setHolidays(mapped);
-    } catch {
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du chargement des congés');
       setHolidays([]);
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode]);
+  }, []);
 
   useEffect(() => {
     fetchHolidays();
@@ -114,34 +116,24 @@ export default function HolidaysPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      const payload = {
+        name: formData.name,
+        description: formData.description,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString(),
+        isRecurring: false,
+      };
       if (editingItem) {
-        await api.put(`/holidays/${editingItem.id}`, formData).catch(() => {});
-        setHolidays((prev) =>
-          prev.map((h) =>
-            h.id === editingItem.id
-              ? {
-                  ...h,
-                  ...formData,
-                  updatedAt: new Date().toISOString(),
-                  updatedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : h
-          )
-        );
+        await api.put(`/holidays/${editingItem.id}`, payload);
+        showToast('Congé mis à jour avec succès', 'success');
       } else {
-        await api.post('/holidays', formData).catch(() => {});
-        const newItem: HolidayItem = {
-          id: `hol-${Date.now()}`,
-          ...formData,
-          createdAt: new Date().toISOString(),
-          createdBy: 'u-root',
-          createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-          updatedAt: new Date().toISOString(),
-          isDeleted: false,
-        };
-        setHolidays((prev) => [newItem, ...prev]);
+        await api.post('/holidays', payload);
+        showToast('Congé créé avec succès', 'success');
       }
       setIsFormModalOpen(false);
+      await fetchHolidays();
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'enregistrement du congé");
     } finally {
       setIsSubmitting(false);
     }
@@ -151,49 +143,29 @@ export default function HolidaysPage() {
     const isRoot = true; // Root context
     const confirmMsg = permanent && isRoot
       ? `ATTENTION: Suppression DÉFINITIVE du congé "${row.name}" ? Action irréversible.`
-      : `Mettre le congé "${row.name}" dans la corbeille ?`;
+      : `Supprimer le congé "${row.name}" ?`;
 
     if (!window.confirm(confirmMsg)) return;
 
     try {
       await api.delete(`/holidays/${row.id}`, {
         params: { permanent: permanent && isRoot },
-      }).catch(() => {});
-
-      if (permanent) {
-        setHolidays((prev) => prev.filter((h) => h.id !== row.id));
-      } else {
-        setHolidays((prev) =>
-          prev.map((h) =>
-            h.id === row.id
-              ? {
-                  ...h,
-                  isDeleted: true,
-                  deletedAt: new Date().toISOString(),
-                  deletedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : h
-          )
-        );
-      }
-    } catch {
-      // Handled
+      });
+      showToast(permanent ? 'Congé supprimé définitivement' : 'Congé supprimé avec succès', 'success');
+      await fetchHolidays();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la suppression du congé');
     }
   };
 
   const handleRestore = async (row: HolidayItem) => {
     if (!window.confirm(`Restaurer le congé "${row.name}" ?`)) return;
     try {
-      await api.post(`/holidays/${row.id}/restore`).catch(() => {});
-      setHolidays((prev) =>
-        prev.map((h) =>
-          h.id === row.id
-            ? { ...h, isDeleted: false, deletedAt: null, deletedByName: undefined }
-            : h
-        )
-      );
-    } catch {
-      // Handled
+      await api.post(`/holidays/${row.id}/restore`);
+      showToast('Congé restauré avec succès', 'success');
+      await fetchHolidays();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors de la restauration du congé');
     }
   };
 

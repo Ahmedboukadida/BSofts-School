@@ -63,10 +63,22 @@ export class SaaSPlansController {
   @Delete(':id')
   @Permissions('billing:delete')
   @Roles('ROOT')
-  @ApiOperation({ summary: 'Delete a SaaS plan' })
-  @ApiResponse({ status: 200, description: 'SaaS plan deleted successfully' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.saasPlansService.remove(id);
+  @ApiOperation({ summary: 'Delete or archive a SaaS plan' })
+  @ApiResponse({ status: 200, description: 'SaaS plan deleted or archived successfully' })
+  remove(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query('permanent') permanent?: string,
+  ) {
+    return this.saasPlansService.remove(id, permanent === 'true');
+  }
+
+  @Post(':id/restore')
+  @Permissions('billing:update')
+  @Roles('ROOT')
+  @ApiOperation({ summary: 'Restore an archived SaaS plan' })
+  @ApiResponse({ status: 200, description: 'SaaS plan restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.saasPlansService.restore(id);
   }
 
   @Post(':id/modules')

@@ -87,4 +87,9 @@ export class SystemLogsService {
 
     return { deleted: result.count };
   }
+
+  async remove(id: string): Promise<{ message: string }> {
+    await this.prisma.systemLog.delete({ where: { id } });
+    return { message: 'Journal système supprimé avec succès' };
+  }
 }

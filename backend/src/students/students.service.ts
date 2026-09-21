@@ -10,15 +10,18 @@ export class StudentsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryStudentDto) {
-    const { page = 1, limit = 10, search, establishmentId, isActive, sortBy, sortOrder } = query;
+    const { page = 1, limit = 50, search, establishmentId, isActive, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.establishmentId = establishmentId;
+    }
     if (isActive !== undefined) {
       where.isActive = isActive;
-    } else if (!query.includeDeleted) {
-      where.isActive = true;
+    }
+    if (!query.includeDeleted) {
+      where.isDeleted = false;
     }
     if (search) {
       where.OR = [
@@ -35,9 +38,23 @@ export class StudentsService {
         where, skip, take: limit, orderBy,
         include: {
           classAssignments: {
-            include: { class: { select: { id: true, name: true } } },
+            include: {
+              class: { select: { id: true, name: true, classLevel: true } },
+              academicYear: { select: { id: true, name: true } },
+            },
             take: 1,
           },
+          parents: {
+            include: {
+              parent: { select: { id: true, firstName: true, lastName: true, phone: true, email: true } },
+            },
+            take: 1,
+          },
+          payments: {
+            select: { id: true, amount: true, status: true, type: true, createdAt: true },
+            take: 10,
+          },
+          establishment: { select: { id: true, name: true, slug: true } },
         },
       }),
       this.prisma.student.count({ where }),
@@ -209,10 +226,15 @@ export class StudentsService {
       throw new BadRequestException('establishmentId is required (provide in body or ensure user has an establishment)');
     }
 
+    const regNum =
+      dto.registrationNumber ||
+      dto.matricule ||
+      `ELEV-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
     const existing = await this.prisma.student.findUnique({
-      where: { registrationNumber: dto.registrationNumber },
+      where: { registrationNumber: regNum },
     });
-    if (existing) throw new ConflictException('Registration number already exists');
+    if (existing) throw new ConflictException('Registration number / matricule already exists');
 
     let userId = dto.userId || null;
 
@@ -238,8 +260,8 @@ export class StudentsService {
         userId = newUser.id;
 
         // Assign STUDENT role
-        const studentRole = await this.prisma.role.findUnique({
-          where: { name: 'STUDENT' },
+        const studentRole = await this.prisma.role.findFirst({
+          where: { code: 'STUDENT' },
         });
         if (studentRole) {
           await this.prisma.userRoleAssignment.create({
@@ -263,13 +285,25 @@ export class StudentsService {
         phone: dto.phone,
         address: dto.address,
         photo: dto.photo,
-        registrationNumber: dto.registrationNumber,
+        registrationNumber: regNum,
         userId,
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
       },
     });
 
-    // If classId is provided, create class assignment
-    if (dto.classId) {
+    // Resolve class assignment if classId or className is provided
+    let targetClassId = dto.classId;
+    if (!targetClassId && dto.className) {
+      const matchingClass = await this.prisma.class.findFirst({
+        where: {
+          establishmentId,
+          name: { contains: dto.className.split(' ')[0], mode: 'insensitive' },
+        },
+      });
+      if (matchingClass) targetClassId = matchingClass.id;
+    }
+
+    if (targetClassId) {
       const currentYear = await this.prisma.academicYear.findFirst({
         where: { establishmentId, isCurrent: true },
       });
@@ -277,11 +311,62 @@ export class StudentsService {
         await this.prisma.studentClassAssignment.create({
           data: {
             studentId: student.id,
-            classId: dto.classId,
+            classId: targetClassId,
             academicYearId: currentYear.id,
           },
         });
       }
+    }
+
+    // Link Parent if parent info is provided
+    if (dto.parentName || dto.parentPhone || dto.parentEmail) {
+      const parentParts = (dto.parentName || 'Tuteur Légal').split(' ');
+      const parentFirst = parentParts[0] || 'Parent';
+      const parentLast = parentParts.slice(1).join(' ') || 'Famille';
+
+      let parent = dto.parentEmail
+        ? await this.prisma.parent.findFirst({ where: { email: dto.parentEmail, establishmentId } })
+        : null;
+
+      if (!parent && dto.parentPhone) {
+        parent = await this.prisma.parent.findFirst({ where: { phone: dto.parentPhone, establishmentId } });
+      }
+
+      if (!parent) {
+        parent = await this.prisma.parent.create({
+          data: {
+            establishmentId,
+            firstName: parentFirst,
+            lastName: parentLast,
+            phone: dto.parentPhone || null,
+            email: dto.parentEmail || null,
+            relationship: 'PARENT',
+          },
+        });
+      }
+
+      await this.prisma.studentParent.create({
+        data: {
+          studentId: student.id,
+          parentId: parent.id,
+          relationship: 'PARENT',
+          isPrimaryContact: true,
+        },
+      });
+    }
+
+    // Initialize tuition payment if tuitionPaid is provided
+    if (dto.tuitionPaid && dto.tuitionPaid > 0) {
+      await this.prisma.studentPayment.create({
+        data: {
+          studentId: student.id,
+          amount: dto.tuitionPaid,
+          status: 'PAID',
+          method: 'CASH',
+          paidAt: new Date(),
+          reference: `REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        },
+      });
     }
 
     return student;
@@ -290,6 +375,8 @@ export class StudentsService {
   async update(id: string, dto: UpdateStudentDto) {
     const student = await this.prisma.student.findUnique({ where: { id } });
     if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
+
+    const regNum = dto.registrationNumber || dto.matricule || undefined;
 
     return this.prisma.student.update({
       where: { id },
@@ -301,6 +388,7 @@ export class StudentsService {
         phone: dto.phone,
         address: dto.address,
         photo: dto.photo,
+        registrationNumber: regNum,
         isActive: dto.isActive,
       },
     });
@@ -377,5 +465,42 @@ export class StudentsService {
       });
       throw err;
     }
+  }
+
+  async restore(id: string, user?: any) {
+    const student = await this.prisma.student.findUnique({ where: { id } });
+    if (!student) throw new NotFoundException(`Student with ID ${id} not found`);
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    const restored = await this.prisma.student.update({
+      where: { id },
+      data: { isActive: true },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+        classAssignments: {
+          include: { class: { select: { id: true, name: true } } },
+          orderBy: { assignedAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'RESTORE',
+        entity: 'Student',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: { isActive: false },
+        newValues: { isActive: true },
+      },
+    });
+
+    return { message: 'Élève restauré avec succès', student: restored };
   }
 }

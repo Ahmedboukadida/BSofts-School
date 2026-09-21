@@ -10,11 +10,13 @@ export class EmployeesService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryEmployeeDto) {
-    const { page = 1, limit = 10, search, establishmentId, sortBy, sortOrder } = query;
+    const { page = 1, limit = 50, search, establishmentId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.establishmentId = establishmentId;
+    }
     if (!query.includeDeleted) {
       where.isActive = true;
     }
@@ -30,7 +32,16 @@ export class EmployeesService {
     const orderBy: any = sortBy ? { [sortBy]: sortOrder || 'asc' } : { createdAt: 'desc' };
 
     const [data, total] = await Promise.all([
-      this.prisma.employee.findMany({ where, skip, take: limit, orderBy }),
+      this.prisma.employee.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
+          establishment: { select: { id: true, name: true, slug: true } },
+          contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      }),
       this.prisma.employee.count({ where }),
     ]);
 
@@ -196,5 +207,37 @@ export class EmployeesService {
       });
       throw err;
     }
+  }
+
+  async restore(id: string, user?: any) {
+    const employee = await this.prisma.employee.findUnique({ where: { id } });
+    if (!employee) throw new NotFoundException(`Employee with ID ${id} not found`);
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    const restored = await this.prisma.employee.update({
+      where: { id },
+      data: { isActive: true },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'RESTORE',
+        entity: 'Employee',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: { isActive: false },
+        newValues: { isActive: true },
+      },
+    });
+
+    return { message: 'Collaborateur restauré avec succès', employee: restored };
   }
 }

@@ -67,4 +67,14 @@ export class RolesController {
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.rolesService.remove(id);
   }
+
+  @Post(':id/restore')
+  @Permissions('roles:update')
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Restore a role' })
+  @ApiResponse({ status: 200, description: 'Role restored successfully' })
+  restore(@Param('id', ParseUUIDPipe) id: string) {
+    return this.rolesService.restore(id);
+  }
 }
+

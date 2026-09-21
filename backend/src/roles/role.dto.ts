@@ -22,6 +22,10 @@ export class CreateRoleDto {
   @IsOptional()
   @IsBoolean()
   isSystem?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  selectedPermissions?: string[];
 }
 
 export class UpdateRoleDto {
@@ -39,6 +43,10 @@ export class UpdateRoleDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  selectedPermissions?: string[];
 }
 
 export class QueryRoleDto extends PaginationQueryDto {

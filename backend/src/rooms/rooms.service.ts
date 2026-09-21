@@ -9,11 +9,13 @@ export class RoomsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryRoomDto) {
-    const { page = 1, limit = 10, search, establishmentId, type, sortBy, sortOrder } = query;
+    const { page = 1, limit = 50, search, establishmentId, type, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.establishmentId = establishmentId;
+    }
     if (type) where.type = type;
     if (!query.includeDeleted) {
       where.isActive = true;
@@ -29,8 +31,14 @@ export class RoomsService {
 
     const [data, total] = await Promise.all([
       this.prisma.room.findMany({
-        where, skip, take: limit, orderBy,
-        include: { _count: { select: { equipment: true, sessions: true } } },
+        where,
+        skip,
+        take: limit,
+        orderBy,
+        include: {
+          establishment: { select: { id: true, name: true, slug: true } },
+          _count: { select: { equipment: true, sessions: true } },
+        },
       }),
       this.prisma.room.count({ where }),
     ]);
@@ -160,5 +168,37 @@ export class RoomsService {
       });
       throw err;
     }
+  }
+
+  async restore(id: string, user?: any) {
+    const room = await this.prisma.room.findUnique({ where: { id } });
+    if (!room) throw new NotFoundException(`Room with ID ${id} not found`);
+
+    const actorSnapshot = user
+      ? `${user.firstName || ''} ${user.lastName || ''} (@${user.username || user.email || ''}) [${user.isRoot ? 'ROOT' : 'ADMIN'}]`.trim()
+      : null;
+
+    const restored = await this.prisma.room.update({
+      where: { id },
+      data: { isActive: true },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: user?.id,
+        actorSnapshot,
+        action: 'RESTORE',
+        entity: 'Room',
+        entityId: id,
+        status: 'SUCCESS',
+        oldValues: { isActive: false },
+        newValues: { isActive: true },
+      },
+    });
+
+    return { message: 'Salle restaurée avec succès', room: restored };
   }
 }
