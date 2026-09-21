@@ -19,7 +19,7 @@ async function bootstrap() {
     'http://localhost:3026',
     'http://localhost:3000',
     'http://localhost:3001',
-    'https://bsoft-school-front.vercel.app',
+    'https://bsofts-school.vercel.app',
     'https://bsofts-school.vercel.app',
     process.env.FRONTEND_URL,
     ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()) : []),

@@ -1,4 +1,4 @@
-import { PrismaClient, Currency, PlanInterval } from '@prisma/client';
+import { PrismaClient, Currency, PlanInterval, EstablishmentCategory } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
@@ -236,6 +236,102 @@ async function seedProduction() {
       }
     }
     console.log(`   ✅ Root user ready: bsofts.contact@gmail.com (Root: ${rootUser.isRoot})`);
+
+    // 8. Provision Default Tenant & Establishment
+    console.log('🏫 Provisioning Default Tenant & Establishment...');
+    let tenant = await prisma.tenant.findUnique({
+      where: { userId: rootUser.id },
+    });
+    if (!tenant) {
+      tenant = await prisma.tenant.create({
+        data: { userId: rootUser.id },
+      });
+    }
+
+    await prisma.tenantSettings.upsert({
+      where: { tenantId: tenant.id },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        currency: Currency.TND,
+        language: 'FR',
+        theme: 'LIGHT',
+        timezone: 'Africa/Tunis',
+        dateFormat: 'DD/MM/YYYY',
+      },
+    });
+
+    const establishment = await prisma.establishment.upsert({
+      where: { slug: 'ecole-pilote-bsofts' },
+      update: {},
+      create: {
+        tenantId: tenant.id,
+        name: 'École Pilote BSofts',
+        slug: 'ecole-pilote-bsofts',
+        category: EstablishmentCategory.SCHOOL,
+        country: 'TN',
+        timezone: 'Africa/Tunis',
+        phone: '+216 71 000 000',
+        email: 'contact@bsofts-school.com',
+        address: 'Tunis, Tunisie',
+      },
+    });
+
+    if (superAdminRole) {
+      const estAssignment = await prisma.userRoleAssignment.findFirst({
+        where: { userId: rootUser.id, roleId: superAdminRole.id, establishmentId: establishment.id },
+      });
+      if (!estAssignment) {
+        await prisma.userRoleAssignment.create({
+          data: { userId: rootUser.id, roleId: superAdminRole.id, establishmentId: establishment.id },
+        });
+      }
+    }
+
+    // Default Academic Year
+    await prisma.academicYear.upsert({
+      where: {
+        establishmentId_name: {
+          establishmentId: establishment.id,
+          name: 'Année Scolaire 2025-2026',
+        },
+      },
+      update: {},
+      create: {
+        establishmentId: establishment.id,
+        name: 'Année Scolaire 2025-2026',
+        code: '2025-2026',
+        startDate: new Date('2025-09-15'),
+        endDate: new Date('2026-06-30'),
+        isCurrent: true,
+      },
+    });
+
+    // Default Dynamic Enums
+    const defaultEnums = [
+      { category: 'STUDENT_STATUS', code: 'INSCRIT', labelFr: 'Inscrit', labelEn: 'Enrolled', labelAr: 'مسجل', color: '#10B981', sortOrder: 1 },
+      { category: 'STUDENT_STATUS', code: 'RADIE', labelFr: 'Radié', labelEn: 'Expelled', labelAr: 'مفصول', color: '#EF4444', sortOrder: 2 },
+      { category: 'STUDENT_STATUS', code: 'SUSPENDU', labelFr: 'Suspendu', labelEn: 'Suspended', labelAr: 'موقوف', color: '#F59E0B', sortOrder: 3 },
+      { category: 'STUDENT_STATUS', code: 'DIPLOME', labelFr: 'Diplômé', labelEn: 'Graduated', labelAr: 'متخرج', color: '#4F46E5', sortOrder: 4 },
+      { category: 'PAYMENT_METHOD', code: 'ESPECES', labelFr: 'Espèces', labelEn: 'Cash', labelAr: 'نقدا', color: '#10B981', sortOrder: 1 },
+      { category: 'PAYMENT_METHOD', code: 'CHEQUE', labelFr: 'Chèque', labelEn: 'Check', labelAr: 'شيك', color: '#3B82F6', sortOrder: 2 },
+      { category: 'PAYMENT_METHOD', code: 'VIREMENT', labelFr: 'Virement', labelEn: 'Bank Transfer', labelAr: 'تحويل بنكي', color: '#8B5CF6', sortOrder: 3 },
+      { category: 'CAISSE_TYPE', code: 'PRINCIPALE', labelFr: 'Caisse Principale', labelEn: 'Main Cash Desk', labelAr: 'الصندوق الرئيسي', color: '#4F46E5', sortOrder: 1 },
+      { category: 'CAISSE_TYPE', code: 'SCOLARITE', labelFr: 'Caisse Frais Scolarité', labelEn: 'Tuition Cash Desk', labelAr: 'صندوق مصاريف الدراسة', color: '#10B981', sortOrder: 2 },
+      { category: 'CAISSE_TYPE', code: 'SALAIRES', labelFr: 'Caisse Salaires', labelEn: 'Payroll Cash Desk', labelAr: 'صندوق الأجور', color: '#F59E0B', sortOrder: 3 },
+    ];
+
+    for (const de of defaultEnums) {
+      const existing = await prisma.dynamicEnum.findFirst({
+        where: { establishmentId: establishment.id, category: de.category, code: de.code },
+      });
+      if (!existing) {
+        await prisma.dynamicEnum.create({
+          data: { ...de, establishmentId: establishment.id },
+        });
+      }
+    }
+    console.log(`   ✅ Default Tenant, Establishment (École Pilote BSofts), Academic Year (2025-2026), and Dynamic Enums ready.`);
 
     console.log('\n============================================================');
     console.log('🎉 [PRODUCTION SEED SUCCESS] Neon Cloud Database is Ready!');

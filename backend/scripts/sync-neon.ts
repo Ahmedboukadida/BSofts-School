@@ -57,11 +57,17 @@ async function checkNeonStatus() {
     `);
 
     const tables = tablesRes.rows.map((r) => r.table_name);
-    console.log(`?? Public Tables in Neon: ${tables.length}`);
+    console.log(`📌 Public Tables in Neon: ${tables.length}`);
     if (tables.length > 0) {
       console.log(`   Sample tables: ${tables.slice(0, 10).join(', ')}${tables.length > 10 ? '...' : ''}`);
+      for (const t of ['User', 'Role', 'SaaSModule', 'SaaSPermission', 'SaaSPlan', 'ClassLevel']) {
+        if (tables.includes(t)) {
+          const countRes = await client.query(`SELECT COUNT(*) FROM "${t}";`);
+          console.log(`   📊 ${t}: ${countRes.rows[0].count} rows`);
+        }
+      }
     } else {
-      console.log('?? Neon database is currently empty (0 tables). Ready for schema push!');
+      console.log('⚠️ Neon database is currently empty (0 tables). Ready for schema push!');
     }
   } catch (err: any) {
     console.error('? Failed to connect to Neon database:', err.message);
