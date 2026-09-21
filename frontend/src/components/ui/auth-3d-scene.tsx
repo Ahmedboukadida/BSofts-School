@@ -174,7 +174,7 @@ export function Auth3DScene() {
           animFrameId = requestAnimationFrame(animate);
 
           const elapsedTime = clock.getElapsedTime();
-          const delta = clock.getDelta();
+          const _delta = clock.getDelta();
 
           // Smooth lerp for mouse parallax
           targetX += (mouseX - targetX) * 0.04;

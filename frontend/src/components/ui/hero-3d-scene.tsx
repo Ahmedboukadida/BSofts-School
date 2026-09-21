@@ -161,7 +161,7 @@ export function Hero3DScene() {
           coreGeometry.dispose();
           particleGeometry.dispose();
         };
-      } catch (err) {
+      } catch {
         // Fallback: 2D Canvas 3D particle constellation if WebGL/Three fails
         initCanvasFallback();
       }
