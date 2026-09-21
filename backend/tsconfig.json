@@ -15,8 +15,7 @@
     "incremental": true,
     "skipLibCheck": true,
     "strict": true,
-    "strictPropertyInitialization": false,
-    "types": ["node"]
+    "strictPropertyInitialization": false
   },
   "include": ["src/**/*", "prisma.config.ts"],
   "exclude": ["node_modules", "dist", "test", "**/*.spec.ts"]
