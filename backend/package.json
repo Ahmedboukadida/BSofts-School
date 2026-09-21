@@ -27,7 +27,11 @@
     "prisma:seed": "prisma db seed",
     "prisma:studio": "prisma studio",
     "seed": "npx tsx prisma/seed.ts",
-    "prisma:validate": "prisma validate"
+    "prisma:validate": "prisma validate",
+    "db:status:neon": "npx tsx scripts/sync-neon.ts --status",
+    "db:push:neon": "npx tsx scripts/sync-neon.ts --push",
+    "db:seed:neon": "npx tsx scripts/sync-neon.ts --seed",
+    "db:pull:neon:data": "npx tsx scripts/sync-neon.ts --pull-data"
   },
   "prisma": {
     "seed": "ts-node --esm prisma/seed.ts"

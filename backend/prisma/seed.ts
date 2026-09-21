@@ -5,17 +5,19 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const envPath = path.join(__dirname, '..', '.env');
-const envFile = fs.readFileSync(envPath, 'utf-8');
-envFile.split('\n').forEach((line) => {
-  const trimmed = line.trim();
-  if (!trimmed || trimmed.startsWith('#')) return;
-  const eqIndex = trimmed.indexOf('=');
-  if (eqIndex === -1) return;
-  const key = trimmed.slice(0, eqIndex).trim();
-  let value = trimmed.slice(eqIndex + 1).trim();
-  if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
-  process.env[key] = value;
-});
+if (!process.env.DATABASE_URL && fs.existsSync(envPath)) {
+  const envFile = fs.readFileSync(envPath, 'utf-8');
+  envFile.split('\n').forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const eqIndex = trimmed.indexOf('=');
+    if (eqIndex === -1) return;
+    const key = trimmed.slice(0, eqIndex).trim();
+    let value = trimmed.slice(eqIndex + 1).trim();
+    if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+    process.env[key] = value;
+  });
+}
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });

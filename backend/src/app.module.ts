@@ -1,5 +1,5 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaModule } from './prisma/prisma.module';
@@ -62,7 +62,15 @@ import {
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: 'E:\\ReFactory\\BSofts-School\\backend\\.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: [
+        `.env.${process.env.NODE_ENV || 'development'}.local`,
+        `.env.${process.env.NODE_ENV || 'development'}`,
+        '.env.local',
+        '.env',
+      ],
+    }),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -115,10 +123,16 @@ import {
     MailModule,
     HomeworkModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      secret: process.env.JWT_SECRET || 'bsofts-school-jwt-secret',
-      signOptions: { expiresIn: '15m' },
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET') || 'bsofts-school-jwt-secret-2026-production-key',
+        signOptions: {
+          expiresIn: (configService.get<string>('JWT_EXPIRATION') as any) || '15m',
+        },
+      }),
     }),
   ],
   controllers: [AppController],

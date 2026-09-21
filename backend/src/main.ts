@@ -13,14 +13,28 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // CORS
+  // CORS with dynamic multi-environment support
+  const allowedOrigins = [
+    'http://localhost:3025',
+    'http://localhost:3026',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'https://bsoft-school-front.vercel.app',
+    process.env.FRONTEND_URL,
+    ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()) : []),
+  ].filter(Boolean) as string[];
+
   app.enableCors({
-    origin: [
-      'http://localhost:3025',
-      'http://localhost:3026',
-      'http://localhost:3000',
-      'http://localhost:3001',
-    ],
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        return callback(null, true);
+      }
+      if (origin.endsWith('.vercel.app')) {
+        return callback(null, true);
+      }
+      return callback(new Error(`CORS origin not allowed: ${origin}`));
+    },
     credentials: true,
   });
 
