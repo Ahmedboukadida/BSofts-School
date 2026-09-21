@@ -33,7 +33,7 @@
     "db:seed:neon": "npx tsx scripts/sync-neon.ts --seed",
     "db:seed:neon:prod": "npx tsx scripts/seed-production.ts",
     "db:pull:neon:data": "npx tsx scripts/sync-neon.ts --pull-data",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && nest build"
   },
   "prisma": {
     "seed": "ts-node --esm prisma/seed.ts"
