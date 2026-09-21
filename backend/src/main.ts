@@ -19,6 +19,7 @@ async function bootstrap() {
     'http://localhost:3026',
     'http://localhost:3000',
     'http://localhost:3001',
+    'https://bsoft-school-front.vercel.app',
     'https://bsofts-school.vercel.app',
     process.env.FRONTEND_URL,
     ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()) : []),
@@ -33,7 +34,7 @@ async function bootstrap() {
       if (origin.endsWith('.vercel.app')) {
         return callback(null, true);
       }
-      return callback(new Error(`CORS origin not allowed: ${origin}`));
+      return callback(null, false);
     },
     credentials: true,
   });
@@ -131,8 +132,8 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT || 3025;
-  await app.listen(port);
-  logger.log(`Application running on: http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0');
+  logger.log(`Application running on: http://0.0.0.0:${port} (local: http://localhost:${port})`);
   logger.log(`API documentation: http://localhost:${port}/swagger`);
 }
 bootstrap();

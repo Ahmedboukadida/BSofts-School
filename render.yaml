@@ -17,6 +17,6 @@ services:
       - key: JWT_REFRESH_EXPIRATION
         value: 7d
       - key: FRONTEND_URL
-        value: https://bsofts-school.vercel.app
+        value: https://bsoft-school-front.vercel.app
       - key: CORS_ORIGIN
-        value: https://bsofts-school.vercel.app
+        value: https://bsoft-school-front.vercel.app
