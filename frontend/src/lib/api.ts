@@ -1,16 +1,34 @@
 import axios from 'axios';
 import { useAuthStore } from '@/store/auth-store';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3025/api';
+function getBaseUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    const isLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0';
+
+    // When running in a production browser (Vercel, custom domain), never fall back to localhost
+    if (!isLocal) {
+      if (envUrl && !envUrl.includes('localhost') && !envUrl.includes('127.0.0.1')) {
+        return envUrl;
+      }
+      return 'https://bsofts-school.onrender.com/api';
+    }
+  }
+
+  return envUrl || 'http://localhost:3025/api';
+}
 
 export const api = axios.create({
-  baseURL: API_URL,
+  baseURL: getBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
 api.interceptors.request.use((config) => {
+  config.baseURL = getBaseUrl();
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('accessToken');
     if (token) {
