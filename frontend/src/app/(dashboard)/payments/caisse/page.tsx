@@ -15,15 +15,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { useTranslation } from '@/components/providers/i18n-provider';
-import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
-import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
 import type { CaisseTransaction, Caisse } from '@/types';
 
 export default function CaissePage() {
   const { t } = useTranslation();
-  const { user } = useAuthStore();
   const { currentEstablishmentId } = useEstablishmentStore();
   const [caisses, setCaisses] = useState<Caisse[]>([]);
   const [selectedCaisseId, setSelectedCaisseId] = useState<string>('');

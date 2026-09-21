@@ -19,12 +19,12 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
-import { useToast } from '@/components/ui/toast';
+import { useToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { ParentItem } from '@/types';
 
 export default function ParentsPage() {
-  const { showToast, showApiErrorToast } = useToast();
+  const { showToast } = useToast();
   const [parents, setParents] = useState<ParentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrashMode, setIsTrashMode] = useState(false);

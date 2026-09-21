@@ -19,7 +19,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
-import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { HomeworkItem } from '@/types';
 

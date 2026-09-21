@@ -69,7 +69,7 @@ export default function CommunityNotificationsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode]);
+  }, []);
 
   useEffect(() => {
     fetchNotifications();

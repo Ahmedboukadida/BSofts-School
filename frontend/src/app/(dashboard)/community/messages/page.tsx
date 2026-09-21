@@ -71,7 +71,7 @@ export default function CommunityMessagesPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode]);
+  }, []);
 
   useEffect(() => {
     fetchThreads();

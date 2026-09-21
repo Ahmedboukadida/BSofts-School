@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/select';
 import { Modal } from '@/components/ui/modal';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useTranslation } from '@/components/providers/i18n-provider';
-import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
+import { useToast, showApiErrorToast } from '@/components/ui/toast';
 import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';

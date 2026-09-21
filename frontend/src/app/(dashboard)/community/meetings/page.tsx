@@ -75,7 +75,7 @@ export default function CommunityMeetingsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode]);
+  }, []);
 
   useEffect(() => {
     fetchMeetings();

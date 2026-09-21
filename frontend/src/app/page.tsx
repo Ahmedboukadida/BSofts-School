@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   School, Check, ArrowRight, GraduationCap, Users, BookOpen, BarChart3,
@@ -244,10 +245,13 @@ export default function LandingPage() {
                 {/* Main 3D Showcase Card */}
                 <div className="relative rounded-3xl overflow-hidden border border-[#E5E5E5] bg-white shadow-premium-xl group">
                   <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#242F40]">
-                    <img
+                    <Image
                       src="/images/lms-hero-3d.jpg"
                       alt="BSofts School 3D LMS Platform"
-                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
+                      fill
+                      priority
+                      sizes="(max-width: 1024px) 100vw, 512px"
+                      className="object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
 
                     {/* Top Header Pill */}
@@ -350,10 +354,12 @@ export default function LandingPage() {
                 <div className="relative bg-white rounded-3xl border border-[#E5E5E5] overflow-hidden shadow-premium hover:shadow-premium-xl transition-all duration-500 hover:-translate-y-1 flex flex-col h-full">
                   {/* Feature Image Header */}
                   <div className="relative h-52 w-full overflow-hidden bg-[#242F40]">
-                    <img
+                    <Image
                       src={feature.image}
                       alt={t(feature.titleKey)}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                      className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
                     />
 
                     {/* Badge & Category */}

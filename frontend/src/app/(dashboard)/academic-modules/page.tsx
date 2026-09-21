@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
-import { useToast, showToast, showApiErrorToast } from '@/components/ui/toast';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import type { MatiereItem, AcademicModuleItem } from '@/types';
 

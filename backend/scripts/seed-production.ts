@@ -300,7 +300,6 @@ async function seedProduction() {
       create: {
         establishmentId: establishment.id,
         name: 'Année Scolaire 2025-2026',
-        code: '2025-2026',
         startDate: new Date('2025-09-15'),
         endDate: new Date('2026-06-30'),
         isCurrent: true,

@@ -60,7 +60,7 @@ async function checkNeonStatus() {
     console.log(`📌 Public Tables in Neon: ${tables.length}`);
     if (tables.length > 0) {
       console.log(`   Sample tables: ${tables.slice(0, 10).join(', ')}${tables.length > 10 ? '...' : ''}`);
-      for (const t of ['User', 'Role', 'SaaSModule', 'SaaSPermission', 'SaaSPlan', 'ClassLevel']) {
+      for (const t of ['User', 'Tenant', 'Establishment', 'AcademicYear', 'DynamicEnum', 'Role', 'SaaSModule', 'SaaSPermission', 'SaaSPlan', 'ClassLevel']) {
         if (tables.includes(t)) {
           const countRes = await client.query(`SELECT COUNT(*) FROM "${t}";`);
           console.log(`   📊 ${t}: ${countRes.rows[0].count} rows`);

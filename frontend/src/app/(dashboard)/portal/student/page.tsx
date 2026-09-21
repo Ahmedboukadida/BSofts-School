@@ -11,9 +11,9 @@ import {
   TrendingUp,
   Printer,
   Sparkles,
-  School,
   Filter,
   RefreshCw,
+  School,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -21,6 +21,78 @@ import { useTranslation } from '@/components/providers/i18n-provider';
 import { useAuthStore } from '@/store/auth-store';
 import api from '@/lib/api';
 import type { TimetableSlot } from '@/types';
+
+interface StudentNote {
+  id: string;
+  value?: number;
+  coefficient?: number;
+  continuousScore?: number;
+  examScore?: number;
+  average?: number;
+  comment?: string;
+  appreciation?: string;
+  matiere?: { name: string } | string;
+  period?: { name?: string; type?: string };
+}
+
+interface StudentBulletin {
+  id?: string;
+  averageScore?: number | string;
+  rank?: number | string;
+  comments?: string;
+  isPromoted?: boolean;
+  period?: { name?: string };
+}
+
+interface StudentAttendanceRecord {
+  id?: string;
+  status: string;
+  reason?: string;
+  markedAt?: string;
+  session?: {
+    date?: string;
+    matiere?: { name: string };
+  };
+}
+
+interface StudentSession {
+  id?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  topic?: string;
+  schedule?: { matiere?: { name: string } };
+  teacher?: { firstName: string; lastName: string };
+  room?: { name: string };
+}
+
+interface StudentExam {
+  id?: string;
+  title?: string;
+  startTime?: string;
+  matiere?: { name: string; coefficient?: number };
+}
+
+interface StudentProfile {
+  id?: string;
+  firstName?: string;
+  lastName?: string;
+  registrationNumber?: string;
+  establishment?: { name: string };
+  classAssignments?: Array<{
+    class?: { name: string };
+    academicYear?: { name: string };
+  }>;
+  notes?: StudentNote[];
+  bulletins?: StudentBulletin[];
+  attendances?: StudentAttendanceRecord[];
+}
+
+interface StudentPortalData {
+  student?: StudentProfile;
+  upcomingSessions?: StudentSession[];
+  upcomingExams?: StudentExam[];
+}
 
 export default function StudentPortalPage() {
   const { t } = useTranslation();
@@ -32,7 +104,7 @@ export default function StudentPortalPage() {
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('T2');
 
-  const [data, setData] = useState<{ student: any; upcomingSessions: any[]; upcomingExams: any[] } | null>(null);
+  const [data, setData] = useState<StudentPortalData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -42,8 +114,11 @@ export default function StudentPortalPage() {
       setError(null);
       const res = await api.get('/students/me');
       setData(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || 'Impossible de charger le dossier scolaire');
+    } catch (err: unknown) {
+      const message = err && typeof err === 'object' && 'response' in err
+        ? ((err as { response?: { data?: { message?: string } } }).response?.data?.message)
+        : 'Impossible de charger le dossier scolaire';
+      setError(message || 'Impossible de charger le dossier scolaire');
     } finally {
       setLoading(false);
     }
@@ -73,8 +148,8 @@ export default function StudentPortalPage() {
   };
 
   // Process live notes and averages
-  const allNotes: any[] = student?.notes || [];
-  const currentNotes = allNotes.filter((n: any) => {
+  const allNotes: StudentNote[] = student?.notes || [];
+  const currentNotes = allNotes.filter((n: StudentNote) => {
     const pName = n.period?.name || '';
     const pType = n.period?.type || '';
     if (selectedPeriod === 'T1') return pName.includes('1') || pType.includes('1') || pName.includes('T1');
@@ -84,11 +159,11 @@ export default function StudentPortalPage() {
   });
   const displayNotes = currentNotes.length > 0 ? currentNotes : allNotes;
 
-  const totalCoef = displayNotes.reduce((acc: number, curr: any) => acc + Number(curr.coefficient || 1), 0);
-  const totalWeighted = displayNotes.reduce((acc: number, curr: any) => acc + (Number(curr.value || 0) * Number(curr.coefficient || 1)), 0);
+  const totalCoef = displayNotes.reduce((acc: number, curr: StudentNote) => acc + Number(curr.coefficient || 1), 0);
+  const totalWeighted = displayNotes.reduce((acc: number, curr: StudentNote) => acc + (Number(curr.value || 0) * Number(curr.coefficient || 1)), 0);
   const calculatedAverage = totalCoef > 0 ? (totalWeighted / totalCoef).toFixed(2) : '0.00';
 
-  const bulletin = student?.bulletins?.find((b: any) => {
+  const bulletin = student?.bulletins?.find((b: StudentBulletin) => {
     const pName = b.period?.name || '';
     return pName.includes(selectedPeriod);
   }) || student?.bulletins?.[0];
@@ -105,17 +180,17 @@ export default function StudentPortalPage() {
   }
 
   // Attendance statistics
-  const attendances: any[] = student?.attendances || [];
+  const attendances: StudentAttendanceRecord[] = student?.attendances || [];
   const totalAttendances = attendances.length;
-  const absencesCount = attendances.filter((a: any) => a.status === 'ABSENT').length;
-  const presentCount = attendances.filter((a: any) => a.status === 'PRESENT').length;
+  const absencesCount = attendances.filter((a: StudentAttendanceRecord) => a.status === 'ABSENT').length;
+  const presentCount = attendances.filter((a: StudentAttendanceRecord) => a.status === 'PRESENT').length;
   const attendanceRate = totalAttendances > 0 ? ((presentCount / totalAttendances) * 100).toFixed(1) : '100.0';
   studentInfo.attendanceRate = Number(attendanceRate);
   studentInfo.absencesCount = absencesCount;
 
   // Live Timetable
-  const rawSessions: any[] = data?.upcomingSessions || [];
-  const timetable: TimetableSlot[] = rawSessions.map((s: any, idx: number) => {
+  const rawSessions: StudentSession[] = data?.upcomingSessions || [];
+  const timetable: TimetableSlot[] = rawSessions.map((s: StudentSession, idx: number) => {
     const d = new Date(s.date);
     const dayNames = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
     const dayName = dayNames[d.getDay()] || 'Lundi';
@@ -138,27 +213,33 @@ export default function StudentPortalPage() {
   });
 
   // Live Upcoming Exams
-  const rawExams: any[] = data?.upcomingExams || [];
-  const upcomingExams = rawExams.map((e: any, idx: number) => {
-    const d = e.startTime ? new Date(e.startTime) : new Date();
+  const rawExams: StudentExam[] = data?.upcomingExams || [];
+  const upcomingExams = rawExams.map((e: StudentExam, idx: number) => {
+    const d = e.startTime ? new Date(e.startTime) : new Date(0);
     return {
       id: e.id || `exam-${idx}`,
       title: e.title || (e.matiere ? `Examen - ${e.matiere.name}` : 'Examen planifié'),
-      date: d.toLocaleDateString('fr-TN', { day: '2-digit', month: 'long', year: 'numeric' }),
-      time: d.toLocaleTimeString('fr-TN', { hour: '2-digit', minute: '2-digit' }),
+      date: e.startTime ? d.toLocaleDateString('fr-TN', { day: '2-digit', month: 'long', year: 'numeric' }) : '-',
+      time: e.startTime ? d.toLocaleTimeString('fr-TN', { hour: '2-digit', minute: '2-digit' }) : '-',
       room: 'Salle d’examen',
       coefficient: Number(e.matiere?.coefficient || 1),
     };
   });
 
-  // Live Attendance History
-  const attendanceHistory = attendances.slice(0, 15).map((a: any, idx: number) => ({
-    id: a.id || `att-${idx}`,
-    date: new Date(a.markedAt || a.session?.date || Date.now()).toLocaleDateString('fr-TN', { day: '2-digit', month: 'long', year: 'numeric' }),
-    subject: a.session?.matiere?.name || 'Séance pédagogique',
-    status: a.status,
-    reason: a.reason || (a.status === 'PRESENT' ? 'Présent en cours' : a.status === 'EXCUSED' ? 'Absence justifiée' : 'Non justifiée'),
-  }));
+  // Live Attendance History (Purity-safe: no Date.now() during render)
+  const attendanceHistory = attendances.slice(0, 15).map((a: StudentAttendanceRecord, idx: number) => {
+    const rawDate = a.markedAt || a.session?.date;
+    const formattedDate = rawDate
+      ? new Date(rawDate).toLocaleDateString('fr-TN', { day: '2-digit', month: 'long', year: 'numeric' })
+      : '-';
+    return {
+      id: a.id || `att-${idx}`,
+      date: formattedDate,
+      subject: a.session?.matiere?.name || 'Séance pédagogique',
+      status: a.status,
+      reason: a.reason || (a.status === 'PRESENT' ? 'Présent en cours' : a.status === 'EXCUSED' ? 'Absence justifiée' : 'Non justifiée'),
+    };
+  });
 
   const tabs = [
     { id: 'schedule', label: t('portals.scheduleTab'), icon: Calendar },
@@ -328,11 +409,10 @@ export default function StudentPortalPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as 'schedule' | 'notes' | 'attendance' | 'exams')}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all whitespace-nowrap ${
-                isActive
-                  ? 'bg-primary text-white shadow-sm shadow-primary/20'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
-              }`}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all whitespace-nowrap ${isActive
+                ? 'bg-primary text-white shadow-sm shadow-primary/20'
+                : 'text-text-secondary hover:text-text-primary hover:bg-surface-hover'
+                }`}
             >
               <TabIcon className="w-4 h-4" />
               {tab.label}
@@ -474,9 +554,9 @@ export default function StudentPortalPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border/60">
-                  {displayNotes.map((n: any) => (
+                  {displayNotes.map((n: StudentNote) => (
                     <tr key={n.id} className="hover:bg-surface-hover/50 transition-colors">
-                      <td className="py-3.5 px-4 font-semibold text-text-primary">{n.matiere?.name || n.matiere || 'Matière'}</td>
+                      <td className="py-3.5 px-4 font-semibold text-text-primary">{(typeof n.matiere === 'object' && n.matiere !== null ? n.matiere.name : n.matiere) || 'Matière'}</td>
                       <td className="py-3.5 px-4 text-center text-text-secondary font-mono">{Number(n.coefficient || 1).toFixed(1)}</td>
                       <td className="py-3.5 px-4 text-center font-mono">{Number(n.continuousScore ?? (Number(n.value) * 0.95)).toFixed(2)}</td>
                       <td className="py-3.5 px-4 text-center font-mono">{Number(n.examScore ?? n.value).toFixed(2)}</td>
@@ -555,13 +635,12 @@ export default function StudentPortalPage() {
                 </div>
 
                 <span
-                  className={`text-xs px-2.5 py-1 rounded-full font-semibold ${
-                    item.status === 'PRESENT'
-                      ? 'bg-emerald-500/10 text-emerald-600'
-                      : item.status === 'ABSENT_JUSTIFIED'
+                  className={`text-xs px-2.5 py-1 rounded-full font-semibold ${item.status === 'PRESENT'
+                    ? 'bg-emerald-500/10 text-emerald-600'
+                    : item.status === 'ABSENT_JUSTIFIED'
                       ? 'bg-blue-500/10 text-blue-600'
                       : 'bg-amber-500/10 text-amber-600'
-                  }`}
+                    }`}
                 >
                   {item.status === 'PRESENT' ? t('attendance.markedPresent') : item.status === 'ABSENT_JUSTIFIED' ? t('portals.absenceJustification') : t('attendance.markedLate')}
                 </span>
