@@ -54,6 +54,13 @@ model SaaSPlan {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   modules       SaaSPlanModule[]
   features      SaaSPlanFeature[]
   subscriptions TenantSubscription[]
@@ -68,6 +75,13 @@ model SaaSModule {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   plans       SaaSPlanModule[]
   permissions SaaSPermission[]
 }
@@ -80,6 +94,13 @@ model SaaSPermission {
   code        String     @unique
   description String?
   createdAt   DateTime   @default(now())
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   rolePermissions RolePermission[]
 }
@@ -119,6 +140,13 @@ model TenantSubscription {
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@index([tenantId])
 }
 
@@ -152,6 +180,13 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   settings             TenantSettings?
   establishments       Establishment[]
   subscriptions        TenantSubscription[]
@@ -169,6 +204,13 @@ model TenantSettings {
   dateFormat String   @default("DD/MM/YYYY")
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 }
 
 model Establishment {
@@ -188,6 +230,13 @@ model Establishment {
   isActive  Boolean               @default(true)
   createdAt DateTime              @default(now())
   updatedAt DateTime              @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   configs             EstablishmentConfig[]
   academicYears       AcademicYear[]
@@ -254,6 +303,13 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   tenant                   Tenant?
   userRoles                UserRoleAssignment[]
   auditLogs                AuditLog[]
@@ -276,6 +332,13 @@ model Role {
   isSystem    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   permissions RolePermission[]
   userRoles   UserRoleAssignment[]
@@ -368,6 +431,13 @@ model EstablishmentConfig {
   enableAntiCheating      Boolean       @default(false)
   createdAt               DateTime      @default(now())
   updatedAt               DateTime      @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 }
 
 model GradingConfig {
@@ -384,6 +454,13 @@ model GradingConfig {
   isDefault       Boolean          @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   classes Class[]
 
@@ -405,6 +482,13 @@ model SmtpConfig {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@index([establishmentId])
 }
 
@@ -418,6 +502,13 @@ model NotificationConfig {
   paymentReminderDays Int           @default(7)
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 }
 
 model PaymentConfig {
@@ -434,6 +525,13 @@ model PaymentConfig {
   blockAccessOnLate  Boolean         @default(false)
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   @@index([establishmentId])
 }
@@ -479,6 +577,13 @@ model AcademicPeriod {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   notes          Note[]
   exams          Exam[]
   sessions       Session[]
@@ -495,6 +600,13 @@ model ClassLevel {
   sortOrder   Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   classes Class[]
 }
@@ -516,6 +628,13 @@ model Class {
   isActive        Boolean        @default(true)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   schedules               ClassSchedule[]
   sessions                Session[]
@@ -556,6 +675,13 @@ model AcademicModule {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   matieres         Matiere[]
   classAssignments ClassModuleAssignment[]
 
@@ -574,6 +700,13 @@ model Matiere {
   isActive    Boolean        @default(true)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   lessons         Lesson[]
   notes           Note[]
@@ -608,6 +741,13 @@ model Student {
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   classAssignments  StudentClassAssignment[]
   attendances       StudentAttendance[]
   notes             Note[]
@@ -636,6 +776,13 @@ model Parent {
   isActive        Boolean       @default(true)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   students StudentParent[]
   payments StudentPayment[]
@@ -691,6 +838,13 @@ model Teacher {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   contracts   TeacherContract[]
   attendances TeacherAttendance[]
   matieres    TeacherMatiere[]
@@ -730,6 +884,13 @@ model TeacherContract {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   payments TeacherPayment[]
 
   @@index([teacherId])
@@ -753,6 +914,13 @@ model Employee {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   contracts EmployeeContract[]
 
   @@index([establishmentId])
@@ -771,6 +939,13 @@ model EmployeeContract {
   description String?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   @@index([employeeId])
 }
@@ -805,6 +980,13 @@ model Room {
   isActive        Boolean       @default(true)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   equipment RoomEquipment[]
   sessions  Session[]
@@ -864,6 +1046,13 @@ model ClassSchedule {
   createdAt DateTime       @default(now())
   updatedAt DateTime       @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   sessions Session[]
 
   @@index([classId])
@@ -895,6 +1084,13 @@ model Session {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   attendances StudentAttendance[]
   lessons     Lesson[]
 
@@ -917,6 +1113,13 @@ model Holiday {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@index([establishmentId])
 }
 
@@ -937,6 +1140,12 @@ model Lesson {
   createdBy  String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  // Audit & Soft-Delete
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   @@index([sessionId])
   @@index([matiereId])
@@ -963,6 +1172,13 @@ model Note {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@unique([studentId, matiereId, periodId, examId])
   @@index([studentId])
   @@index([matiereId])
@@ -984,6 +1200,12 @@ model Bulletin {
   comments     String?
   generatedAt  DateTime       @default(now())
   generatedBy  String?
+
+  // Audit & Soft-Delete
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   @@unique([studentId, periodId, classId])
   @@index([studentId])
@@ -1048,6 +1270,12 @@ model Exam {
   createdBy       String?
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
+
+  // Audit & Soft-Delete
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   questions   ExamQuestion[]
   submissions ExamSubmission[]
@@ -1156,6 +1384,13 @@ model StudentAttendance {
   markedAt  DateTime         @default(now())
   createdAt DateTime         @default(now())
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@unique([studentId, sessionId])
   @@index([studentId])
   @@index([sessionId])
@@ -1174,6 +1409,13 @@ model TeacherAttendance {
   markedBy  String?
   createdAt DateTime         @default(now())
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@unique([teacherId, date])
   @@index([teacherId])
 }
@@ -1191,6 +1433,13 @@ model TeacherLeave {
   approvedAt DateTime?
   createdAt  DateTime    @default(now())
   updatedAt  DateTime    @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   @@index([teacherId])
 }
@@ -1257,6 +1506,13 @@ model PaymentPlan {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   payments StudentPayment[]
 
   @@index([establishmentId])
@@ -1286,6 +1542,12 @@ model StudentPayment {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
+  // Audit & Soft-Delete
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@index([studentId])
   @@index([parentId])
   @@index([planId])
@@ -1311,6 +1573,12 @@ model TeacherPayment {
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
+  // Audit & Soft-Delete
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@index([teacherId])
   @@index([contractId])
 }
@@ -1327,6 +1595,13 @@ model Caisse {
   isActive        Boolean       @default(true)
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   transactions FinancialTransaction[]
 
@@ -1346,6 +1621,13 @@ model FinancialTransaction {
   referenceType String?
   performedBy   String?
   createdAt     DateTime        @default(now())
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   @@index([caisseId])
   @@index([type])
@@ -1396,6 +1678,13 @@ model Conversation {
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   participants ConversationParticipant[]
   messages     Message[]
 }
@@ -1428,6 +1717,13 @@ model Message {
   isRead         Boolean      @default(false)
   createdAt      DateTime     @default(now())
 
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
+
   @@index([conversationId])
   @@index([senderId])
   @@index([receiverId])
@@ -1443,6 +1739,13 @@ model Notification {
   isRead    Boolean          @default(false)
   link      String?
   createdAt DateTime         @default(now())
+
+  // Audit & Soft-Delete
+  createdBy String?
+  updatedBy String?
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+  deletedBy String?
 
   @@index([userId])
 }
