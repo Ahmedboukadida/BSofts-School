@@ -105,6 +105,7 @@ async function bootstrap() {
     .addTag('Notifications', 'User notifications')
     .addTag('Audit Logs', 'System audit trail')
     .addTag('Reports', 'Report generation')
+    .addTag('Dynamic Enums', 'Dynamic configurable enum values per establishment')
     .addTag('Landing', 'Public landing page data (no auth)')
     .addBearerAuth(
       {

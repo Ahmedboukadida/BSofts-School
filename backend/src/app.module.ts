@@ -53,6 +53,7 @@ import { PlatformSettingsModule } from './platform-settings/platform-settings.mo
 import { UploadModule } from './upload/upload.module';
 import { MailModule } from './mail/mail.module';
 import { HomeworkModule } from './homework/homework.module';
+import { DynamicEnumsModule } from './dynamic-enums/dynamic-enums.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -122,6 +123,7 @@ import {
     UploadModule,
     MailModule,
     HomeworkModule,
+    DynamicEnumsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       global: true,

@@ -10,6 +10,9 @@ import {
   RotateCcw,
   Building,
   CheckCircle2,
+  Mail,
+  Send,
+  AlertCircle,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -52,6 +55,21 @@ export default function SaaSPlatformSettingsPage() {
     enforceTwoFactorAdmin: true,
   });
 
+  // SMTP Configuration State
+  const [smtpConfig, setSmtpConfig] = useState({
+    host: '',
+    port: 587,
+    user: '',
+    password: '',
+    fromName: 'BSofts School',
+    fromEmail: '',
+    isSecure: false,
+    isDefault: true,
+  });
+  const [testEmail, setTestEmail] = useState('');
+  const [isTestingSmtp, setIsTestingSmtp] = useState(false);
+  const [smtpStatus, setSmtpStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   useEffect(() => {
     api.get('/saas-settings')
       .then((res) => {
@@ -60,7 +78,59 @@ export default function SaaSPlatformSettingsPage() {
         }
       })
       .catch(() => {});
+
+    api.get('/mail/config')
+      .then((res) => {
+        if (res.data) {
+          setSmtpConfig({
+            host: res.data.host || '',
+            port: res.data.port || 587,
+            user: res.data.user || '',
+            password: res.data.password || '',
+            fromName: res.data.fromName || 'BSofts School',
+            fromEmail: res.data.fromEmail || '',
+            isSecure: Boolean(res.data.isSecure),
+            isDefault: true,
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSaveSmtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setSmtpStatus(null);
+    try {
+      await api.post('/mail/config', smtpConfig);
+      setSmtpStatus({ type: 'success', message: 'Configuration SMTP enregistrée avec succès dans la base de données.' });
+    } catch (err: any) {
+      setSmtpStatus({ type: 'error', message: err?.response?.data?.message || 'Erreur lors de la sauvegarde SMTP.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestSmtp = async () => {
+    if (!testEmail) {
+      setSmtpStatus({ type: 'error', message: 'Veuillez renseigner un email de test.' });
+      return;
+    }
+    setIsTestingSmtp(true);
+    setSmtpStatus(null);
+    try {
+      const res = await api.post('/mail/test', { testEmail });
+      if (res.data?.success) {
+        setSmtpStatus({ type: 'success', message: `Email de test envoyé avec succès à ${testEmail} !` });
+      } else {
+        setSmtpStatus({ type: 'error', message: res.data?.error || 'Échec de l’envoi de test.' });
+      }
+    } catch (err: any) {
+      setSmtpStatus({ type: 'error', message: err?.response?.data?.message || 'Erreur de connexion SMTP.' });
+    } finally {
+      setIsTestingSmtp(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,6 +459,134 @@ export default function SaaSPlatformSettingsPage() {
                 </span>
               </div>
             </label>
+          </div>
+        </Card>
+
+        {/* Section 5: Configuration SMTP & Serveur Mail */}
+        <Card className="p-6 border border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-border pb-3">
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <Mail className="w-5 h-5 text-sky-600" />
+              Serveur de Messagerie SMTP (Emails Transactionnels & Notifications)
+            </h2>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSaveSmtp}
+              isLoading={isLoading}
+            >
+              <Save className="w-4 h-4 mr-1.5" />
+              Sauvegarder SMTP
+            </Button>
+          </div>
+
+          <p className="text-xs text-text-secondary mb-4">
+            Ces paramètres sont enregistrés dans la table <code className="font-mono text-brand">SmtpConfig</code> et utilisés dynamiquement pour l’envoi des alertes d’absence, bulletins de paie, reçus de scolarité et réinitialisations de mot de passe.
+          </p>
+
+          {smtpStatus && (
+            <div
+              className={`p-3.5 rounded-xl border mb-4 flex items-center gap-2 text-xs font-semibold ${
+                smtpStatus.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-200 text-emerald-700'
+                  : 'bg-rose-500/10 border-rose-200 text-rose-700'
+              }`}
+            >
+              {smtpStatus.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span>{smtpStatus.message}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <Input
+              label="Hôte SMTP (Host) *"
+              placeholder="smtp.gmail.com ou smtp.mailtrap.io"
+              value={smtpConfig.host}
+              onChange={(e) => setSmtpConfig({ ...smtpConfig, host: e.target.value })}
+            />
+            <Input
+              label="Port SMTP *"
+              type="number"
+              placeholder="587 ou 465"
+              value={smtpConfig.port}
+              onChange={(e) => setSmtpConfig({ ...smtpConfig, port: Number(e.target.value) })}
+            />
+            <div className="flex flex-col justify-end">
+              <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface border border-border cursor-pointer h-[42px]">
+                <input
+                  type="checkbox"
+                  checked={smtpConfig.isSecure}
+                  onChange={(e) => setSmtpConfig({ ...smtpConfig, isSecure: e.target.checked })}
+                  className="rounded text-brand focus:ring-brand w-4 h-4"
+                />
+                <span className="text-xs font-bold text-text-primary">
+                  Activer SSL / TLS Sécurisé (Port 465)
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <Input
+              label="Utilisateur SMTP (Username / Email) *"
+              placeholder="contact@bsofts.tn"
+              value={smtpConfig.user}
+              onChange={(e) => setSmtpConfig({ ...smtpConfig, user: e.target.value })}
+            />
+            <Input
+              label="Mot de Passe SMTP (App Password) *"
+              type="password"
+              placeholder="••••••••••••"
+              value={smtpConfig.password}
+              onChange={(e) => setSmtpConfig({ ...smtpConfig, password: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+            <Input
+              label="Nom de l'Expéditeur (From Name)"
+              placeholder="École Pilote BSofts"
+              value={smtpConfig.fromName}
+              onChange={(e) => setSmtpConfig({ ...smtpConfig, fromName: e.target.value })}
+            />
+            <Input
+              label="Email de l'Expéditeur (From Email)"
+              placeholder="no-reply@bsofts-school.com"
+              value={smtpConfig.fromEmail}
+              onChange={(e) => setSmtpConfig({ ...smtpConfig, fromEmail: e.target.value })}
+            />
+          </div>
+
+          {/* Test de Connexion SMTP */}
+          <div className="p-4 rounded-xl bg-surface border border-border flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            <div className="flex-1">
+              <span className="text-xs font-bold text-text-primary block">Tester l'Envoi SMTP en Temps Réel</span>
+              <span className="text-[11px] text-text-secondary">
+                Envoie un email de diagnostic immédiat pour valider la délivrabilité.
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="email"
+                placeholder="Votre email de test"
+                value={testEmail}
+                onChange={(e) => setTestEmail(e.target.value)}
+                className="px-3 py-2 text-xs rounded-xl bg-surface-elevated border border-border font-medium w-52 outline-none focus:border-brand"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleTestSmtp}
+                isLoading={isTestingSmtp}
+              >
+                <Send className="w-3.5 h-3.5 mr-1.5" />
+                Tester
+              </Button>
+            </div>
           </div>
         </Card>
       </form>
