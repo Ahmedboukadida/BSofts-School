@@ -13,6 +13,7 @@ import {
   Mail,
   Send,
   AlertCircle,
+  Video,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,6 +71,16 @@ export default function SaaSPlatformSettingsPage() {
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
   const [smtpStatus, setSmtpStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // LiveKit Configuration State
+  const [livekitConfig, setLivekitConfig] = useState({
+    url: 'wss://bsofts-yid6ey9o.livekit.cloud',
+    apiKey: 'APIusw2GoZsh792',
+    apiSecret: 'mlPDCxP4fayL3O0ZHpHKQxCl1PYnMfjrdr1R49nfxW3A',
+    tokenTtlMinutes: 240,
+  });
+  const [isTestingLivekit, setIsTestingLivekit] = useState(false);
+  const [livekitStatus, setLivekitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   useEffect(() => {
     api.get('/saas-settings')
       .then((res) => {
@@ -91,6 +102,19 @@ export default function SaaSPlatformSettingsPage() {
             fromEmail: res.data.fromEmail || '',
             isSecure: Boolean(res.data.isSecure),
             isDefault: true,
+          });
+        }
+      })
+      .catch(() => {});
+
+    api.get('/livekit/config')
+      .then((res) => {
+        if (res.data) {
+          setLivekitConfig({
+            url: res.data.url || 'wss://bsofts-yid6ey9o.livekit.cloud',
+            apiKey: res.data.apiKey || 'APIusw2GoZsh792',
+            apiSecret: res.data.apiSecret || '',
+            tokenTtlMinutes: res.data.tokenTtlMinutes || 240,
           });
         }
       })
@@ -129,6 +153,37 @@ export default function SaaSPlatformSettingsPage() {
       setSmtpStatus({ type: 'error', message: err?.response?.data?.message || 'Erreur de connexion SMTP.' });
     } finally {
       setIsTestingSmtp(false);
+    }
+  };
+
+  const handleSaveLivekit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setLivekitStatus(null);
+    try {
+      await api.post('/livekit/config', livekitConfig);
+      setLivekitStatus({ type: 'success', message: 'Paramètres LiveKit Cloud enregistrés avec succès dans la base de données.' });
+    } catch (err: any) {
+      setLivekitStatus({ type: 'error', message: err?.response?.data?.message || 'Erreur lors de la sauvegarde LiveKit.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestLivekit = async () => {
+    setIsTestingLivekit(true);
+    setLivekitStatus(null);
+    try {
+      const res = await api.post('/livekit/test-connection', {});
+      if (res.data?.success) {
+        setLivekitStatus({ type: 'success', message: res.data.message || 'Connexion LiveKit Cloud validée !' });
+      } else {
+        setLivekitStatus({ type: 'error', message: res.data?.message || 'Échec du test de connexion LiveKit.' });
+      }
+    } catch (err: any) {
+      setLivekitStatus({ type: 'error', message: err?.response?.data?.message || 'Erreur lors du test LiveKit.' });
+    } finally {
+      setIsTestingLivekit(false);
     }
   };
 
@@ -587,6 +642,98 @@ export default function SaaSPlatformSettingsPage() {
                 Tester
               </Button>
             </div>
+          </div>
+        </Card>
+
+        {/* Section 6: Configuration LiveKit Cloud (WebRTC & Réunions) */}
+        <Card className="p-6 border border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-border pb-3">
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <Video className="w-5 h-5 text-emerald-600" />
+              Serveur WebRTC LiveKit Cloud (Visioconférence & Réunions Dynamiques)
+            </h2>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSaveLivekit}
+              isLoading={isLoading}
+            >
+              <Save className="w-4 h-4 mr-1.5" />
+              Sauvegarder LiveKit
+            </Button>
+          </div>
+
+          <p className="text-xs text-text-secondary mb-4">
+            Paramètres dynamiques pour la génération de tokens d’accès et l’orchestration des salles de classe virtuelles et réunions des conseils d’école en temps réel.
+          </p>
+
+          {livekitStatus && (
+            <div
+              className={`p-3.5 rounded-xl border mb-4 flex items-center gap-2 text-xs font-semibold ${
+                livekitStatus.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-200 text-emerald-700'
+                  : 'bg-rose-500/10 border-rose-200 text-rose-700'
+              }`}
+            >
+              {livekitStatus.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span>{livekitStatus.message}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <Input
+              label="URL LiveKit Cloud (WebSocket wss://) *"
+              placeholder="wss://bsofts-yid6ey9o.livekit.cloud"
+              value={livekitConfig.url}
+              onChange={(e) => setLivekitConfig({ ...livekitConfig, url: e.target.value })}
+            />
+            <Input
+              label="Durée de Validité des Tokens (Minutes)"
+              type="number"
+              min={15}
+              max={1440}
+              value={livekitConfig.tokenTtlMinutes}
+              onChange={(e) => setLivekitConfig({ ...livekitConfig, tokenTtlMinutes: Number(e.target.value) })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+            <Input
+              label="Clé d’API LiveKit (API Key) *"
+              placeholder="APIusw2GoZsh792"
+              value={livekitConfig.apiKey}
+              onChange={(e) => setLivekitConfig({ ...livekitConfig, apiKey: e.target.value })}
+            />
+            <Input
+              label="Secret d’API LiveKit (API Secret) *"
+              type="password"
+              placeholder="••••••••••••••••"
+              value={livekitConfig.apiSecret}
+              onChange={(e) => setLivekitConfig({ ...livekitConfig, apiSecret: e.target.value })}
+            />
+          </div>
+
+          {/* Test de Connexion LiveKit */}
+          <div className="p-4 rounded-xl bg-surface border border-border flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex-1">
+              <span className="text-xs font-bold text-text-primary block">Diagnostic LiveKit Cloud</span>
+              <span className="text-[11px] text-text-secondary">
+                Vérifie la validité du point de terminaison WebSocket et la cohérence de la clé API.
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleTestLivekit}
+              isLoading={isTestingLivekit}
+            >
+              <Video className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
+              Tester la Connexion LiveKit
+            </Button>
           </div>
         </Card>
       </form>

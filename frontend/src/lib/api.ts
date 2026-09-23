@@ -74,7 +74,16 @@ const originalGet = api.get.bind(api);
     return inFlightGetRequests.get(key) as Promise<R>;
   }
 
+  if (inFlightGetRequests.size > 50) {
+    inFlightGetRequests.clear();
+  }
+
+  const timeoutId = setTimeout(() => {
+    inFlightGetRequests.delete(key);
+  }, 15000);
+
   const promise = originalGet<T, R, D>(url, config).finally(() => {
+    clearTimeout(timeoutId);
     inFlightGetRequests.delete(key);
   });
 

@@ -48,7 +48,7 @@ export default function HomeworkPage() {
   const fetchHomework = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/homework', { params: { limit: 100, isDeleted: isTrashMode } });
+      const res = await api.get('/homework', { params: { limit: 100, includeDeleted: isTrashMode } });
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: HomeworkItem[] = list.map((h: any) => ({

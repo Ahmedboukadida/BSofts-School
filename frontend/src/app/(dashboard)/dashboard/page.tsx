@@ -22,6 +22,7 @@ import { useTranslation } from '@/components/providers/i18n-provider';
 import { Spinner } from '@/components/ui/spinner';
 import { useAuthStore } from '@/store/auth-store';
 import { Card } from '@/components/ui/card';
+import { useEstablishmentStore } from '@/store/establishment-store';
 import type { Student, DashboardStats } from '@/types';
 
 function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -61,62 +62,80 @@ function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
+  const { currentEstablishmentId, establishments, currentAcademicYearId, academicYears } = useEstablishmentStore();
+
+  const currentEst = establishments.find((e) => e.id === currentEstablishmentId);
+  const currentYear = academicYears.find((y) => y.id === currentAcademicYearId) || academicYears.find((y) => y.isCurrent);
+
   const [stats, setStats] = useState<DashboardStats>({
-    students: 642,
-    teachers: 48,
-    classes: 24,
-    revenueTND: 184500,
-    pendingTND: 32600,
-    attendanceRate: 96.4,
+    students: 0,
+    teachers: 0,
+    classes: 0,
+    revenueTND: 0,
+    pendingTND: 0,
+    attendanceRate: 100,
   });
   const [recentStudents, setRecentStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoading(true);
+
     const loadData = async () => {
       try {
-        const [studentsRes, teachersRes, classesRes, paymentsRes, recentStudentsRes] = await Promise.all([
-          api.get('/students?limit=1').catch(() => ({ data: { meta: { total: 642 } } })),
-          api.get('/teachers?limit=1').catch(() => ({ data: { meta: { total: 48 } } })),
-          api.get('/classes?limit=1').catch(() => ({ data: { meta: { total: 24 } } })),
-          api.get('/student-payments?limit=200').catch(() => ({ data: { data: [] } })),
-          api.get('/students?limit=5&sortBy=createdAt&sortOrder=desc').catch(() => ({ data: { data: [] } })),
-        ]);
+        const params: Record<string, string> = {};
+        if (currentEstablishmentId && currentEstablishmentId !== 'ALL' && currentEstablishmentId !== 'all') {
+          params.establishmentId = currentEstablishmentId;
+        }
+
+        const statsRes = await api.get('/reports/stats', { params }).catch(async () => {
+          // Fallback to individual endpoints if /reports/stats endpoint is unavailable
+          const [sRes, tRes, cRes, pRes] = await Promise.all([
+            api.get('/students?limit=1', { params }).catch(() => ({ data: { meta: { total: 0 } } })),
+            api.get('/teachers?limit=1', { params }).catch(() => ({ data: { meta: { total: 0 } } })),
+            api.get('/classes?limit=1', { params }).catch(() => ({ data: { meta: { total: 0 } } })),
+            api.get('/student-payments?limit=100', { params }).catch(() => ({ data: { data: [] } })),
+          ]);
+          const payments = pRes.data?.data || [];
+          const paid = payments.filter((p: any) => p.status === 'PAID').reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+          const pending = payments.filter((p: any) => p.status === 'PENDING').reduce((sum: number, p: any) => sum + Number(p.amount || 0), 0);
+          return {
+            data: {
+              students: sRes.data?.meta?.total || 0,
+              teachers: tRes.data?.meta?.total || 0,
+              classes: cRes.data?.meta?.total || 0,
+              revenueTND: paid,
+              pendingTND: pending,
+              attendanceRate: 100,
+              recentStudents: [],
+            },
+          };
+        });
 
         if (!isMounted) return;
 
-        const paymentsData = paymentsRes.data?.data || [];
-        const liveRevenue = paymentsData
-          .filter((p: { status: string; amount: number }) => p.status === 'PAID')
-          .reduce((sum: number, p: { amount: number }) => sum + Number(p.amount || 0), 0);
-
+        const data = statsRes.data || {};
         setStats({
-          students: studentsRes.data?.meta?.total || 642,
-          teachers: teachersRes.data?.meta?.total || 48,
-          classes: classesRes.data?.meta?.total || 24,
-          revenueTND: liveRevenue > 0 ? liveRevenue : 184500,
-          pendingTND: 32600,
-          attendanceRate: 96.4,
+          students: Number(data.students || 0),
+          teachers: Number(data.teachers || 0),
+          classes: Number(data.classes || 0),
+          revenueTND: Number(data.revenueTND || 0),
+          pendingTND: Number(data.pendingTND || 0),
+          attendanceRate: Number(data.attendanceRate || 100),
         });
 
-        const studentsRaw = Array.isArray(recentStudentsRes.data)
-          ? recentStudentsRes.data
-          : recentStudentsRes.data?.data || [];
-
-        if (studentsRaw.length > 0) {
-          setRecentStudents(studentsRaw);
+        if (Array.isArray(data.recentStudents) && data.recentStudents.length > 0) {
+          setRecentStudents(data.recentStudents);
         } else {
-          setRecentStudents([
-            { id: 'st-1', firstName: 'Amine', lastName: 'Trabelsi', registrationNumber: 'ELEV-2024-001', className: '4-MATH (Bac)', createdAt: '2026-09-14T08:00:00Z' },
-            { id: 'st-2', firstName: 'Sarra', lastName: 'Ben Ammar', registrationNumber: 'ELEV-2024-042', className: '4-SC-EXP (Bac)', createdAt: '2026-09-13T10:30:00Z' },
-            { id: 'st-3', firstName: 'Yassine', lastName: 'Gharbi', registrationNumber: 'ELEV-2024-089', className: '3-INFO', createdAt: '2026-09-12T09:15:00Z' },
-            { id: 'st-4', firstName: 'Nour', lastName: 'Mejri', registrationNumber: 'ELEV-2025-015', className: '3-MATH-A', createdAt: '2026-09-11T14:20:00Z' },
-            { id: 'st-5', firstName: 'Kais', lastName: 'Bouazizi', registrationNumber: 'ELEV-2025-088', className: '2-SC-1', createdAt: '2026-09-10T11:00:00Z' },
-          ]);
+          const recRes = await api.get('/students?limit=5&sortBy=createdAt&sortOrder=desc', { params }).catch(() => ({ data: { data: [] } }));
+          const recData = Array.isArray(recRes.data) ? recRes.data : recRes.data?.data || [];
+          if (isMounted) {
+            setRecentStudents(recData);
+          }
         }
       } catch {
-        // Handled
+        // Handled cleanly with zero fake data
       } finally {
         if (isMounted) setIsLoading(false);
       }
@@ -126,7 +145,7 @@ export default function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [currentEstablishmentId]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';
@@ -144,13 +163,13 @@ export default function DashboardPage() {
         
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 backdrop-blur-md text-white border border-white/20">
                 <School className="w-3.5 h-3.5" />
-                Lycée Pilote Bourguiba
+                {currentEst?.name || 'Établissement Actif'}
               </span>
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
-                Année Scolaire 2025 / 2026
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-[#CCA43B]/20 text-[#CCA43B] border border-[#CCA43B]/30">
+                Année Scolaire {currentYear?.name || '2024 / 2025'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">

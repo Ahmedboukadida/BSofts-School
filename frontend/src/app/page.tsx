@@ -47,9 +47,10 @@ const features = [
 ];
 
 const fallbackPlans = [
-  { nameKey: 'landing.pricing.free', price: '0', intervalKey: 'landing.pricing.monthly', featureKeys: ['landing.pricing.feature1', 'landing.pricing.feature2', 'landing.pricing.feature3', 'landing.pricing.feature4'], popular: false },
-  { nameKey: 'landing.pricing.basic', price: '4,900', intervalKey: 'landing.pricing.monthly', featureKeys: ['landing.pricing.feature5', 'landing.pricing.feature6', 'landing.pricing.feature7', 'landing.pricing.feature8', 'landing.pricing.feature9'], popular: true },
-  { nameKey: 'landing.pricing.premium', price: '19,900', intervalKey: 'landing.pricing.monthly', featureKeys: ['landing.pricing.feature10', 'landing.pricing.feature11', 'landing.pricing.feature12', 'landing.pricing.feature13', 'landing.pricing.feature14', 'landing.pricing.feature15'], popular: false },
+  { nameKey: 'landing.pricing.free', planCode: 'free', price: '0', currency: 'DT', intervalKey: 'landing.pricing.monthly', featureKeys: ['landing.pricing.feature1', 'landing.pricing.feature2', 'landing.pricing.feature3', 'landing.pricing.feature4'], popular: false },
+  { nameKey: 'landing.pricing.basic', planCode: 'basic', price: '50', currency: 'DT', intervalKey: 'landing.pricing.monthly', featureKeys: ['landing.pricing.feature5', 'landing.pricing.feature6', 'landing.pricing.feature7', 'landing.pricing.feature8', 'landing.pricing.feature9'], popular: true },
+  { nameKey: 'landing.pricing.premium', planCode: 'premium', price: '150', currency: 'DT', intervalKey: 'landing.pricing.monthly', featureKeys: ['landing.pricing.feature10', 'landing.pricing.feature11', 'landing.pricing.feature12', 'landing.pricing.feature13', 'landing.pricing.feature14', 'landing.pricing.feature15'], popular: false },
+  { nameKey: 'landing.pricing.enterprise', planCode: 'enterprise', price: '500', currency: 'DT', intervalKey: 'landing.pricing.yearly', featureKeys: ['landing.pricing.feature16', 'landing.pricing.feature17', 'landing.pricing.feature18', 'landing.pricing.feature19', 'landing.pricing.feature20'], popular: false },
 ];
 
 const testimonials = [
@@ -108,16 +109,46 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', h);
   }, []);
 
+  const mapPlanMetadata = (name?: string, index: number = 0) => {
+    const n = (name || '').toLowerCase();
+    if (n.includes('free') || n.includes('gratuit')) {
+      return { nameKey: 'landing.pricing.free', planCode: 'free', defaultFeatures: fallbackPlans[0].featureKeys };
+    }
+    if (n.includes('basic') || n.includes('basique') || n.includes('starter')) {
+      return { nameKey: 'landing.pricing.basic', planCode: 'basic', defaultFeatures: fallbackPlans[1].featureKeys };
+    }
+    if (n.includes('prem') || n.includes('pro')) {
+      return { nameKey: 'landing.pricing.premium', planCode: 'premium', defaultFeatures: fallbackPlans[2].featureKeys };
+    }
+    if (n.includes('enter') || n.includes('entrep')) {
+      return { nameKey: 'landing.pricing.enterprise', planCode: 'enterprise', defaultFeatures: fallbackPlans[3].featureKeys };
+    }
+    const fallback = fallbackPlans[index] || fallbackPlans[1];
+    return { nameKey: fallback.nameKey, planCode: fallback.planCode, defaultFeatures: fallback.featureKeys };
+  };
+
   const fetchPlans = useCallback(async () => {
     try {
       const res = await api.get('/landing/plans');
       const data = res.data;
-      const activePlans = (Array.isArray(data) ? data : data.data || []).filter((p: { isActive?: boolean }) => p.isActive);
-      if (activePlans.length > 0) setPlans(activePlans.map((p: { name?: string; price?: number; interval?: string }, i: number) => ({
-        nameKey: p.name || fallbackPlans[i]?.nameKey || '', price: String(p.price ?? fallbackPlans[i]?.price ?? '0'),
-        intervalKey: p.interval || fallbackPlans[i]?.intervalKey || 'landing.pricing.monthly',
-        featureKeys: fallbackPlans[i]?.featureKeys || [], popular: i === 1,
-      })));
+      const activePlans = (Array.isArray(data) ? data : data.data || []).filter((p: { isActive?: boolean }) => p.isActive !== false);
+      if (activePlans.length > 0) {
+        setPlans(activePlans.map((p: any, i: number) => {
+          const { nameKey, planCode, defaultFeatures } = mapPlanMetadata(p.name, i);
+          const rawPrice = Number(p.price);
+          const formattedPrice = isNaN(rawPrice) ? String(p.price ?? fallbackPlans[i]?.price ?? '0') : String(rawPrice);
+          const intervalKey = (p.interval || '').toLowerCase().includes('year') ? 'landing.pricing.yearly' : 'landing.pricing.monthly';
+          return {
+            nameKey,
+            planCode,
+            price: formattedPrice,
+            currency: 'DT',
+            intervalKey,
+            featureKeys: defaultFeatures,
+            popular: planCode === 'basic',
+          };
+        }));
+      }
     } catch { /* keep fallback */ }
   }, []);
 
@@ -435,31 +466,34 @@ export default function LandingPage() {
             </div>
             <h2 className="text-4xl sm:text-5xl font-bold text-text-primary tracking-tight">{t('landing.pricing.subtitle')}</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto items-start">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto items-stretch">
             {plans.map((plan, i) => (
-              <div key={plan.nameKey} className={`relative reveal opacity-0 translate-y-12 transition-all duration-700 ${plan.popular ? 'md:-mt-4' : ''}`} style={{ transitionDelay: `${i * 100}ms` }}>
+              <div key={plan.nameKey} className={`relative reveal opacity-0 translate-y-12 transition-all duration-700 flex flex-col ${plan.popular ? 'lg:-mt-4' : ''}`} style={{ transitionDelay: `${i * 100}ms` }}>
                 {plan.popular && (
                   <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
                     <span className="bg-[#CCA43B] text-[#242F40] text-xs font-bold px-5 py-1.5 rounded-full shadow-lg shadow-[#CCA43B]/30 uppercase tracking-wider">{t('landing.pricing.popular')}</span>
                   </div>
                 )}
-                <div className={`rounded-3xl p-8 transition-all duration-500 border ${plan.popular ? 'bg-[#242F40] text-white shadow-premium-xl scale-[1.02] border-[#CCA43B]/40' : 'bg-white border-[#E5E5E5] card-premium'}`}>
-                  <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : 'text-text-primary'}`}>{t(plan.nameKey)}</h3>
-                  <div className="mt-5 flex items-baseline gap-1">
-                    <span className={`text-5xl font-bold font-feature-tabular ${plan.popular ? 'text-[#CCA43B]' : 'text-text-primary'}`}>{plan.price}</span>
-                    <span className={`text-sm ${plan.popular ? 'text-white/60' : 'text-text-tertiary'}`}>{t(plan.intervalKey)}</span>
+                <div className={`rounded-3xl p-6 sm:p-7 transition-all duration-500 border flex flex-col justify-between flex-1 ${plan.popular ? 'bg-[#242F40] text-white shadow-premium-xl scale-[1.02] border-[#CCA43B]/40' : 'bg-white border-[#E5E5E5] card-premium'}`}>
+                  <div>
+                    <h3 className={`text-xl font-bold ${plan.popular ? 'text-white' : 'text-text-primary'}`}>{t(plan.nameKey)}</h3>
+                    <div className="mt-5 flex items-baseline gap-1.5">
+                      <span className={`text-4xl sm:text-5xl font-bold font-feature-tabular ${plan.popular ? 'text-[#CCA43B]' : 'text-text-primary'}`}>{plan.price}</span>
+                      <span className={`text-base font-bold ${plan.popular ? 'text-[#CCA43B]' : 'text-text-primary'}`}>DT</span>
+                      <span className={`text-xs ${plan.popular ? 'text-white/70' : 'text-text-tertiary'}`}>{t(plan.intervalKey)}</span>
+                    </div>
+                    <ul className="mt-7 space-y-3">
+                      {plan.featureKeys.map((fk) => (
+                        <li key={fk} className="flex items-start gap-2.5">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${plan.popular ? 'bg-white/10' : 'bg-[#CCA43B]/15'}`}>
+                            <Check className={`w-3 h-3 ${plan.popular ? 'text-[#CCA43B]' : 'text-[#242F40]'}`} />
+                          </div>
+                          <span className={`text-xs leading-relaxed ${plan.popular ? 'text-white/80' : 'text-text-secondary'}`}>{t(fk)}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <ul className="mt-8 space-y-3.5">
-                    {plan.featureKeys.map((fk) => (
-                      <li key={fk} className="flex items-center gap-3">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${plan.popular ? 'bg-white/10' : 'bg-[#CCA43B]/15'}`}>
-                          <Check className={`w-3 h-3 ${plan.popular ? 'text-[#CCA43B]' : 'text-[#242F40]'}`} />
-                        </div>
-                        <span className={`text-sm ${plan.popular ? 'text-white/80' : 'text-text-secondary'}`}>{t(fk)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <Link href="/register" className="block mt-8">
+                  <Link href={`/register?plan=${plan.planCode}`} className="block mt-8">
                     <Button variant={plan.popular ? 'coral' : 'secondary'} className={`w-full h-12 rounded-xl font-semibold ${plan.popular ? 'bg-[#CCA43B] hover:bg-[#b89332] text-[#242F40] shadow-lg shadow-[#CCA43B]/25 font-bold' : 'glass hover:bg-white/80'}`}>
                       {t('landing.pricing.getStarted')}
                     </Button>

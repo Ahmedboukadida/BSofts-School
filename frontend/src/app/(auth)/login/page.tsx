@@ -112,64 +112,6 @@ export default function LoginPage() {
         </Button>
       </form>
 
-      {/* Quick Demo Credentials for Multi-Tenant Testing (Item 12) */}
-      <div className="mt-6 p-4 rounded-2xl bg-surface border border-border text-xs text-text-secondary space-y-2.5">
-        <div className="flex items-center justify-between">
-          <p className="font-semibold text-text-primary">{t('auth.login.demoTitle')}</p>
-          <span className="text-[10px] text-text-tertiary font-mono">2 Tenants • 6 Rôles</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => { setEmail('bsofts.contact@gmail.com'); setPassword('Ahmed123*'); }}
-            className="p-2 text-left bg-surface-elevated hover:bg-surface-hover rounded-xl border border-border transition-colors group"
-          >
-            <p className="font-bold text-coral group-hover:underline">👑 Super Admin</p>
-            <p className="text-[10px] text-text-tertiary truncate">bsofts.contact@gmail.com</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEmail('tenant1@bsofts.com'); setPassword('Admin@123'); }}
-            className="p-2 text-left bg-surface-elevated hover:bg-surface-hover rounded-xl border border-border transition-colors group"
-          >
-            <p className="font-bold text-brand group-hover:underline">🏢 Tenant 1 Admin</p>
-            <p className="text-[10px] text-text-tertiary truncate">tenant1@bsofts.com</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEmail('admin1@school.dz'); setPassword('Admin@123'); }}
-            className="p-2 text-left bg-surface-elevated hover:bg-surface-hover rounded-xl border border-border transition-colors group"
-          >
-            <p className="font-bold text-text-primary group-hover:underline">🏫 Admin École</p>
-            <p className="text-[10px] text-text-tertiary truncate">admin1@school.dz</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEmail('teacher1@school.dz'); setPassword('Admin@123'); }}
-            className="p-2 text-left bg-surface-elevated hover:bg-surface-hover rounded-xl border border-border transition-colors group"
-          >
-            <p className="font-bold text-indigo-600 group-hover:underline">👩‍🏫 Enseignant</p>
-            <p className="text-[10px] text-text-tertiary truncate">teacher1@school.dz</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEmail('parent1@school.dz'); setPassword('Admin@123'); }}
-            className="p-2 text-left bg-surface-elevated hover:bg-surface-hover rounded-xl border border-border transition-colors group"
-          >
-            <p className="font-bold text-emerald-600 group-hover:underline">👨‍👩‍👦 Parent</p>
-            <p className="text-[10px] text-text-tertiary truncate">parent1@school.dz</p>
-          </button>
-          <button
-            type="button"
-            onClick={() => { setEmail('student1@school.dz'); setPassword('Admin@123'); }}
-            className="p-2 text-left bg-surface-elevated hover:bg-surface-hover rounded-xl border border-border transition-colors group"
-          >
-            <p className="font-bold text-cyan-600 group-hover:underline">🎓 Étudiant</p>
-            <p className="text-[10px] text-text-tertiary truncate">student1@school.dz</p>
-          </button>
-        </div>
-      </div>
-
       <p className="mt-6 text-center text-sm text-text-secondary">
         {t('auth.login.noAccount')}{' '}
         <Link href="/register" className="text-brand hover:text-brand-hover font-semibold transition-colors duration-200">{t('auth.login.createOne')}</Link>

@@ -81,7 +81,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
         const response = await api.get('/auth/profile');
         const userData = response.data;
-        const establishmentId = userData.userRoles?.[0]?.establishmentId;
+        const savedEstId = typeof window !== 'undefined' ? localStorage.getItem('x-establishment-id') : null;
+        const hasAccessToSaved = userData.isRoot || userData.userRoles?.some((r: any) => r.establishmentId === savedEstId);
+        const establishmentId = (savedEstId && hasAccessToSaved)
+          ? savedEstId
+          : (userData.userRoles?.find((r: any) => r.establishmentId)?.establishmentId || userData.userRoles?.[0]?.establishmentId);
         set({ user: { ...userData, establishmentId }, isAuthenticated: true, isLoading: false });
         usePermissionsStore.getState().fetchPermissions(userData);
       } catch {

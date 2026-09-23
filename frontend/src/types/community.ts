@@ -40,19 +40,97 @@ export interface Notification {
   link?: string;
 }
 
+export type MeetingType = 'GENERAL' | 'PARENT_TEACHER' | 'STAFF' | 'DISCIPLINE' | 'PEDAGOGICAL' | 'BOARD' | 'CLASS_COUNCIL' | 'ADMINISTRATIVE';
+export type MeetingMode = 'IN_PERSON' | 'ONLINE' | 'HYBRID';
+export type MeetingStatus = 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type ParticipantRole = 'HOST' | 'MODERATOR' | 'PRESENTER' | 'ATTENDEE';
+export type ParticipantStatus = 'INVITED' | 'CONFIRMED' | 'ATTENDED' | 'DECLINED' | 'ABSENT';
+
+export interface MeetingParticipantItem {
+  id: string;
+  meetingId: string;
+  userId?: string;
+  name: string;
+  email: string;
+  role: ParticipantRole;
+  status: ParticipantStatus;
+  joinedAt?: string;
+  leftAt?: string;
+  token?: string;
+  handRaised?: boolean;
+  user?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    avatar?: string;
+  };
+}
+
+export interface MeetingVoteItem {
+  id: string;
+  pointId: string;
+  participantId: string;
+  value: 'YES' | 'NO' | 'ABSTAIN';
+  createdAt: string;
+}
+
+export interface MeetingPointItem {
+  id: string;
+  meetingId: string;
+  title: string;
+  description?: string;
+  status?: string;
+  sortOrder: number;
+  isVote: boolean;
+  votes?: MeetingVoteItem[];
+}
+
+export interface MeetingDocumentItem {
+  id: string;
+  meetingId: string;
+  title: string;
+  fileUrl: string;
+  fileType?: string;
+  sizeBytes?: number;
+  uploadedAt: string;
+}
+
 export interface MeetingItem extends BaseAuditItem {
   id: string;
-  title: string;
-  type: 'PARENT_TEACHER' | 'CLASS_COUNCIL' | 'PEDAGOGICAL' | 'ADMINISTRATIVE';
-  roomType: 'VIRTUAL' | 'PRESENTIAL';
-  locationOrUrl: string;
+  subject: string;
+  title?: string;
+  type: MeetingType;
   date: string;
   startTime: string;
-  endTime: string;
-  organizer: string;
-  participantsCount: number;
-  status: 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
-  agenda: string;
+  endTime?: string;
+  duration?: number;
+  mode: MeetingMode;
+  roomType?: 'VIRTUAL' | 'PRESENTIAL';
+  location: string;
+  locationOrUrl?: string;
+  description?: string;
+  agenda?: string;
+  establishmentId?: string;
+  createdById?: string;
+  organizer?: string;
+  participantsCount?: number;
+  status: MeetingStatus;
+  roomName?: string;
+  isOnline?: boolean;
+  summary?: string;
+  participants?: MeetingParticipantItem[];
+  points?: MeetingPointItem[];
+  documents?: MeetingDocumentItem[];
+  _count?: {
+    participants: number;
+    points: number;
+    documents: number;
+  };
+  establishment?: {
+    id: string;
+    name: string;
+    slug?: string;
+  };
 }
 
 export interface MessageThread extends BaseAuditItem {

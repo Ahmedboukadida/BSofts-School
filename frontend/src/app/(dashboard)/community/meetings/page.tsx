@@ -1,650 +1,983 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Video,
   Plus,
   Calendar,
   Users,
-  CheckCircle2,
   Clock,
   RotateCcw,
   Building2,
   ExternalLink,
   MapPin,
-  FileSpreadsheet,
+  Trash2,
+  Radio,
+  Vote,
+  FileText,
+  Copy,
+  Check,
+  ChevronRight,
+  Shield,
+  Search,
+  Filter,
+  AlertCircle,
+  Eye,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
 import api from '@/lib/api';
-import type { MeetingItem } from '@/types';
+import { useEstablishmentStore } from '@/store/establishment-store';
+import { useAuthStore } from '@/store/auth-store';
+import type { MeetingItem, MeetingType, MeetingMode, MeetingStatus } from '@/types';
+
+const MEETING_TYPE_LABELS: Record<string, string> = {
+  GENERAL: 'Assemblée Générale',
+  PARENT_TEACHER: 'Parents-Enseignants',
+  STAFF: 'Réunion du Personnel',
+  DISCIPLINE: 'Conseil de Discipline',
+  PEDAGOGICAL: 'Conseil Pédagogique',
+  BOARD: "Conseil d'Administration",
+  CLASS_COUNCIL: 'Conseil de Classe',
+  ADMINISTRATIVE: 'Réunion Administrative',
+};
+
+const MEETING_TYPE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  GENERAL: { bg: 'bg-[#242F40]/10', text: 'text-[#242F40]', border: 'border-[#242F40]/20' },
+  PARENT_TEACHER: { bg: 'bg-[#CCA43B]/10', text: 'text-[#CCA43B]', border: 'border-[#CCA43B]/30' },
+  STAFF: { bg: 'bg-[#363636]/10', text: 'text-[#363636]', border: 'border-[#363636]/20' },
+  DISCIPLINE: { bg: 'bg-red-500/10', text: 'text-red-600', border: 'border-red-500/20' },
+  PEDAGOGICAL: { bg: 'bg-blue-500/10', text: 'text-blue-600', border: 'border-blue-500/20' },
+  BOARD: { bg: 'bg-purple-500/10', text: 'text-purple-600', border: 'border-purple-500/20' },
+  CLASS_COUNCIL: { bg: 'bg-amber-500/10', text: 'text-amber-600', border: 'border-amber-500/20' },
+  ADMINISTRATIVE: { bg: 'bg-slate-500/10', text: 'text-slate-600', border: 'border-slate-500/20' },
+};
 
 export default function CommunityMeetingsPage() {
+  const router = useRouter();
+  const { currentEstablishmentId } = useEstablishmentStore();
+  const { user } = useAuthStore();
+
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isTrashMode, setIsTrashMode] = useState(false);
-  const [typeFilter, setTypeFilter] = useState('');
-  const [roomFilter, setRoomFilter] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [modeFilter, setModeFilter] = useState('ALL');
 
-  // Create Modal State (Extra Large Size 6xl)
+  // Create Modal State
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Detail Modal State
+  const [selectedMeeting, setSelectedMeeting] = useState<MeetingItem | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
+
+  // Form Data
   const [formData, setFormData] = useState({
-    title: '',
-    type: 'CLASS_COUNCIL' as 'PARENT_TEACHER' | 'CLASS_COUNCIL' | 'PEDAGOGICAL' | 'ADMINISTRATIVE',
-    roomType: 'VIRTUAL' as 'VIRTUAL' | 'PRESENTIAL',
-    locationOrUrl: 'https://meet.bsofts.tn/classe-4math',
+    subject: '',
+    type: 'PEDAGOGICAL' as MeetingType,
+    mode: 'ONLINE' as MeetingMode,
     date: new Date().toISOString().split('T')[0],
-    startTime: '16:00',
-    endTime: '18:00',
-    organizer: 'M. Ahmed Zitouni (Direction)',
-    participantsCount: 18,
-    agenda: 'Ordre du jour : Bilan trimestriel, assiduité et préparation aux examens de synthèse.',
+    startTime: '14:00',
+    endTime: '15:30',
+    duration: 90,
+    location: 'Visioconférence LiveKit HD',
+    description: '',
+    points: [{ title: 'Bilan pédagogique du trimestre', description: 'Évaluation des résultats et objectifs', isVote: false }],
+    participants: [{ name: '', email: '', role: 'ATTENDEE' }],
   });
 
   const fetchMeetings = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/community/meetings').catch(() => ({ data: { data: [] } }));
+      const params: any = { limit: 100 };
+      if (currentEstablishmentId && currentEstablishmentId !== 'ALL' && currentEstablishmentId !== 'all') {
+        params.establishmentId = currentEstablishmentId;
+      }
+      const res = await api.get('/meetings', { params }).catch(() => ({ data: { data: [] } }));
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
-      const mapped: MeetingItem[] = list.map((m: any) => ({
-        id: m.id || '',
-        title: m.title || 'Réunion',
-        type: (m.type as any) || 'PEDAGOGICAL',
-        roomType: (m.roomType as any) || 'PRESENTIAL',
-        locationOrUrl: m.locationOrUrl || 'Salle de réunion',
-        date: m.date || new Date().toISOString().split('T')[0],
-        startTime: m.startTime || '14:00',
-        endTime: m.endTime || '16:00',
-        organizer: m.organizer || 'Direction Pédagogique',
-        participantsCount: Number(m.participantsCount || 0),
-        status: (m.status as any) || 'SCHEDULED',
-        agenda: m.agenda || '',
-        createdAt: m.createdAt || new Date().toISOString(),
-        updatedAt: m.updatedAt || new Date().toISOString(),
-        isDeleted: Boolean(m.isDeleted),
-      }));
-      setMeetings(mapped);
+      setMeetings(list);
     } catch {
       setMeetings([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [currentEstablishmentId]);
 
   useEffect(() => {
     fetchMeetings();
   }, [fetchMeetings]);
 
   const openCreateModal = () => {
+    setFormError(null);
     setFormData({
-      title: '',
-      type: 'CLASS_COUNCIL',
-      roomType: 'VIRTUAL',
-      locationOrUrl: 'https://meet.bsofts.tn/visio-' + Math.floor(100 + Math.random() * 900),
+      subject: '',
+      type: 'PEDAGOGICAL',
+      mode: 'ONLINE',
       date: new Date().toISOString().split('T')[0],
-      startTime: '16:00',
-      endTime: '17:30',
-      organizer: 'Direction Pédagogique',
-      participantsCount: 20,
-      agenda: '',
+      startTime: '14:00',
+      endTime: '15:30',
+      duration: 90,
+      location: 'Visioconférence LiveKit HD',
+      description: '',
+      points: [{ title: "Point d'ordre du jour", description: '', isVote: false }],
+      participants: [{ name: '', email: '', role: 'ATTENDEE' }],
     });
     setIsFormModalOpen(true);
   };
 
+  const handleAddPoint = () => {
+    setFormData((prev) => ({
+      ...prev,
+      points: [...prev.points, { title: '', description: '', isVote: false }],
+    }));
+  };
+
+  const handleRemovePoint = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      points: prev.points.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleAddParticipant = () => {
+    setFormData((prev) => ({
+      ...prev,
+      participants: [...prev.participants, { name: '', email: '', role: 'ATTENDEE' }],
+    }));
+  };
+
+  const handleRemoveParticipant = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      participants: prev.participants.filter((_, i) => i !== index),
+    }));
+  };
+
   const handleCreateMeeting = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.subject.trim()) {
+      setFormError('Le titre de la réunion est obligatoire');
+      return;
+    }
+
     setIsSubmitting(true);
+    setFormError(null);
+
     try {
-      await api.post('/community/meetings', formData).catch(() => {});
-      const newMeeting: MeetingItem = {
-        id: `meet-${Date.now()}`,
-        ...formData,
-        status: 'SCHEDULED',
-        createdAt: new Date().toISOString(),
-        createdBy: 'u-root',
-        createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-        updatedAt: new Date().toISOString(),
-        isDeleted: false,
+      const payload: any = {
+        subject: formData.subject,
+        type: formData.type,
+        mode: formData.mode,
+        date: formData.date,
+        startTime: formData.startTime,
+        endTime: formData.endTime,
+        duration: Number(formData.duration) || 60,
+        location: formData.location,
+        description: formData.description,
+        establishmentId: currentEstablishmentId && currentEstablishmentId !== 'ALL' && currentEstablishmentId !== 'all'
+          ? currentEstablishmentId
+          : undefined,
+        points: formData.points.filter((p) => p.title.trim().length > 0),
+        participants: formData.participants.filter((p) => p.name.trim().length > 0 && p.email.trim().length > 0),
       };
-      setMeetings((prev) => [newMeeting, ...prev]);
+
+      const res = await api.post('/meetings', payload);
+      const created = res.data;
+      setMeetings((prev) => [created, ...prev]);
       setIsFormModalOpen(false);
+    } catch (err: any) {
+      setFormError(err.response?.data?.message || 'Erreur lors de la création de la réunion');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDelete = async (row: MeetingItem, permanent = false) => {
-    const isRoot = true;
-    const confirmMsg = permanent && isRoot
-      ? `ATTENTION: Suppression DÉFINITIVE de la réunion "${row.title}" ? Action irréversible.`
-      : `Annuler ou placer la réunion "${row.title}" dans la corbeille ?`;
-
-    if (!window.confirm(confirmMsg)) return;
-
+  const handleDeleteMeeting = async (meeting: MeetingItem) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir archiver la réunion "${meeting.subject || meeting.title}" ?`)) return;
     try {
-      await api.delete(`/community/meetings/${row.id}`, {
-        params: { permanent: permanent && isRoot },
-      }).catch(() => {});
-
-      if (permanent) {
-        setMeetings((prev) => prev.filter((m) => m.id !== row.id));
-      } else {
-        setMeetings((prev) =>
-          prev.map((m) =>
-            m.id === row.id
-              ? {
-                  ...m,
-                  isDeleted: true,
-                  deletedAt: new Date().toISOString(),
-                  deletedByName: 'Ahmed Zitouni (@root) [ROOT]',
-                }
-              : m
-          )
-        );
-      }
-    } catch {
-      // Handled
+      await api.delete(`/meetings/${meeting.id}`);
+      setMeetings((prev) => prev.filter((m) => m.id !== meeting.id));
+    } catch (err: any) {
+      alert(err.response?.data?.message || "Erreur lors de la suppression de la réunion");
     }
   };
 
-  const handleRestore = async (row: MeetingItem) => {
-    if (!window.confirm(`Restaurer la réunion "${row.title}" ?`)) return;
+  const openMeetingDetail = async (meeting: MeetingItem) => {
     try {
-      await api.post(`/community/meetings/${row.id}/restore`).catch(() => {});
-      setMeetings((prev) =>
-        prev.map((m) =>
-          m.id === row.id
-            ? { ...m, isDeleted: false, deletedAt: null, deletedByName: undefined }
-            : m
-        )
-      );
+      const res = await api.get(`/meetings/${meeting.id}`);
+      setSelectedMeeting(res.data);
     } catch {
-      // Handled
+      setSelectedMeeting(meeting);
     }
+    setIsDetailModalOpen(true);
   };
 
+  const copyMeetingLink = (id: string) => {
+    const url = `${window.location.origin}/community/meetings/${id}`;
+    navigator.clipboard.writeText(url);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
+  // Filters
   const filteredMeetings = meetings.filter((m) => {
-    if (!isTrashMode && m.isDeleted) return false;
-    if (isTrashMode && !m.isDeleted) return false;
-    if (typeFilter && m.type !== typeFilter) return false;
-    if (roomFilter && m.roomType !== roomFilter) return false;
+    const titleMatch = (m.subject || m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (m.description || m.agenda || '').toLowerCase().includes(searchQuery.toLowerCase());
+    if (!titleMatch) return false;
+    if (statusFilter !== 'ALL' && m.status !== statusFilter) return false;
+    if (typeFilter !== 'ALL' && m.type !== typeFilter) return false;
+    if (modeFilter !== 'ALL' && m.mode !== modeFilter) return false;
     return true;
   });
 
-  const columns: ColumnDef<MeetingItem>[] = [
-    {
-      key: 'title',
-      header: 'Intitulé de la Réunion & Ordre du Jour',
-      sortable: true,
-      render: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-brand/10 text-brand border border-brand/20 flex items-center justify-center shrink-0">
-            {row.roomType === 'VIRTUAL' ? <Video className="w-5 h-5 text-brand" /> : <Building2 className="w-5 h-5 text-purple-600" />}
-          </div>
-          <div>
-            <div className="font-semibold text-text-primary text-sm line-clamp-1">{row.title}</div>
-            <div className="text-xs text-text-tertiary line-clamp-1 mt-0.5">{row.agenda}</div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'dateTime',
-      header: 'Date & Horaires',
-      sortable: true,
-      render: (row) => (
-        <div>
-          <div className="text-xs font-semibold text-text-primary flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-brand" />
-            <span>{row.date}</span>
-          </div>
-          <div className="text-[11px] text-text-tertiary mt-0.5 flex items-center gap-1 font-mono">
-            <Clock className="w-3 h-3" />
-            <span>{row.startTime} - {row.endTime}</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'roomType',
-      header: 'Modalité & Lieu',
-      render: (row) => (
-        <div>
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-              row.roomType === 'VIRTUAL'
-                ? 'bg-blue-500/10 text-blue-600 border-blue-500/20'
-                : 'bg-purple-500/10 text-purple-600 border-purple-500/20'
-            }`}
-          >
-            {row.roomType === 'VIRTUAL' ? <Video className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-            {row.roomType === 'VIRTUAL' ? 'Visioconférence' : 'Présentiel'}
-          </span>
-          <div className="text-[11px] text-text-secondary mt-1 truncate max-w-[180px]">
-            {row.locationOrUrl}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'organizer',
-      header: 'Organisateur & Effectif',
-      render: (row) => (
-        <div>
-          <div className="text-xs font-medium text-text-primary truncate max-w-[160px]">{row.organizer}</div>
-          <div className="text-[11px] text-text-tertiary mt-0.5 flex items-center gap-1">
-            <Users className="w-3 h-3" />
-            <span>{row.participantsCount} participants</span>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      header: 'Statut',
-      sortable: true,
-      render: (row) => {
-        const badgeMap = {
-          SCHEDULED: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-          IN_PROGRESS: 'bg-amber-500/10 text-amber-600 border-amber-500/20 animate-pulse',
-          COMPLETED: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-          CANCELLED: 'bg-rose-500/10 text-rose-600 border-rose-500/20',
-        };
-        const labelMap = {
-          SCHEDULED: 'Planifiée',
-          IN_PROGRESS: 'En cours',
-          COMPLETED: 'Terminée',
-          CANCELLED: 'Annulée',
-        };
-        return (
-          <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeMap[row.status]}`}>
-            {labelMap[row.status]}
-          </span>
-        );
-      },
-    },
-  ];
-
-  const detailSections: DetailSection<MeetingItem>[] = [
-    {
-      title: 'Informations de la Séance',
-      render: (item) => (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-3 bg-surface rounded-xl border border-border">
-              <span className="text-xs text-text-tertiary block">Type de Réunion</span>
-              <span className="font-bold text-text-primary text-sm">{item.type}</span>
-              <span className="text-xs text-brand block mt-0.5 font-medium">{item.roomType}</span>
-            </div>
-            <div className="p-3 bg-surface rounded-xl border border-border">
-              <span className="text-xs text-text-tertiary block">Accès / Lieu</span>
-              <span className="font-semibold text-text-primary text-sm truncate block">{item.locationOrUrl}</span>
-              {item.roomType === 'VIRTUAL' && (
-                <a
-                  href={item.locationOrUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-0.5 font-medium"
-                >
-                  <ExternalLink className="w-3 h-3" />
-                  Rejoindre la visio
-                </a>
-              )}
-            </div>
-            <div className="p-3 bg-surface rounded-xl border border-border">
-              <span className="text-xs text-text-tertiary block">Date & Durée</span>
-              <span className="font-bold text-text-primary text-sm">{item.date}</span>
-              <span className="text-xs text-text-secondary block mt-0.5 font-mono">{item.startTime} à {item.endTime}</span>
-            </div>
-          </div>
-          <div className="p-4 bg-surface rounded-xl border border-border">
-            <span className="text-xs font-bold text-text-tertiary uppercase block mb-1">Ordre du Jour & Objectifs</span>
-            <p className="text-sm text-text-primary whitespace-pre-wrap">{item.agenda}</p>
-          </div>
-        </div>
-      ),
-    },
-    {
-      title: 'Traçabilité & Audit Trail',
-      render: (item) => (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-3 bg-surface rounded-xl border border-border">
-            <span className="text-xs text-text-tertiary block">Création</span>
-            <span className="font-medium text-text-primary">
-              {new Date(item.createdAt).toLocaleString('fr-FR')}
-            </span>
-            <span className="text-xs text-text-secondary block mt-1">
-              Par: {item.createdByName || item.createdBy}
-            </span>
-          </div>
-          <div className="p-3 bg-surface rounded-xl border border-border">
-            <span className="text-xs text-text-tertiary block">Dernière Modification</span>
-            <span className="font-medium text-text-primary">
-              {new Date(item.updatedAt).toLocaleString('fr-FR')}
-            </span>
-            <span className="text-xs text-text-secondary block mt-1">
-              Par: {item.updatedByName || item.updatedBy || 'Système'}
-            </span>
-          </div>
-        </div>
-      ),
-    },
-  ];
+  // KPI Counters
+  const totalCount = meetings.length;
+  const liveCount = meetings.filter((m) => m.status === 'IN_PROGRESS').length;
+  const scheduledCount = meetings.filter((m) => m.status === 'SCHEDULED').length;
+  const onlineCount = meetings.filter((m) => m.mode === 'ONLINE' || m.mode === 'HYBRID').length;
 
   return (
     <div className="space-y-6">
-      {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Top Banner & Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-[#FFFFFF] p-6 rounded-2xl border border-[#E5E5E5] shadow-xs">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-brand/10 text-brand">
-              <Video className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-xl bg-[#242F40] text-[#CCA43B] flex items-center justify-center font-bold">
+              <Video className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-text-primary">Réunions Virtuelles & Conseils</h1>
-              <p className="text-sm text-text-secondary">
-                Organisation des conseils de classe, réunions parents-professeurs et salons de visioconférence.
+              <h1 className="text-xl font-bold text-[#242F40]">Visioconférences & Réunions Scolaires</h1>
+              <p className="text-xs text-[#363636]/70 mt-0.5">
+                Salles WebRTC LiveKit Cloud, votes en séance et planification collégiale
               </p>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+
+        <div className="flex items-center gap-2.5">
           <Button
-            variant={isTrashMode ? 'secondary' : 'outline'}
-            onClick={() => setIsTrashMode(!isTrashMode)}
-            className="flex items-center gap-2"
+            onClick={fetchMeetings}
+            variant="outline"
+            className="border-[#E5E5E5] text-[#363636] hover:bg-[#E5E5E5]/30 text-xs flex items-center gap-1.5"
           >
-            {isTrashMode ? <RotateCcw className="w-4 h-4 text-brand" /> : <Building2 className="w-4 h-4 text-text-tertiary" />}
-            {isTrashMode ? 'Voir Actifs' : 'Corbeille'}
+            <RotateCcw className="w-3.5 h-3.5" />
+            Actualiser
           </Button>
-          <Button onClick={openCreateModal} className="flex items-center gap-2 shadow-sm">
-            <Plus className="w-4 h-4" />
-            Programmer une Réunion
+
+          <Button
+            onClick={openCreateModal}
+            className="bg-[#242F40] hover:bg-[#363636] text-[#FFFFFF] text-xs font-semibold flex items-center gap-2 shadow-xs"
+          >
+            <Plus className="w-4 h-4 text-[#CCA43B]" />
+            Planifier une Réunion
           </Button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="p-4 border-l-4 border-l-brand">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs text-text-tertiary block">Réunions Programmées</span>
-              <span className="text-2xl font-bold text-text-primary">{meetings.filter((m) => !m.isDeleted).length}</span>
-            </div>
-            <div className="p-2 bg-brand/10 text-brand rounded-xl">
-              <Video className="w-5 h-5" />
-            </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="p-4 bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-[#242F40]/5 text-[#242F40] flex items-center justify-center">
+            <Video className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-[#242F40]">{totalCount}</div>
+            <div className="text-xs text-[#363636]/60">Total Réunions</div>
           </div>
         </Card>
-        <Card className="p-4 border-l-4 border-l-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs text-text-tertiary block">Salons Visioconférence</span>
-              <span className="text-2xl font-bold text-blue-600">
-                {meetings.filter((m) => !m.isDeleted && m.roomType === 'VIRTUAL').length}
-              </span>
-            </div>
-            <div className="p-2 bg-blue-500/10 text-blue-600 rounded-xl">
-              <ExternalLink className="w-5 h-5" />
-            </div>
+
+        <Card className="p-4 bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center relative">
+            <Radio className="w-5 h-5" />
+            {liveCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping" />
+            )}
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-emerald-600">{liveCount}</div>
+            <div className="text-xs text-[#363636]/60">En Direct Actuellement</div>
           </div>
         </Card>
-        <Card className="p-4 border-l-4 border-l-purple-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs text-text-tertiary block">Conseils de Classe</span>
-              <span className="text-2xl font-bold text-purple-600">
-                {meetings.filter((m) => !m.isDeleted && m.type === 'CLASS_COUNCIL').length}
-              </span>
-            </div>
-            <div className="p-2 bg-purple-500/10 text-purple-600 rounded-xl">
-              <FileSpreadsheet className="w-5 h-5" />
-            </div>
+
+        <Card className="p-4 bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-[#CCA43B]/10 text-[#CCA43B] flex items-center justify-center">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-[#242F40]">{scheduledCount}</div>
+            <div className="text-xs text-[#363636]/60">À Venir / Programmées</div>
           </div>
         </Card>
-        <Card className="p-4 border-l-4 border-l-emerald-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="text-xs text-text-tertiary block">Total Participants Convoqués</span>
-              <span className="text-2xl font-bold text-emerald-600">
-                {meetings.filter((m) => !m.isDeleted).reduce((acc, curr) => acc + curr.participantsCount, 0)}
-              </span>
-            </div>
-            <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-xl">
-              <CheckCircle2 className="w-5 h-5" />
-            </div>
+
+        <Card className="p-4 bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
+            <Users className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="text-2xl font-bold text-[#242F40]">{onlineCount}</div>
+            <div className="text-xs text-[#363636]/60">En Visioconférence</div>
           </div>
         </Card>
       </div>
 
-      {/* Main Unified DataTable */}
-      <DataTable<MeetingItem>
-        title={isTrashMode ? 'Corbeille des Réunions' : 'Calendrier des Réunions & Conseils'}
-        data={filteredMeetings}
-        columns={columns}
-        isLoading={isLoading}
-        searchPlaceholder="Rechercher par titre, type, organisateur ou salle..."
-        searchKeys={['title', 'type', 'organizer', 'locationOrUrl', 'date', 'agenda']}
-        exportFilename={`reunions-${new Date().toISOString().split('T')[0]}`}
-        exportTitle="Calendrier des Réunions - BSofts School"
-        detailSections={detailSections}
-        allowedDisplayModes={['list', 'grid', 'split']}
-        defaultDisplayMode="list"
-        gridCardRender={(item, onSelect) => (
-          <Card
-            key={item.id}
-            onClick={onSelect}
-            className="p-5 cursor-pointer hover:border-brand/40 hover:shadow-md transition-all relative overflow-hidden flex flex-col justify-between"
-          >
-            <div>
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <span className="px-2.5 py-0.5 rounded text-[10px] font-bold bg-brand/10 text-brand border border-brand/20">
-                  {item.roomType === 'VIRTUAL' ? 'VISIO' : 'PRÉSENTIEL'}
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                  {item.status}
-                </span>
-              </div>
+      {/* Filter and Search Bar */}
+      <Card className="p-4 bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl space-y-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#363636]/40" />
+            <input
+              type="text"
+              placeholder="Rechercher par sujet, description..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 text-xs bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg focus:outline-hidden focus:border-[#242F40] text-[#363636]"
+            />
+          </div>
 
-              <h3 className="font-bold text-text-primary text-sm line-clamp-1 mb-1">{item.title}</h3>
-              <p className="text-xs text-text-secondary line-clamp-2 mb-3">{item.agenda}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="text-xs px-3 py-2 bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg text-[#363636] focus:outline-hidden"
+            >
+              <option value="ALL">Tous les statuts</option>
+              <option value="IN_PROGRESS">En Direct (Live)</option>
+              <option value="SCHEDULED">Prévue</option>
+              <option value="COMPLETED">Terminée</option>
+              <option value="CANCELLED">Annulée</option>
+            </select>
 
-              <div className="space-y-1 text-xs text-text-secondary bg-surface p-2.5 rounded-lg border border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-text-tertiary">Organisateur:</span>
-                  <span className="font-medium text-text-primary truncate max-w-[140px]">{item.organizer}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-text-tertiary">Lieu / Lien:</span>
-                  <span className="font-mono text-brand truncate max-w-[140px]">{item.locationOrUrl}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs text-text-tertiary">
-              <span className="flex items-center gap-1 font-mono text-[10px]">
-                <Calendar className="w-3 h-3" />
-                {item.date} ({item.startTime})
-              </span>
-              <span className="text-[10px] text-text-tertiary font-semibold">{item.participantsCount} part.</span>
-            </div>
-          </Card>
-        )}
-        actions={{
-          onDelete: (row) => handleDelete(row, false),
-          onRestore: (row) => handleRestore(row),
-          onPermanentDelete: (row) => handleDelete(row, true),
-        }}
-        customFilters={
-          <div className="flex items-center gap-2 flex-wrap">
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-border bg-surface text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-brand"
+              className="text-xs px-3 py-2 bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg text-[#363636] focus:outline-hidden"
             >
-              <option value="">Tous les types</option>
+              <option value="ALL">Tous les types</option>
+              <option value="PEDAGOGICAL">Conseil Pédagogique</option>
+              <option value="PARENT_TEACHER">Parents-Enseignants</option>
               <option value="CLASS_COUNCIL">Conseil de Classe</option>
-              <option value="PARENT_TEACHER">Parents-Professeurs</option>
-              <option value="PEDAGOGICAL">Comité Pédagogique</option>
-              <option value="ADMINISTRATIVE">Commission Administrative</option>
+              <option value="STAFF">Réunion du Personnel</option>
+              <option value="DISCIPLINE">Conseil de Discipline</option>
+              <option value="BOARD">Conseil d'Administration</option>
+              <option value="GENERAL">Assemblée Générale</option>
             </select>
+
             <select
-              value={roomFilter}
-              onChange={(e) => setRoomFilter(e.target.value)}
-              className="px-3 py-1.5 rounded-xl border border-border bg-surface text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-brand"
+              value={modeFilter}
+              onChange={(e) => setModeFilter(e.target.value)}
+              className="text-xs px-3 py-2 bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg text-[#363636] focus:outline-hidden"
             >
-              <option value="">Toutes les modalités</option>
-              <option value="VIRTUAL">Visioconférence</option>
-              <option value="PRESENTIAL">Présentiel</option>
+              <option value="ALL">Toutes les modalités</option>
+              <option value="ONLINE">Visioconférence (En ligne)</option>
+              <option value="IN_PERSON">Présentiel</option>
+              <option value="HYBRID">Hybride</option>
             </select>
           </div>
-        }
-      />
+        </div>
+      </Card>
 
-      {/* Extra Large Form Modal (size="6xl") */}
+      {/* Meetings List */}
+      <div className="space-y-3">
+        {isLoading ? (
+          <div className="p-12 text-center bg-[#FFFFFF] rounded-2xl border border-[#E5E5E5]">
+            <div className="w-8 h-8 border-2 border-[#242F40] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-xs text-[#363636]/60">Chargement des réunions en cours...</p>
+          </div>
+        ) : filteredMeetings.length === 0 ? (
+          <div className="p-12 text-center bg-[#FFFFFF] rounded-2xl border border-[#E5E5E5]">
+            <Video className="w-12 h-12 text-[#363636]/20 mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-[#242F40]">Aucune réunion trouvée</h3>
+            <p className="text-xs text-[#363636]/60 mt-1 max-w-sm mx-auto">
+              Planifiez une nouvelle visioconférence ou modifiez vos critères de recherche.
+            </p>
+            <Button
+              onClick={openCreateModal}
+              className="mt-4 bg-[#242F40] hover:bg-[#363636] text-[#FFFFFF] text-xs font-semibold"
+            >
+              <Plus className="w-3.5 h-3.5 mr-1.5 text-[#CCA43B]" />
+              Planifier une Réunion
+            </Button>
+          </div>
+        ) : (
+          filteredMeetings.map((meeting) => {
+            const isLive = meeting.status === 'IN_PROGRESS';
+            const isOnline = meeting.mode === 'ONLINE' || meeting.mode === 'HYBRID';
+            const typeConfig = MEETING_TYPE_COLORS[meeting.type] || {
+              bg: 'bg-[#242F40]/10',
+              text: 'text-[#242F40]',
+              border: 'border-[#242F40]/20',
+            };
+            const dateStr = meeting.date ? new Date(meeting.date).toLocaleDateString('fr-FR', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            }) : 'Date non définie';
+
+            const participantCount = meeting._count?.participants || meeting.participants?.length || meeting.participantsCount || 0;
+            const pointsCount = meeting._count?.points || meeting.points?.length || 0;
+
+            return (
+              <Card
+                key={meeting.id}
+                className="p-5 bg-[#FFFFFF] border border-[#E5E5E5] hover:border-[#242F40]/30 transition-all rounded-2xl shadow-xs"
+              >
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                  {/* Left Column: Meeting Details */}
+                  <div className="flex items-start gap-4 flex-1">
+                    <div
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border ${
+                        isLive
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                          : isOnline
+                          ? 'bg-[#242F40] text-[#CCA43B] border-[#242F40]'
+                          : 'bg-[#363636]/10 text-[#363636] border-[#363636]/20'
+                      }`}
+                    >
+                      {isLive ? <Radio className="w-6 h-6 animate-pulse" /> : <Video className="w-6 h-6" />}
+                    </div>
+
+                    <div className="space-y-1.5 flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border ${typeConfig.bg} ${typeConfig.text} ${typeConfig.border}`}
+                        >
+                          {MEETING_TYPE_LABELS[meeting.type] || meeting.type}
+                        </span>
+
+                        {isLive && (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                            EN DIRECT
+                          </span>
+                        )}
+
+                        {meeting.status === 'SCHEDULED' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                            Prévue
+                          </span>
+                        )}
+
+                        {meeting.status === 'COMPLETED' && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-[#363636]/10 text-[#363636] border border-[#363636]/20">
+                            Terminée
+                          </span>
+                        )}
+
+                        <span className="text-[11px] text-[#363636]/50">
+                          {isOnline ? 'Visioconférence WebRTC' : 'Présentiel'}
+                        </span>
+                      </div>
+
+                      <h3 className="text-base font-bold text-[#242F40] truncate">
+                        {meeting.subject || meeting.title}
+                      </h3>
+
+                      <p className="text-xs text-[#363636]/70 line-clamp-1">
+                        {meeting.description || meeting.agenda || 'Aucune description détaillée'}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-[#363636]/70 pt-1">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-[#CCA43B]" />
+                          <span>{dateStr}</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 font-mono">
+                          <Clock className="w-3.5 h-3.5 text-[#363636]/50" />
+                          <span>{meeting.startTime} {meeting.endTime ? `- ${meeting.endTime}` : ''} ({meeting.duration || 60}m)</span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-[#363636]/50" />
+                          <span>{participantCount} participant{participantCount > 1 ? 's' : ''}</span>
+                        </div>
+
+                        {pointsCount > 0 && (
+                          <div className="flex items-center gap-1.5 text-[#242F40] font-medium">
+                            <Vote className="w-3.5 h-3.5 text-[#CCA43B]" />
+                            <span>{pointsCount} point{pointsCount > 1 ? 's' : ''} à l'ordre du jour</span>
+                          </div>
+                        )}
+
+                        {meeting.establishment?.name && (
+                          <div className="flex items-center gap-1.5 text-xs text-[#363636]/60">
+                            <Building2 className="w-3.5 h-3.5" />
+                            <span>{meeting.establishment.name}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Actions */}
+                  <div className="flex items-center gap-2 self-end lg:self-center shrink-0">
+                    {isOnline && meeting.status !== 'CANCELLED' && (
+                      <Button
+                        onClick={() => router.push(`/community/meetings/${meeting.id}`)}
+                        className={`text-xs font-bold px-4 py-2 flex items-center gap-2 shadow-xs ${
+                          isLive
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-[#FFFFFF]'
+                            : 'bg-[#242F40] hover:bg-[#363636] text-[#FFFFFF]'
+                        }`}
+                      >
+                        <Video className="w-4 h-4 text-[#CCA43B]" />
+                        {isLive ? 'Rejoindre la Séance' : 'Entrer dans la Salle'}
+                      </Button>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      onClick={() => openMeetingDetail(meeting)}
+                      className="border-[#E5E5E5] text-[#363636] hover:bg-[#E5E5E5]/40 text-xs flex items-center gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      Détails
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => copyMeetingLink(meeting.id)}
+                      className="border-[#E5E5E5] text-[#363636] hover:bg-[#E5E5E5]/40 text-xs flex items-center gap-1.5"
+                      title="Copier le lien d'invitation"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDeleteMeeting(meeting)}
+                      className="border-red-200 text-red-600 hover:bg-red-50 text-xs"
+                      title="Supprimer / Archiver"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })
+        )}
+      </div>
+
+      {/* Planifier une Réunion Modal */}
       <Modal
         isOpen={isFormModalOpen}
         onClose={() => setIsFormModalOpen(false)}
-        title="Programmer une Nouvelle Réunion ou Conseil"
-        size="6xl"
+        title="Planifier une Réunion & Visioconférence"
+        size="2xl"
       >
-        <form onSubmit={handleCreateMeeting} className="space-y-6">
-          {/* Section 1: Type & Modalité */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-3 flex items-center gap-2">
-              <Video className="w-4 h-4 text-brand" />
-              1. Typologie & Modalité de Réunion
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1">Type de Séance</label>
-                <select
-                  value={formData.type}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      type: e.target.value as 'PARENT_TEACHER' | 'CLASS_COUNCIL' | 'PEDAGOGICAL' | 'ADMINISTRATIVE',
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand"
-                >
-                  <option value="CLASS_COUNCIL">Conseil de Classe Trimestriel</option>
-                  <option value="PARENT_TEACHER">Réunion Parents-Professeurs</option>
-                  <option value="PEDAGOGICAL">Comité Pédagogique / Département</option>
-                  <option value="ADMINISTRATIVE">Commission Administrative</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-text-secondary mb-1">Modalité</label>
-                <select
-                  value={formData.roomType}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      roomType: e.target.value as 'VIRTUAL' | 'PRESENTIAL',
-                    })
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-border bg-surface text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-brand"
-                >
-                  <option value="VIRTUAL">Visioconférence en Ligne (Salon Virtuel)</option>
-                  <option value="PRESENTIAL">Présentiel dans l’Établissement</option>
-                </select>
-              </div>
+        <form onSubmit={handleCreateMeeting} className="space-y-5">
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                Titre / Ordre du jour de la Réunion *
+              </label>
               <Input
-                label="Lien Visio ou Salle de Réunion"
-                value={formData.locationOrUrl}
-                onChange={(e) => setFormData({ ...formData, locationOrUrl: e.target.value })}
+                value={formData.subject}
+                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                placeholder="Ex: Conseil de classe - 4ème Année Mathématiques"
                 required
-                placeholder="https://meet.bsofts.tn/... ou Salle 1"
+                className="text-xs"
               />
             </div>
-          </div>
 
-          {/* Section 2: Date, Horaires & Participants */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-3 flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-brand" />
-              2. Planification Temporelle & Convocations
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                Type de Réunion
+              </label>
+              <select
+                value={formData.type}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as MeetingType })}
+                className="w-full text-xs px-3 py-2 bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg text-[#363636] focus:outline-hidden"
+              >
+                <option value="PEDAGOGICAL">Conseil Pédagogique</option>
+                <option value="PARENT_TEACHER">Parents-Enseignants</option>
+                <option value="CLASS_COUNCIL">Conseil de Classe</option>
+                <option value="STAFF">Réunion du Personnel</option>
+                <option value="DISCIPLINE">Conseil de Discipline</option>
+                <option value="BOARD">Conseil d'Administration</option>
+                <option value="GENERAL">Assemblée Générale</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                Modalité
+              </label>
+              <select
+                value={formData.mode}
+                onChange={(e) => {
+                  const m = e.target.value as MeetingMode;
+                  setFormData({
+                    ...formData,
+                    mode: m,
+                    location: m === 'IN_PERSON' ? 'Salle de réunion' : 'Visioconférence LiveKit HD',
+                  });
+                }}
+                className="w-full text-xs px-3 py-2 bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg text-[#363636] focus:outline-hidden"
+              >
+                <option value="ONLINE">Visioconférence en ligne (LiveKit WebRTC)</option>
+                <option value="IN_PERSON">Présentiel sur site</option>
+                <option value="HYBRID">Hybride (En ligne + Présentiel)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                Date de la séance *
+              </label>
               <Input
-                label="Date de la Séance"
                 type="date"
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 required
-              />
-              <Input
-                label="Heure de Début"
-                type="time"
-                value={formData.startTime}
-                onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                required
-              />
-              <Input
-                label="Heure de Fin"
-                type="time"
-                value={formData.endTime}
-                onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                required
-              />
-              <Input
-                label="Nombre de Participants Attendu"
-                type="number"
-                value={formData.participantsCount}
-                onChange={(e) => setFormData({ ...formData, participantsCount: Number(e.target.value) })}
-                required
+                className="text-xs"
               />
             </div>
-          </div>
 
-          {/* Section 3: Titre & Ordre du Jour */}
-          <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-text-tertiary mb-3 flex items-center gap-2">
-              <Users className="w-4 h-4 text-brand" />
-              3. Titre & Ordre du Jour
-            </h4>
-            <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                  Début *
+                </label>
+                <Input
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  required
+                  className="text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                  Fin
+                </label>
+                <Input
+                  type="time"
+                  value={formData.endTime}
+                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                  className="text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                Lieu ou URL de connexion
+              </label>
               <Input
-                label="Intitulé de la Réunion"
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                required
-                placeholder="Ex: Conseil de Classe Trimestre 1 - 4ème Math"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder="Ex: Salle des professeurs ou LiveKit Room"
+                className="text-xs"
               />
+            </div>
+
+            <div className="sm:col-span-2">
+              <label className="block text-xs font-semibold text-[#242F40] mb-1">
+                Description & Objectifs
+              </label>
               <Textarea
-                label="Ordre du Jour Détaillé & Points à l'Ordre"
-                value={formData.agenda}
-                onChange={(e) => setFormData({ ...formData, agenda: e.target.value })}
-                rows={4}
-                required
-                placeholder="Préciser les thématiques, bilans et décisions attendues..."
+                rows={2}
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Décrivez le contexte, les documents à préparer..."
+                className="text-xs"
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-border">
-            <div className="text-xs text-text-tertiary">
-              Des invitations avec lien de visio seront envoyées automatiquement aux participants.
+          {/* Agenda Points (Ordre du jour) */}
+          <div className="border-t border-[#E5E5E5] pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#242F40] flex items-center gap-1.5">
+                <Vote className="w-3.5 h-3.5 text-[#CCA43B]" />
+                Points à l'ordre du jour & Résolutions
+              </label>
+              <button
+                type="button"
+                onClick={handleAddPoint}
+                className="text-[11px] font-semibold text-[#242F40] hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3 text-[#CCA43B]" />
+                Ajouter un point
+              </button>
             </div>
-            <div className="flex items-center gap-3">
-              <Button type="button" variant="outline" onClick={() => setIsFormModalOpen(false)}>
-                Annuler
-              </Button>
-              <Button type="submit" isLoading={isSubmitting}>
-                Valider et Programmer
-              </Button>
+
+            {formData.points.map((point, index) => (
+              <div key={index} className="p-3 bg-[#F8F9FA] border border-[#E5E5E5] rounded-xl space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder={`Point ${index + 1} (ex: Approbation des notes trimestrielles)`}
+                    value={point.title}
+                    onChange={(e) => {
+                      const updated = [...formData.points];
+                      updated[index].title = e.target.value;
+                      setFormData({ ...formData, points: updated });
+                    }}
+                    className="text-xs flex-1 bg-[#FFFFFF]"
+                  />
+                  {formData.points.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePoint(index)}
+                      className="text-red-500 hover:text-red-700 text-xs px-2 py-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Input
+                    placeholder="Description / précisions (facultatif)"
+                    value={point.description || ''}
+                    onChange={(e) => {
+                      const updated = [...formData.points];
+                      updated[index].description = e.target.value;
+                      setFormData({ ...formData, points: updated });
+                    }}
+                    className="text-[11px] flex-1 mr-3 bg-[#FFFFFF]"
+                  />
+
+                  <label className="flex items-center gap-1.5 text-xs text-[#363636] shrink-0 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={point.isVote}
+                      onChange={(e) => {
+                        const updated = [...formData.points];
+                        updated[index].isVote = e.target.checked;
+                        setFormData({ ...formData, points: updated });
+                      }}
+                      className="rounded border-[#E5E5E5] text-[#242F40] focus:ring-0"
+                    />
+                    <span>Soumis au vote</span>
+                  </label>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Participants */}
+          <div className="border-t border-[#E5E5E5] pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-[#242F40] flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-[#CCA43B]" />
+                Participants invités
+              </label>
+              <button
+                type="button"
+                onClick={handleAddParticipant}
+                className="text-[11px] font-semibold text-[#242F40] hover:underline flex items-center gap-1"
+              >
+                <Plus className="w-3 h-3 text-[#CCA43B]" />
+                Ajouter un invité
+              </button>
             </div>
+
+            {formData.participants.map((p, index) => (
+              <div key={index} className="grid grid-cols-12 gap-2 items-center">
+                <div className="col-span-5">
+                  <Input
+                    placeholder="Nom complet"
+                    value={p.name}
+                    onChange={(e) => {
+                      const updated = [...formData.participants];
+                      updated[index].name = e.target.value;
+                      setFormData({ ...formData, participants: updated });
+                    }}
+                    className="text-xs bg-[#FFFFFF]"
+                  />
+                </div>
+                <div className="col-span-4">
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={p.email}
+                    onChange={(e) => {
+                      const updated = [...formData.participants];
+                      updated[index].email = e.target.value;
+                      setFormData({ ...formData, participants: updated });
+                    }}
+                    className="text-xs bg-[#FFFFFF]"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <select
+                    value={p.role}
+                    onChange={(e) => {
+                      const updated = [...formData.participants];
+                      updated[index].role = e.target.value;
+                      setFormData({ ...formData, participants: updated });
+                    }}
+                    className="w-full text-xs px-2 py-2 bg-[#FFFFFF] border border-[#E5E5E5] rounded-lg text-[#363636]"
+                  >
+                    <option value="ATTENDEE">Participant</option>
+                    <option value="MODERATOR">Modérateur</option>
+                    <option value="PRESENTER">Présentateur</option>
+                  </select>
+                </div>
+                <div className="col-span-1 text-right">
+                  {formData.participants.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveParticipant(index)}
+                      className="text-red-500 hover:text-red-700 text-xs p-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center justify-end gap-3 border-t border-[#E5E5E5] pt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsFormModalOpen(false)}
+              className="text-xs border-[#E5E5E5]"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="bg-[#242F40] hover:bg-[#363636] text-[#FFFFFF] text-xs font-semibold px-5"
+            >
+              {isSubmitting ? 'Planification en cours...' : 'Planifier la Réunion'}
+            </Button>
           </div>
         </form>
       </Modal>
+
+      {/* Détails Réunion Modal */}
+      {selectedMeeting && (
+        <Modal
+          isOpen={isDetailModalOpen}
+          onClose={() => setIsDetailModalOpen(false)}
+          title={`Détails de la Réunion : ${selectedMeeting.subject || selectedMeeting.title}`}
+          size="xl"
+        >
+          <div className="space-y-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-[#242F40]/10 text-[#242F40]">
+                {MEETING_TYPE_LABELS[selectedMeeting.type] || selectedMeeting.type}
+              </span>
+              <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-600">
+                {selectedMeeting.status}
+              </span>
+              <span className="text-xs text-[#363636]/60">
+                {selectedMeeting.mode}
+              </span>
+            </div>
+
+            <div className="p-4 bg-[#F8F9FA] rounded-xl border border-[#E5E5E5] space-y-2">
+              <div className="text-xs text-[#363636]/70">
+                <span className="font-semibold text-[#242F40]">Date & Heure : </span>
+                {selectedMeeting.date ? new Date(selectedMeeting.date).toLocaleDateString('fr-FR') : ''} à {selectedMeeting.startTime}
+              </div>
+              <div className="text-xs text-[#363636]/70">
+                <span className="font-semibold text-[#242F40]">Lieu / Salle : </span>
+                {selectedMeeting.location}
+              </div>
+              {selectedMeeting.description && (
+                <div className="text-xs text-[#363636]/80 pt-1">
+                  <span className="font-semibold text-[#242F40]">Description : </span>
+                  {selectedMeeting.description}
+                </div>
+              )}
+            </div>
+
+            {/* Agenda points */}
+            {selectedMeeting.points && selectedMeeting.points.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-[#242F40] uppercase tracking-wider">
+                  Ordre du Jour ({selectedMeeting.points.length})
+                </h4>
+                <div className="space-y-2">
+                  {selectedMeeting.points.map((pt, idx) => (
+                    <div key={idx} className="p-3 bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl text-xs space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[#242F40]">
+                          {idx + 1}. {pt.title}
+                        </span>
+                        {pt.isVote && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#CCA43B]/15 text-[#CCA43B]">
+                            Vote Délibératif
+                          </span>
+                        )}
+                      </div>
+                      {pt.description && <p className="text-[11px] text-[#363636]/70">{pt.description}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Participants */}
+            {selectedMeeting.participants && selectedMeeting.participants.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-[#242F40] uppercase tracking-wider">
+                  Participants ({selectedMeeting.participants.length})
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {selectedMeeting.participants.map((p, idx) => (
+                    <div key={idx} className="p-2.5 bg-[#FFFFFF] border border-[#E5E5E5] rounded-xl text-xs flex items-center justify-between">
+                      <div>
+                        <div className="font-semibold text-[#242F40]">{p.name}</div>
+                        <div className="text-[10px] text-[#363636]/60">{p.email}</div>
+                      </div>
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[#242F40]/10 text-[#242F40]">
+                        {p.role}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between border-t border-[#E5E5E5] pt-4">
+              <Button
+                variant="outline"
+                onClick={() => copyMeetingLink(selectedMeeting.id)}
+                className="text-xs flex items-center gap-1.5"
+              >
+                {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                {copiedLink ? 'Lien Copié !' : 'Copier le Lien Direct'}
+              </Button>
+
+              {(selectedMeeting.mode === 'ONLINE' || selectedMeeting.mode === 'HYBRID') && (
+                <Button
+                  onClick={() => router.push(`/community/meetings/${selectedMeeting.id}`)}
+                  className="bg-[#242F40] hover:bg-[#363636] text-[#FFFFFF] text-xs font-bold flex items-center gap-2"
+                >
+                  <Video className="w-4 h-4 text-[#CCA43B]" />
+                  Rejoindre la Réunion Live
+                </Button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
