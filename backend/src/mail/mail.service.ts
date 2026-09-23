@@ -63,6 +63,14 @@ export class MailService {
       if (config.fromEmail) fromEmail = config.fromEmail;
     }
 
+    if (user) user = user.trim();
+    if (pass) {
+      pass = pass.trim();
+      if (host.includes('gmail')) {
+        pass = pass.replace(/\s+/g, '');
+      }
+    }
+
     if (!user || !pass) {
       throw new BadRequestException(
         "Configuration SMTP incomplète : adresse email (utilisateur) et mot de passe d'application manquants. Veuillez les renseigner dans Paramètres > Configuration SMTP."
