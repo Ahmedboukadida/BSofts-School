@@ -1,6 +1,6 @@
 import { IsString, IsOptional, IsNumber, IsBoolean, IsIn, IsUUID } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 export class CreateHomeworkDto {
@@ -128,4 +128,10 @@ export class QueryHomeworkDto extends PaginationQueryDto {
   @IsOptional()
   @IsUUID()
   matiereId?: string;
+
+  @ApiPropertyOptional({ description: 'Alias for includeDeleted' })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isDeleted?: boolean;
 }

@@ -26,16 +26,32 @@ export class MailController {
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   async testSmtp(@Body() dto: TestSmtpDto, @Req() req: any): Promise<MailSendResultEntity> {
     const establishmentId = req.user?.establishmentId;
+    const frontendUrl = process.env.FRONTEND_URL || 'https://bsofts-school.vercel.app';
+    const settingsUrl = `${frontendUrl}/admin/settings`;
     return this.mailService.sendMail(
       {
         to: dto.testEmail,
-        subject: 'BSofts School — SMTP Test Notification',
-        text: 'This is a verification email from your BSofts School educational management system.',
+        subject: 'BSofts School — Diagnostic et Test de Connexion SMTP',
+        text: `BSofts School — Test de messagerie réussi.\n\nVotre serveur SMTP est opérationnel.\nLien : ${settingsUrl}`,
         html: `
-          <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-            <h2 style="color: #2563eb;">BSofts School Platform</h2>
-            <p>Your SMTP mail configuration is verified and functioning correctly.</p>
-            <p style="color: #64748b; font-size: 12px;">Sent automatically by BSofts School Educational Engine.</p>
+          <div style="font-family: Arial, sans-serif; max-width: 580px; margin: 0 auto; background-color: #FFFFFF; border: 1px solid #E5E5E5; border-radius: 16px; overflow: hidden;">
+            <div style="background-color: #242F40; padding: 24px; text-align: center;">
+              <h1 style="color: #CCA43B; margin: 0; font-size: 22px; font-weight: bold;">BSofts School</h1>
+              <p style="color: #FFFFFF; margin: 6px 0 0 0; font-size: 13px; opacity: 0.9;">Notification de Test & Diagnostic SMTP</p>
+            </div>
+            <div style="padding: 28px 24px; color: #363636; line-height: 1.6;">
+              <h2 style="color: #242F40; font-size: 17px; margin-top: 0;">Configuration SMTP Opérationnelle</h2>
+              <p>Ce message confirme que votre passerelle SMTP est correctement reliée et fonctionnelle pour l'envoi des emails transactionnels, relevés de notes et notifications scolaires.</p>
+              <div style="text-align: center; margin: 28px 0;">
+                <a href="${settingsUrl}" style="background-color: #CCA43B; color: #242F40; font-weight: bold; font-size: 14px; text-decoration: none; padding: 12px 24px; border-radius: 10px; display: inline-block;">
+                  Accéder aux Paramètres BSofts School &rarr;
+                </a>
+              </div>
+              <p style="font-size: 12px; color: #777777;">Expédié par le moteur de communication BSofts School.</p>
+            </div>
+            <div style="background-color: #F8F9FA; border-top: 1px solid #E5E5E5; padding: 14px 24px; text-align: center; font-size: 11px; color: #888888;">
+              &copy; ${new Date().getFullYear()} BSofts School. Tous droits réservés.
+            </div>
           </div>
         `,
       },
@@ -45,24 +61,18 @@ export class MailController {
   }
 
   @Get('config')
-  @ApiOperation({ summary: 'Get active SMTP configuration for current establishment' })
+  @ApiOperation({ summary: 'Get active SMTP configuration for current establishment or platform' })
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   async getConfig(@Req() req: any): Promise<SmtpConfigEntity | null> {
     const establishmentId = req.user?.establishmentId;
-    if (!establishmentId) {
-      throw new BadRequestException('No active establishment context found');
-    }
     return this.mailService.getConfig(establishmentId);
   }
 
   @Post('config')
-  @ApiOperation({ summary: 'Configure or update SMTP settings for establishment' })
+  @ApiOperation({ summary: 'Configure or update SMTP settings for establishment or platform' })
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   async saveConfig(@Body() dto: CreateSmtpConfigDto, @Req() req: any): Promise<SmtpConfigEntity> {
     const establishmentId = req.user?.establishmentId;
-    if (!establishmentId) {
-      throw new BadRequestException('No active establishment context found');
-    }
     return this.mailService.saveConfig(establishmentId, dto, req.user);
   }
 }

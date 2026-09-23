@@ -59,15 +59,38 @@ export class AcademicModulesService {
     return module;
   }
 
-  async create(dto: CreateAcademicModuleDto) {
-    return this.prisma.academicModule.create({
+  async create(dto: CreateAcademicModuleDto, user?: any) {
+    const establishmentId = dto.establishmentId || user?.establishmentId;
+    if (!establishmentId) {
+      throw new BadRequestException('establishmentId is required (provide in body or ensure user has an establishment)');
+    }
+
+    const module = await this.prisma.academicModule.create({
       data: {
-        establishmentId: dto.establishmentId,
+        establishmentId,
         name: dto.name,
         code: dto.code,
         description: dto.description,
       },
     });
+
+    if (dto.matieres && Array.isArray(dto.matieres) && dto.matieres.length > 0) {
+      await Promise.all(
+        dto.matieres.map((m) =>
+          this.prisma.matiere.create({
+            data: {
+              name: m.name,
+              code: m.code || m.name.slice(0, 4).toUpperCase(),
+              coefficient: m.coefficient || 1,
+              maxScore: m.maxScore || 20,
+              moduleId: module.id,
+            },
+          }),
+        ),
+      );
+    }
+
+    return this.findOne(module.id);
   }
 
   async update(id: string, dto: UpdateAcademicModuleDto) {

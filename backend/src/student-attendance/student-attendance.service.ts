@@ -9,10 +9,13 @@ export class StudentAttendanceService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryStudentAttendanceDto) {
-    const { page = 1, limit = 10, studentId, sessionId, classId, startDate, endDate, sortBy, sortOrder } = query;
+    const { page = 1, limit = 10, studentId, sessionId, classId, establishmentId, startDate, endDate, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.student = { ...(where.student || {}), establishmentId };
+    }
     if (studentId) where.studentId = studentId;
     if (sessionId) where.sessionId = sessionId;
     if (classId) where.session = { classId };
@@ -190,15 +193,24 @@ export class StudentAttendanceService {
       } else {
         const cls = await this.prisma.class.findUnique({
           where: { id: dto.classId },
-          select: { academicYearId: true },
+          select: { academicYearId: true, establishmentId: true },
         });
         const currentYear = cls?.academicYearId
           ? { id: cls.academicYearId }
-          : (await this.prisma.academicYear.findFirst({ where: { isCurrent: true } })) || (await this.prisma.academicYear.findFirst());
-        const currentPeriod = await this.prisma.academicPeriod.findFirst({ orderBy: { createdAt: 'asc' } });
+          : (await this.prisma.academicYear.findFirst({ where: { establishmentId: cls?.establishmentId, isCurrent: true } })) ||
+            (await this.prisma.academicYear.findFirst({ where: { establishmentId: cls?.establishmentId } }));
 
-        if (!currentYear?.id || !currentPeriod?.id) {
-          throw new BadRequestException('Année scolaire ou période académique requise pour créer une session');
+        if (!currentYear?.id) {
+          throw new BadRequestException('Année scolaire requise pour créer une session');
+        }
+
+        const currentPeriod = await this.prisma.academicPeriod.findFirst({
+          where: { academicYearId: currentYear.id },
+          orderBy: { createdAt: 'asc' },
+        });
+
+        if (!currentPeriod?.id) {
+          throw new BadRequestException('Période académique requise pour créer une session');
         }
 
         const newSession = await this.prisma.session.create({

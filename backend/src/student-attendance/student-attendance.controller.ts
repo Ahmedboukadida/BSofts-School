@@ -21,7 +21,10 @@ export class StudentAttendanceController {
   @Permissions('attendance:list')
   @ApiOperation({ summary: 'List all student attendance records' })
   @ApiResponse({ status: 200, description: 'Student attendance records retrieved successfully' })
-  findAll(@Query() query: QueryStudentAttendanceDto) {
+  findAll(@Query() query: QueryStudentAttendanceDto, @CurrentUser() user: any) {
+    if (!query.establishmentId && !user?.isRoot && user?.establishmentId) {
+      query.establishmentId = user.establishmentId;
+    }
     return this.service.findAll(query);
   }
 

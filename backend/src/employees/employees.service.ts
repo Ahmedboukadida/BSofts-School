@@ -45,7 +45,13 @@ export class EmployeesService {
       this.prisma.employee.count({ where }),
     ]);
 
-    const entities = data.map((item) => new EmployeeEntity(item as any));
+    const entities = data.map((item: any) => new EmployeeEntity({
+      ...item,
+      matricule: item.registrationNumber || `EMP-${item.id.slice(0, 6).toUpperCase()}`,
+      department: item.department || 'Administration',
+      salaryTnd: item.contracts?.[0]?.salary ? Number(item.contracts[0].salary) : 1200,
+      contractType: item.contracts?.[0]?.description || item.contracts?.[0]?.type || 'CDI',
+    }));
     return new PaginatedDto(entities, total, page, limit);
   }
 
@@ -64,7 +70,7 @@ export class EmployeesService {
   async create(dto: CreateEmployeeDto, user?: any) {
     const establishmentId = dto.establishmentId || user?.establishmentId;
     if (!establishmentId) {
-      throw new Error('establishmentId is required (provide in body or ensure user has an establishment)');
+      throw new BadRequestException('establishmentId is required (provide in body or ensure user has an establishment)');
     }
 
     let userId = dto.userId || null;
@@ -76,15 +82,30 @@ export class EmployeesService {
       if (existingUser) {
         userId = existingUser.id;
       } else {
-        const hashedPassword = await bcrypt.hash('Employee@123', 10);
+        const est = await this.prisma.establishment.findUnique({
+          where: { id: establishmentId },
+          select: { tenantId: true },
+        });
+
+        const baseUsername = dto.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'employee';
+        let uniqueUsername = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
+        const userWithUsername = await this.prisma.user.findUnique({ where: { username: uniqueUsername } });
+        if (userWithUsername) {
+          uniqueUsername = `${baseUsername}_${Date.now()}`;
+        }
+
+        const tempPassword = (dto as any).password || `Emp_${Math.random().toString(36).slice(-8)}!${Math.floor(10 + Math.random() * 90)}`;
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
         const newUser = await this.prisma.user.create({
           data: {
             email: dto.email,
-            username: dto.email.split('@')[0],
+            username: uniqueUsername,
             password: hashedPassword,
             firstName: dto.firstName,
             lastName: dto.lastName,
             phone: dto.phone,
+            tenantId: est?.tenantId,
           },
         });
         userId = newUser.id;
@@ -104,7 +125,7 @@ export class EmployeesService {
       }
     }
 
-    return this.prisma.employee.create({
+    const employee = await this.prisma.employee.create({
       data: {
         establishmentId,
         firstName: dto.firstName,
@@ -115,15 +136,42 @@ export class EmployeesService {
         position: dto.position,
         hireDate: dto.hireDate ? new Date(dto.hireDate) : new Date(),
         userId,
+        isActive: dto.isActive !== undefined ? dto.isActive : true,
+      },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+        contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
     });
+
+    if (dto.salaryTnd || dto.contractType) {
+      let contractType: any = 'MONTHLY';
+      if (dto.contractType === 'CDI' || dto.contractType === 'YEARLY') contractType = 'YEARLY';
+      else if (dto.contractType === 'CDD' || dto.contractType === 'MONTHLY') contractType = 'MONTHLY';
+      else if (dto.contractType === 'HOURLY' || dto.contractType === 'VACATAIRE') contractType = 'HOURLY';
+      else if (dto.contractType === 'CUSTOM' || dto.contractType === 'STAGE') contractType = 'CUSTOM';
+
+      await this.prisma.employeeContract.create({
+        data: {
+          employeeId: employee.id,
+          type: contractType,
+          startDate: dto.hireDate ? new Date(dto.hireDate) : new Date(),
+          salary: dto.salaryTnd || 0,
+          currency: 'TND',
+          description: dto.contractType || 'Contrat initial',
+          isActive: true,
+        },
+      });
+    }
+
+    return employee;
   }
 
   async update(id: string, dto: UpdateEmployeeDto) {
     const employee = await this.prisma.employee.findUnique({ where: { id } });
     if (!employee) throw new NotFoundException(`Employee with ID ${id} not found`);
 
-    return this.prisma.employee.update({
+    const updated = await this.prisma.employee.update({
       where: { id },
       data: {
         firstName: dto.firstName,
@@ -132,8 +180,51 @@ export class EmployeesService {
         email: dto.email,
         position: dto.position,
         isActive: dto.isActive,
+        ...(dto.hireDate ? { hireDate: new Date(dto.hireDate) } : {}),
+      },
+      include: {
+        establishment: { select: { id: true, name: true, slug: true } },
+        contracts: { orderBy: { createdAt: 'desc' }, take: 1 },
       },
     });
+
+    if (dto.salaryTnd || dto.contractType) {
+      const activeContract = await this.prisma.employeeContract.findFirst({
+        where: { employeeId: id, isActive: true },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      let contractType: any = 'MONTHLY';
+      if (dto.contractType === 'CDI' || dto.contractType === 'YEARLY') contractType = 'YEARLY';
+      else if (dto.contractType === 'CDD' || dto.contractType === 'MONTHLY') contractType = 'MONTHLY';
+      else if (dto.contractType === 'HOURLY' || dto.contractType === 'VACATAIRE') contractType = 'HOURLY';
+      else if (dto.contractType === 'CUSTOM' || dto.contractType === 'STAGE') contractType = 'CUSTOM';
+
+      if (activeContract) {
+        await this.prisma.employeeContract.update({
+          where: { id: activeContract.id },
+          data: {
+            salary: dto.salaryTnd !== undefined ? dto.salaryTnd : activeContract.salary,
+            type: contractType,
+            description: dto.contractType || activeContract.description,
+          },
+        });
+      } else {
+        await this.prisma.employeeContract.create({
+          data: {
+            employeeId: id,
+            type: contractType,
+            startDate: dto.hireDate ? new Date(dto.hireDate) : new Date(),
+            salary: dto.salaryTnd || 0,
+            currency: 'TND',
+            description: dto.contractType || 'Contrat',
+            isActive: true,
+          },
+        });
+      }
+    }
+
+    return updated;
   }
 
   async remove(id: string, isPermanent = false, user?: any) {

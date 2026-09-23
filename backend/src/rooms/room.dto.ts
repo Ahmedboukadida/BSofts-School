@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsEnum, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsEnum, MinLength, IsArray } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
@@ -40,6 +40,11 @@ export class CreateRoomDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  equipment?: string[];
 }
 
 export class UpdateRoomDto {
@@ -72,6 +77,11 @@ export class UpdateRoomDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsOptional()
+  @IsArray()
+  equipment?: string[];
 
   @ApiProperty({ required: false })
   @IsOptional()

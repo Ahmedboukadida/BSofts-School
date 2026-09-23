@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateConversationDto, QueryConversationDto } from './conversation.dto';
 import { PaginatedDto } from '../common/pagination.dto';
@@ -33,7 +33,7 @@ export class ConversationsService {
     return new PaginatedDto(data, total, page, limit);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, user?: any) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id },
       include: {
@@ -48,6 +48,14 @@ export class ConversationsService {
       },
     });
     if (!conversation) throw new NotFoundException(`Conversation with ID ${id} not found`);
+
+    if (user && !user.isRoot && user.role !== 'SUPER_ADMIN') {
+      const isParticipant = conversation.participants.some(p => p.userId === user.id);
+      if (!isParticipant) {
+        throw new ForbiddenException('You are not a participant in this conversation');
+      }
+    }
+
     return conversation;
   }
 
@@ -73,9 +81,20 @@ export class ConversationsService {
     return conversation;
   }
 
-  async remove(id: string) {
-    const conversation = await this.prisma.conversation.findUnique({ where: { id } });
+  async remove(id: string, user?: any) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { id },
+      include: { participants: true },
+    });
     if (!conversation) throw new NotFoundException(`Conversation with ID ${id} not found`);
+
+    if (user && !user.isRoot && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+      const isParticipant = conversation.participants.some(p => p.userId === user.id);
+      if (!isParticipant) {
+        throw new ForbiddenException('You cannot delete a conversation you do not belong to');
+      }
+    }
+
     await this.prisma.conversation.delete({ where: { id } });
     return { message: 'Conversation deleted' };
   }

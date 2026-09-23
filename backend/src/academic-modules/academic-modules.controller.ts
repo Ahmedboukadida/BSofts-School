@@ -38,8 +38,8 @@ export class AcademicModulesController {
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   @ApiOperation({ summary: 'Create a new academic module' })
   @ApiResponse({ status: 201, description: 'Academic module created successfully' })
-  create(@Body() dto: CreateAcademicModuleDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateAcademicModuleDto, @CurrentUser() user: any) {
+    return this.service.create(dto, user);
   }
 
   @Put(':id')

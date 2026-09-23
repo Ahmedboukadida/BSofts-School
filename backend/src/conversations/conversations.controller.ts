@@ -5,12 +5,14 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { ConversationsService } from './conversations.service';
 import { CreateConversationDto, QueryConversationDto } from './conversation.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 
 @ApiTags('Messaging')
 @ApiBearerAuth()
 @Controller('conversations')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ConversationsController {
   constructor(private readonly service: ConversationsService) {}
 
@@ -24,8 +26,8 @@ export class ConversationsController {
   @Get(':id')
   @ApiOperation({ summary: 'Get a conversation by ID' })
   @ApiResponse({ status: 200, description: 'Conversation retrieved successfully' })
-  findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.service.findOne(id);
+  findOne(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.service.findOne(id, user);
   }
 
   @Post()
@@ -36,9 +38,10 @@ export class ConversationsController {
   }
 
   @Delete(':id')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN', 'TEACHER', 'EMPLOYEE')
   @ApiOperation({ summary: 'Delete a conversation' })
   @ApiResponse({ status: 200, description: 'Conversation deleted successfully' })
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.service.remove(id);
+  remove(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: any) {
+    return this.service.remove(id, user);
   }
 }

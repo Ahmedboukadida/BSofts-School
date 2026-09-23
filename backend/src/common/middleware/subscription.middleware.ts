@@ -73,20 +73,25 @@ export class SubscriptionMiddleware implements NestMiddleware {
       }
 
       if (!tenant) {
-        throw new ForbiddenException('No tenant found for user');
+        return res.status(403).json({
+          statusCode: 403,
+          message: 'No tenant found for user',
+          error: 'Forbidden',
+        });
       }
 
       if (!tenant.subscriptions.length) {
-        throw new ForbiddenException('No active subscription');
+        return res.status(403).json({
+          statusCode: 403,
+          message: 'No active subscription found for tenant',
+          error: 'Forbidden',
+        });
       }
 
       (req as any).tenantId = tenant.id;
       next();
     } catch (error) {
-      if (error instanceof ForbiddenException) {
-        throw error;
-      }
-      // Token verification failed or other errors - let JwtAuthGuard handle it
+      // Token verification failed or other unexpected errors - let JwtAuthGuard handle it downstream
       next();
     }
   }

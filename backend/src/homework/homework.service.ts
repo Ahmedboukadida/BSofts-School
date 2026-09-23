@@ -83,7 +83,8 @@ export class HomeworkService {
   }
 
   async findAll(query: QueryHomeworkDto, user?: any): Promise<PaginatedDto<HomeworkEntity>> {
-    const { page = 1, limit = 10, search, status, className, includeDeleted } = query;
+    const { page = 1, limit = 10, search, status, className } = query;
+    const includeDeleted = query.includeDeleted ?? query.isDeleted;
 
     let filtered = this.items.filter((item) => {
       // Soft-delete filter

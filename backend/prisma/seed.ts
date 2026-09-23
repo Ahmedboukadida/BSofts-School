@@ -1,9 +1,35 @@
-import { PrismaClient, Currency, EstablishmentCategory, SubscriptionStatus } from '@prisma/client';
+import {
+  PrismaClient,
+  Currency,
+  Language,
+  Theme,
+  EstablishmentCategory,
+  SubscriptionStatus,
+  PeriodType,
+  PaymentMethod,
+  PaymentStatus,
+  TransactionType,
+  CaisseType,
+  RoomType,
+  ContractType,
+  AttendanceStatus,
+  ExamType,
+  ExamStatus,
+  MeetingType,
+  MeetingMode,
+  MeetingStatus,
+  MeetingParticipantRole,
+  ParticipantStatus,
+  VoteValue,
+} from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import * as bcrypt from 'bcrypt';
 import * as fs from 'fs';
 import * as path from 'path';
 
+// -------------------------------------------------------------
+// Load environment variables if not already set
+// -------------------------------------------------------------
 const envPath = path.join(__dirname, '..', '.env');
 if (!process.env.DATABASE_URL && fs.existsSync(envPath)) {
   const envFile = fs.readFileSync(envPath, 'utf-8');
@@ -23,7 +49,7 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 // ============================================================
-// HELPER FUNCTIONS
+// HELPER UTILITIES
 // ============================================================
 
 function randomDate(start: Date, end: Date): Date {
@@ -39,7 +65,7 @@ function generateMatricule(prefix: string, index: number): string {
 }
 
 // ============================================================
-// SEED DATA
+// METADATA DEFINITIONS
 // ============================================================
 
 const modules = [
@@ -71,10 +97,10 @@ const modules = [
 const permissionActions = ['list', 'read', 'create', 'update', 'delete', 'export', 'import'];
 
 const plans = [
-  { name: 'Free', description: 'Free plan for small establishments', price: 0, currency: Currency.TND, interval: 'MONTHLY' as const, sortOrder: 1 },
-  { name: 'Basic', description: 'Basic plan for schools', price: 50, currency: Currency.TND, interval: 'MONTHLY' as const, sortOrder: 2 },
-  { name: 'Premium', description: 'Premium plan with all features', price: 150, currency: Currency.TND, interval: 'MONTHLY' as const, sortOrder: 3 },
-  { name: 'Enterprise', description: 'Enterprise plan for large institutions', price: 500, currency: Currency.TND, interval: 'YEARLY' as const, sortOrder: 4 },
+  { name: 'Free', description: 'Plan d\'initiation pour petites structures', price: 0, currency: Currency.TND, interval: 'MONTHLY' as const, sortOrder: 1 },
+  { name: 'Basic', description: 'Idéal pour écoles primaires et collèges en croissance', price: 50, currency: Currency.TND, interval: 'MONTHLY' as const, sortOrder: 2 },
+  { name: 'Premium', description: 'Solution complète pour institutions d\'envergure', price: 150, currency: Currency.TND, interval: 'MONTHLY' as const, sortOrder: 3 },
+  { name: 'Enterprise', description: 'Infrastructure sur-mesure pour groupes scolaires multisites', price: 500, currency: Currency.TND, interval: 'YEARLY' as const, sortOrder: 4 },
 ];
 
 const classLevels = [
@@ -95,146 +121,242 @@ const classLevels = [
   { name: 'Terminale', sortOrder: 15 },
 ];
 
-const establishments: Array<{ name: string; slug: string; category: EstablishmentCategory }> = [
-  { name: 'École El Irfane', slug: 'ecole-el-irfane', category: EstablishmentCategory.DAYCARE },
-  { name: 'École Primaire Les Palmiers', slug: 'ecole-primaire-les-palmiers', category: EstablishmentCategory.SCHOOL },
-  { name: 'Collège Al Andalous', slug: 'college-al-andalous', category: EstablishmentCategory.MIDDLE_SCHOOL },
-  { name: 'Lycée Ibn Khaldoun', slug: 'lycee-ibn-khaldoun', category: EstablishmentCategory.HIGH_SCHOOL },
+const tenantDefinitions = [
+  { name: 'Groupe Éducatif Hannibal', email: 'tenant1@bsofts.com', username: 'hannibal_admin', firstName: 'Hédi', lastName: 'Hannibal' },
+  { name: 'Institution Al-Amel', email: 'tenant2@bsofts.com', username: 'alamel_admin', firstName: 'Leila', lastName: 'Ben Ammar' },
+  { name: 'Complexe Scolaire Ibn Khaldoun', email: 'tenant3@bsofts.com', username: 'ibnkhaldoun_admin', firstName: 'Moncef', lastName: 'Khaldoun' },
+  { name: 'Étoile Brillante Éducation', email: 'tenant4@bsofts.com', username: 'etoile_admin', firstName: 'Salma', lastName: 'Trabelsi' },
 ];
 
-const matieres = [
+const establishmentDefinitions: Array<{
+  tenantIndex: number;
+  name: string;
+  slug: string;
+  category: EstablishmentCategory;
+  city: string;
+  address: string;
+  phone: string;
+  email: string;
+}> = [
+  // Tenant 1: Groupe Éducatif Hannibal
+  {
+    tenantIndex: 0,
+    name: "Jardin d'Enfants Les Poussins",
+    slug: 'creche-les-poussins',
+    category: EstablishmentCategory.DAYCARE,
+    city: 'Tunis',
+    address: '14 Rue d\'Angleterre, Tunis',
+    phone: '+216 71 234 560',
+    email: 'contact@creche-lespoussins.tn',
+  },
+  {
+    tenantIndex: 0,
+    name: 'École Primaire Hannibal',
+    slug: 'ecole-hannibal',
+    category: EstablishmentCategory.SCHOOL,
+    city: 'Carthage',
+    address: '28 Avenue Habib Bourguiba, Carthage',
+    phone: '+216 71 740 120',
+    email: 'contact@ecole-hannibal.tn',
+  },
+
+  // Tenant 2: Institution Al-Amel
+  {
+    tenantIndex: 1,
+    name: 'École Primaire Al-Amel',
+    slug: 'ecole-al-amel',
+    category: EstablishmentCategory.SCHOOL,
+    city: 'Ariana',
+    address: '45 Avenue de la République, Ariana',
+    phone: '+216 71 850 330',
+    email: 'primaire@alamel.tn',
+  },
+  {
+    tenantIndex: 1,
+    name: 'Collège Privé Al-Amel',
+    slug: 'college-al-amel',
+    category: EstablishmentCategory.MIDDLE_SCHOOL,
+    city: 'La Marsa',
+    address: '12 Rue Sidi Abdelaziz, La Marsa',
+    phone: '+216 71 910 440',
+    email: 'college@alamel.tn',
+  },
+
+  // Tenant 3: Complexe Scolaire Ibn Khaldoun
+  {
+    tenantIndex: 2,
+    name: 'Collège Ibn Khaldoun',
+    slug: 'college-ibn-khaldoun',
+    category: EstablishmentCategory.MIDDLE_SCHOOL,
+    city: 'Sousse',
+    address: '88 Boulevard 14 Janvier, Sousse',
+    phone: '+216 73 220 550',
+    email: 'college@ibnkhaldoun.tn',
+  },
+  {
+    tenantIndex: 2,
+    name: "Lycée d'Excellence Ibn Khaldoun",
+    slug: 'lycee-ibn-khaldoun',
+    category: EstablishmentCategory.HIGH_SCHOOL,
+    city: 'Sousse',
+    address: '102 Avenue Léopold Senghor, Sousse',
+    phone: '+216 73 340 660',
+    email: 'lycee@ibnkhaldoun.tn',
+  },
+
+  // Tenant 4: Étoile Brillante Éducation
+  {
+    tenantIndex: 3,
+    name: 'École Internationale Étoile Brillante',
+    slug: 'ecole-etoile-brillante',
+    category: EstablishmentCategory.SCHOOL,
+    city: 'Sfax',
+    address: '55 Route de Téniour Km 2, Sfax',
+    phone: '+216 74 410 770',
+    email: 'primaire@etoile-brillante.tn',
+  },
+  {
+    tenantIndex: 3,
+    name: 'Lycée Polyvalent Étoile Brillante',
+    slug: 'lycee-etoile-brillante',
+    category: EstablishmentCategory.HIGH_SCHOOL,
+    city: 'Sfax',
+    address: '77 Route Soukra Km 3, Sfax',
+    phone: '+216 74 620 880',
+    email: 'lycee@etoile-brillante.tn',
+  },
+];
+
+const matieresCatalog = [
   { name: 'Mathématiques', code: 'MATH', coefficient: 3 },
   { name: 'Français', code: 'FRAN', coefficient: 3 },
   { name: 'Arabe', code: 'ARAB', coefficient: 3 },
   { name: 'Anglais', code: 'ANGL', coefficient: 2 },
   { name: 'Physique-Chimie', code: 'PHYCH', coefficient: 2 },
-  { name: 'SVT', code: 'SVT', coefficient: 2 },
+  { name: 'Sciences de la Vie et de la Terre', code: 'SVT', coefficient: 2 },
   { name: 'Histoire-Géographie', code: 'HIST', coefficient: 2 },
   { name: 'Éducation Civique', code: 'CIVIQ', coefficient: 1 },
-  { name: 'EPS', code: 'EPS', coefficient: 1 },
-  { name: 'Informatique', code: 'INFO', coefficient: 1 },
-  { name: 'Art Plastique', code: 'ART', coefficient: 1 },
+  { name: 'EPS & Sport', code: 'EPS', coefficient: 1 },
+  { name: 'Informatique & Algorithmique', code: 'INFO', coefficient: 2 },
+  { name: 'Arts Plastiques', code: 'ART', coefficient: 1 },
   { name: 'Musique', code: 'MUSIQ', coefficient: 1 },
 ];
 
-const firstNames = [
-  'Mohammed', 'Ahmed', 'Youcef', 'Khaled', 'Amine', 'Omar', 'Karim', 'Samir', 'Rachid', 'Farid',
-  'Fatima', 'Aicha', 'Khadija', 'Amina', 'Nadia', 'Sabrina', 'Meriem', 'Dalila', 'Naima', 'Sara',
-  'Yacine', 'Sofiane', 'Abdelkader', 'Redouane', 'Zakaria', 'Mehdi', 'Bilal', 'Hamza', 'Youssef', 'Anis',
-  'Lina', 'Houda', 'Imane', 'Asma', 'Wassila', 'Nesrine', 'Radia', 'Samira', 'Leila', 'Djihad',
+const tunisianFirstNames = [
+  'Ahmed', 'Mohamed', 'Youssef', 'Amine', 'Karim', 'Sami', 'Omar', 'Mehdi', 'Bilel', 'Hamza',
+  'Yassine', 'Skander', 'Farouk', 'Zied', 'Anis', 'Tarek', 'Slim', 'Kais', 'Wassim', 'Ilyes',
+  'Mariem', 'Fatma', 'Sarra', 'Nour', 'Yasmine', 'Rania', 'Amira', 'Ines', 'Dorra', 'Chaima',
+  'Sirine', 'Hela', 'Nesrine', 'Maha', 'Salma', 'Khadija', 'Leila', 'Aya', 'Eya', 'Asma',
 ];
 
-const lastNames = [
-  'Benali', 'Mohamedi', 'Khelifi', 'Bouzid', 'Ait Ahmed', 'Mebarki', 'Cherif', 'Belkacem', 'Hamidi', 'Brahimi',
-  'Djelloul', 'Benaissa', 'Aouchiche', 'Mansouri', 'Touati', 'Guerfi', 'Bouhadja', 'Slimani', 'Bentaleb', 'Ferhat',
-  'Bouzoura', 'Messaoudi', 'Boukhtoucha', 'Rahal', 'Bouzid', 'Mebarki', 'Cherif', 'Belkacem', 'Hamidi', 'Brahimi',
-];
-
-const addresses = [
-  '123 Rue Didouche Mourad, Alger',
-  '45 Avenue de la Liberté, Oran',
-  '78 Boulevard Emir Abdelkader, Constantine',
-  '12 Rue Hassiba Ben Bouali, Tlemcen',
-  '89 Avenue principale, Blida',
-  '34 Rue des Frères Abbas, Sétif',
-  '56 Boulevard Zighoud Youcef, Annaba',
-  '23 Rue Larbi Ben M\'hidi, Batna',
-  '67 Avenue Ahmed Ouaked, Biskra',
-  '91 Rue Colonel Amirouche, Tizi Ouzou',
-];
-
-const roomNames = [
-  'Salle 101', 'Salle 102', 'Salle 103', 'Salle 201', 'Salle 202',
-  'Salle 203', 'Salle 301', 'Salle 302', 'Labo Info', 'Labo Sci',
-  'Gymnase', 'Bibliothèque', 'Amphithéâtre', 'Salle des Professeurs', 'Bureau Direction',
+const tunisianLastNames = [
+  'Ben Salem', 'Trabelsi', 'Gharbi', 'Bouazizi', 'Masmoudi', 'Dridi', 'Ayari', 'Mejri', 'Chaabane', 'Hammami',
+  'Jlassi', 'Khemiri', 'Mansouri', 'Kefi', 'Riahi', 'Zitouni', 'Boukadida', 'Maaloul', 'Triki', 'Louati',
+  'Sassi', 'Abidi', 'Bouslama', 'Rekik', 'Fakhfakh', 'Ellouze', 'Belhadj', 'Cherif', 'Baccouche', 'Koubaa',
 ];
 
 const lessonTitles = [
-  'Introduction aux fractions',
-  'Les droits de l\'homme',
-  'La photosynthèse',
-  'Les parties du discours',
-  'Les équations du second degré',
-  'La Révolution française',
-  'Les cellules vivantes',
-  'Les accents français',
-  'La chimie organique',
-  'Le système solaire',
-  'Les droits de l\'homme',
-  'La géométrie dans l\'espace',
-  'La poésie contemporaine',
-  'Les circuits électriques',
-  'La殖民isation',
-  'La nutrition chez les plantes',
-  'Les nombres décimaux',
-  'La grammaire arabe',
-  'L\'empire ottoman',
-  'Les Oxhydres-carbures',
+  'Introduction aux fractions rationnelles',
+  'Les droits fondamentaux et libertés publiques',
+  'La photosynthèse et flux d\'énergie',
+  'Grammaire: les propositions subordonnées relatives',
+  'Résolution des équations du second degré',
+  'Histoire: La Décolonisation et l\'émergence du tiers-monde',
+  'Biologie cellulaire: structure et fonctions des organites',
+  'Phonétique et prosodie en langue française',
+  'Cinétique chimique et catalyses',
+  'Astronomie: le système solaire et gravitation',
+  'Géométrie analytique dans l\'espace tridimensionnel',
+  'Poésie moderne et métaphores contemporaines',
+  'Circuits électriques en courant alternatif',
+  'Nutrition minérale et hydrique chez les végétaux',
+  'Arithmétique: nombres premiers et cryptographie RSA',
+  'Syntaxe avancée de la langue arabe',
+  'Histoire de l\'Empire ottoman et réformes au Maghreb',
+  'Thermochimie et bilans énergétiques',
+  'Algorithmes de tri et complexité temporelle',
+  'Programmation orientée objet en TypeScript',
 ];
 
 // ============================================================
-// MAIN SEED FUNCTION
+// MAIN SEED EXECUTION
 // ============================================================
 
 async function main() {
-  console.log('🌱 Seeding database...\n');
+  console.log('🌱 Starting full multi-tenant seed for BSofts School...\n');
 
-  // Clean existing data
-  console.log('🧹 Cleaning existing data...');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "DynamicEnum" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "AuditLog" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Notification" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Message" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "ConversationParticipant" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Conversation" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "FinancialTransaction" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Caisse" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "TeacherPayment" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "TeacherContract" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "StudentPayment" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "ExamSubmission" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "ExamQuestion" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Exam" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Note" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Lesson" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "TeacherAttendance" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "TeacherLeave" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "StudentAttendance" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Holiday" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Session" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Room" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "StudentClassAssignment" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "StudentParent" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "TeacherMatiere" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "ClassModuleAssignment" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Class" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "AcademicPeriod" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "AcademicYear" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Teacher" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Employee" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Parent" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Student" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Establishment" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "TenantSubscription" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "SaaSPlanFeature" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "SaaSPlanModule" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "SaaSPlan" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "SaaSPermission" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "SaaSModule" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "RolePermission" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "UserRoleAssignment" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Role" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "LoginLog" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Matiere" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "AcademicModule" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "TenantSettings" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "ClassLevel" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "User" CASCADE');
-  await prisma.$executeRawUnsafe('TRUNCATE TABLE "Tenant" CASCADE');
-  console.log('   ✅ Data cleaned\n');
+  // 0. Safe cleanup of existing data in transaction
+  console.log('🧹 Cleaning existing tables in cascade order...');
+  const tableNames = [
+    'DynamicEnum',
+    'AuditLog',
+    'Notification',
+    'Message',
+    'ConversationParticipant',
+    'Conversation',
+    'FinancialTransaction',
+    'Caisse',
+    'TeacherPayment',
+    'TeacherContract',
+    'StudentPayment',
+    'ExamSubmission',
+    'ExamQuestion',
+    'Exam',
+    'Note',
+    'MeetingVote',
+    'MeetingPoint',
+    'MeetingDocument',
+    'MeetingParticipant',
+    'Meeting',
+    'Lesson',
+    'TeacherAttendance',
+    'TeacherLeave',
+    'StudentAttendance',
+    'Holiday',
+    'Session',
+    'Room',
+    'StudentClassAssignment',
+    'StudentParent',
+    'TeacherMatiere',
+    'ClassModuleAssignment',
+    'Class',
+    'GradingConfig',
+    'AcademicPeriod',
+    'AcademicYear',
+    'Teacher',
+    'Employee',
+    'Parent',
+    'Student',
+    'Establishment',
+    'TenantSubscription',
+    'SaaSPlanFeature',
+    'SaaSPlanModule',
+    'SaaSPlan',
+    'SaaSPermission',
+    'SaaSModule',
+    'RolePermission',
+    'UserRoleAssignment',
+    'Role',
+    'LoginLog',
+    'Matiere',
+    'AcademicModule',
+    'TenantSettings',
+    'ClassLevel',
+    'User',
+    'Tenant',
+  ];
+
+  for (const table of tableNames) {
+    try {
+      await prisma.$executeRawUnsafe(`TRUNCATE TABLE "${table}" CASCADE`);
+    } catch {
+      // Table may not exist yet or already empty
+    }
+  }
+  console.log('   ✅ Tables truncated cleanly.\n');
 
   // 1. Create SaaS Modules
-  console.log('📦 Creating SaaS modules...');
+  console.log('📦 1. Creating SaaS Modules...');
   const createdModules = await Promise.all(
     modules.map((m) =>
       prisma.saaSModule.upsert({
@@ -244,10 +366,10 @@ async function main() {
       }),
     ),
   );
-  console.log(`   ✅ ${createdModules.length} modules created`);
+  console.log(`   ✅ ${createdModules.length} SaaS modules ready.`);
 
   // 2. Create Permissions
-  console.log('🔐 Creating permissions...');
+  console.log('🔐 2. Creating Permissions (161 granular permissions)...');
   const permissionsToCreate: Array<{ moduleId: string; name: string; code: string; description: string }> = [];
   for (const mod of createdModules) {
     for (const action of permissionActions) {
@@ -268,23 +390,21 @@ async function main() {
       }),
     ),
   );
-  console.log(`   ✅ ${createdPermissions.length} permissions created`);
+  console.log(`   ✅ ${createdPermissions.length} permissions ready.`);
 
   // 3. Create SaaS Plans
-  console.log('💳 Creating SaaS plans...');
+  console.log('💳 3. Creating SaaS Plans (Free, Basic, Premium, Enterprise)...');
   const createdPlans = await Promise.all(
     plans.map((p) =>
       prisma.saaSPlan.upsert({
         where: { name: p.name },
-        update: { price: p.price, description: p.description },
+        update: { price: p.price, description: p.description, currency: p.currency, interval: p.interval, sortOrder: p.sortOrder },
         create: p,
       }),
     ),
   );
-  console.log(`   ✅ ${createdPlans.length} plans created`);
 
   // Assign modules to plans
-  console.log('🔗 Assigning modules to plans...');
   for (const plan of createdPlans) {
     for (const mod of createdModules) {
       await prisma.saaSPlanModule.upsert({
@@ -294,17 +414,59 @@ async function main() {
       });
     }
   }
-  console.log('   ✅ Plan modules assigned');
 
-  // 4. Create System Roles
-  console.log('👑 Creating system roles...');
+  // Seed SaaSPlanFeatures matching landing page tiers
+  const planFeaturesCatalog = [
+    // Free Plan (50 students, 5 teachers)
+    { planId: createdPlans[0].id, code: 'max_students', value: '50', description: 'Jusqu\'à 50 élèves' },
+    { planId: createdPlans[0].id, code: 'max_teachers', value: '5', description: 'Jusqu\'à 5 professeurs' },
+    { planId: createdPlans[0].id, code: 'reports', value: 'basic', description: 'Rapports élémentaires' },
+    { planId: createdPlans[0].id, code: 'support', value: 'community', description: 'Support communautaire' },
+
+    // Basic Plan (200 students, 20 teachers)
+    { planId: createdPlans[1].id, code: 'max_students', value: '200', description: 'Jusqu\'à 200 élèves' },
+    { planId: createdPlans[1].id, code: 'max_teachers', value: '20', description: 'Jusqu\'à 20 professeurs' },
+    { planId: createdPlans[1].id, code: 'reports', value: 'standard', description: 'Rapports & statistiques standards' },
+    { planId: createdPlans[1].id, code: 'sms', value: 'true', description: 'Notifications SMS & WhatsApp' },
+    { planId: createdPlans[1].id, code: 'support', value: 'email', description: 'Support email 48h' },
+
+    // Premium Plan (Unlimited students & teachers)
+    { planId: createdPlans[2].id, code: 'max_students', value: 'unlimited', description: 'Élèves illimités' },
+    { planId: createdPlans[2].id, code: 'max_teachers', value: 'unlimited', description: 'Professeurs illimités' },
+    { planId: createdPlans[2].id, code: 'reports', value: 'advanced', description: 'Analytique & prévisions avancées' },
+    { planId: createdPlans[2].id, code: 'sms', value: 'true', description: 'Notifications SMS/Email illimitées' },
+    { planId: createdPlans[2].id, code: 'support', value: 'priority_24_7', description: 'Support prioritaire 24/7' },
+    { planId: createdPlans[2].id, code: 'api', value: 'true', description: 'Accès API & Webhooks' },
+    { planId: createdPlans[2].id, code: 'livekit_meetings', value: 'true', description: 'Classes virtuelles LiveKit HD' },
+
+    // Enterprise Plan (Multi-site, white label, SLA)
+    { planId: createdPlans[3].id, code: 'max_students', value: 'unlimited', description: 'Élèves illimités multi-campus' },
+    { planId: createdPlans[3].id, code: 'max_teachers', value: 'unlimited', description: 'Équipes pédagogiques illimitées' },
+    { planId: createdPlans[3].id, code: 'custom_domain', value: 'true', description: 'Nom de domaine & SSL dédié' },
+    { planId: createdPlans[3].id, code: 'white_label', value: 'true', description: 'Marque blanche complète' },
+    { planId: createdPlans[3].id, code: 'dedicated_account_manager', value: 'true', description: 'Gestionnaire de compte dédié' },
+    { planId: createdPlans[3].id, code: 'sla_guarantee', value: '99.9%', description: 'Garantie SLA 99.9%' },
+    { planId: createdPlans[3].id, code: 'livekit_meetings', value: 'true', description: 'Classes virtuelles LiveKit HD' },
+  ];
+
+  for (const pf of planFeaturesCatalog) {
+    await prisma.saaSPlanFeature.upsert({
+      where: { planId_code: { planId: pf.planId, code: pf.code } },
+      update: { value: pf.value, description: pf.description },
+      create: pf,
+    });
+  }
+  console.log(`   ✅ ${createdPlans.length} plans & features assigned.`);
+
+  // 4. Create System Roles & Permissions
+  console.log('👑 4. Creating System Roles...');
   const roles = [
-    { name: 'Super Admin', code: 'SUPER_ADMIN', description: 'Establishment owner', isSystem: true },
-    { name: 'Admin', code: 'ADMIN', description: 'Administrative staff', isSystem: true },
-    { name: 'Employee', code: 'EMPLOYEE', description: 'Office staff', isSystem: true },
-    { name: 'Teacher', code: 'TEACHER', description: 'Teaching staff', isSystem: true },
-    { name: 'Student', code: 'STUDENT', description: 'Students', isSystem: true },
-    { name: 'Parent', code: 'PARENT', description: 'Parents & guardians', isSystem: true },
+    { name: 'Super Admin', code: 'SUPER_ADMIN', description: 'Propriétaire d\'établissement / Multi-campus', isSystem: true },
+    { name: 'Admin', code: 'ADMIN', description: 'Directeur ou administrateur d\'établissement', isSystem: true },
+    { name: 'Employee', code: 'EMPLOYEE', description: 'Personnel administratif et comptable', isSystem: true },
+    { name: 'Teacher', code: 'TEACHER', description: 'Corps enseignant et formateurs', isSystem: true },
+    { name: 'Student', code: 'STUDENT', description: 'Élèves et apprenants', isSystem: true },
+    { name: 'Parent', code: 'PARENT', description: 'Parents et tuteurs légaux', isSystem: true },
   ];
 
   const createdRoles = await Promise.all(
@@ -316,14 +478,11 @@ async function main() {
       }),
     ),
   );
-  console.log(`   ✅ ${createdRoles.length} roles created`);
 
-  // Assign permissions to roles
-  console.log('🔗 Assigning permissions to roles...');
   const rolePermissionsMap: Record<string, string[]> = {
     SUPER_ADMIN: createdPermissions.map((p) => p.code),
     ADMIN: createdPermissions.filter((p) => !p.code.startsWith('billing')).map((p) => p.code),
-    EMPLOYEE: ['students:list', 'students:read', 'teachers:list', 'teachers:read', 'payments:list', 'payments:read'],
+    EMPLOYEE: ['students:list', 'students:read', 'teachers:list', 'teachers:read', 'payments:list', 'payments:read', 'finance:list', 'finance:read', 'finance:create'],
     TEACHER: ['students:list', 'students:read', 'lessons:list', 'lessons:read', 'lessons:create', 'grades:list', 'grades:read', 'grades:create', 'attendance:list', 'attendance:create', 'exams:list', 'exams:read', 'exams:create'],
     STUDENT: ['lessons:list', 'lessons:read', 'grades:list', 'grades:read', 'exams:list', 'exams:read', 'attendance:list', 'attendance:read'],
     PARENT: ['students:list', 'students:read', 'grades:list', 'grades:read', 'payments:list', 'payments:read', 'attendance:list', 'attendance:read'],
@@ -340,10 +499,10 @@ async function main() {
       });
     }
   }
-  console.log('   ✅ Role permissions assigned');
+  console.log(`   ✅ ${createdRoles.length} roles initialized with permissions.`);
 
   // 5. Create Class Levels
-  console.log('📚 Creating class levels...');
+  console.log('📚 5. Creating Class Levels...');
   const createdClassLevels = await Promise.all(
     classLevels.map((cl) =>
       prisma.classLevel.upsert({
@@ -353,19 +512,16 @@ async function main() {
       }),
     ),
   );
-  console.log(`   ✅ ${createdClassLevels.length} class levels created`);
+  console.log(`   ✅ ${createdClassLevels.length} class levels ready.`);
 
-  // 6. Create Super Admin User (Root)
-  console.log('👤 Creating super admin user...');
-  const rootPassword = await bcrypt.hash('Ahmed123*', 12);
-  const hashedPassword = await bcrypt.hash('Admin@123', 12);
+  // 6. Create Super Admin Root User
+  console.log('👤 6. Creating Super Admin User (bsofts.contact@gmail.com)...');
+  const rootPassword = await bcrypt.hash('Ahmed123*', 10);
+  const commonPassword = await bcrypt.hash('Admin@123', 10);
+
   const superAdmin = await prisma.user.upsert({
     where: { email: 'bsofts.contact@gmail.com' },
-    update: {
-      password: rootPassword,
-      isRoot: true,
-      isActive: true,
-    },
+    update: { password: rootPassword, isRoot: true, isActive: true },
     create: {
       email: 'bsofts.contact@gmail.com',
       username: 'bsofts_root',
@@ -378,1110 +534,870 @@ async function main() {
   });
 
   const superAdminRole = createdRoles.find((r) => r.code === 'SUPER_ADMIN')!;
-  const existingAssignment = await prisma.userRoleAssignment.findFirst({
-    where: { userId: superAdmin.id, roleId: superAdminRole.id, establishmentId: null },
-  });
-  if (!existingAssignment) {
-    await prisma.userRoleAssignment.create({
-      data: { userId: superAdmin.id, roleId: superAdminRole.id },
-    });
-  }
-  console.log('   ✅ Super admin user created: bsofts.contact@gmail.com / Ahmed123*');
-
-  // 7. Create Tenants
-  console.log('🏢 Creating tenants...');
-  const tenantUsers = [];
-  for (let i = 0; i < 2; i++) {
-    const tenantUser = await prisma.user.upsert({
-      where: { email: `tenant${i + 1}@bsofts.com` },
-      update: {},
-      create: {
-        email: `tenant${i + 1}@bsofts.com`,
-        username: `tenant${i + 1}`,
-        firstName: `Tenant ${i + 1}`,
-        lastName: 'Admin',
-        password: hashedPassword,
-        isRoot: false,
-        isActive: true,
-      },
-    });
-    tenantUsers.push(tenantUser);
-  }
-
-  const createdTenants = await Promise.all(
-    tenantUsers.map((user) =>
-      prisma.tenant.create({
-        data: { userId: user.id },
-      }),
-    ),
-  );
-  console.log(`   ✅ ${createdTenants.length} tenants created`);
-
-  // 8. Create Establishments
-  console.log('🏫 Creating establishments...');
-  const createdEstablishments = await Promise.all(
-    establishments.map((e, i) =>
-      prisma.establishment.create({
-        data: {
-          ...e,
-          tenantId: createdTenants[i % createdTenants.length].id,
-          country: 'TN',
-          timezone: 'Africa/Tunis',
-          phone: `216${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
-          email: `${e.slug}@school.dz`,
-          address: randomPick(addresses),
-        },
-      }),
-    ),
-  );
-  console.log(`   ✅ ${createdEstablishments.length} establishments created`);
-
-  // Assign Super Admin to all establishments
-  for (const est of createdEstablishments) {
-    const existing = await prisma.userRoleAssignment.findFirst({
-      where: { userId: superAdmin.id, roleId: superAdminRole.id, establishmentId: est.id },
-    });
-    if (!existing) {
-      await prisma.userRoleAssignment.create({
-        data: { userId: superAdmin.id, roleId: superAdminRole.id, establishmentId: est.id },
-      });
-    }
-  }
-
-  // 9. Create Tenant Settings
-  console.log('⚙️ Creating tenant settings...');
-  for (const tenant of createdTenants) {
-    await prisma.tenantSettings.create({
-      data: {
-        tenantId: tenant.id,
-        currency: 'TND',
-        language: 'FR',
-        theme: 'LIGHT',
-        timezone: 'Africa/Tunis',
-        dateFormat: 'DD/MM/YYYY',
-      },
-    });
-  }
-  console.log('   ✅ Tenant settings created with defaults: TND, FR, LIGHT');
-
-  // 9.1 Create Default Dynamic Enums per establishment
-  console.log('🏷️ Creating dynamic enums...');
-  const defaultEnums = [
-    { category: 'STUDENT_STATUS', code: 'INSCRIT', labelFr: 'Inscrit', labelEn: 'Enrolled', labelAr: 'مسجل', color: '#10B981', sortOrder: 1 },
-    { category: 'STUDENT_STATUS', code: 'RADIE', labelFr: 'Radié', labelEn: 'Expelled', labelAr: 'مفصول', color: '#EF4444', sortOrder: 2 },
-    { category: 'STUDENT_STATUS', code: 'SUSPENDU', labelFr: 'Suspendu', labelEn: 'Suspended', labelAr: 'موقوف', color: '#F59E0B', sortOrder: 3 },
-    { category: 'STUDENT_STATUS', code: 'DIPLOME', labelFr: 'Diplômé', labelEn: 'Graduated', labelAr: 'متخرج', color: '#4F46E5', sortOrder: 4 },
-    { category: 'PAYMENT_METHOD', code: 'ESPECES', labelFr: 'Espèces', labelEn: 'Cash', labelAr: 'نقدا', color: '#10B981', sortOrder: 1 },
-    { category: 'PAYMENT_METHOD', code: 'CHEQUE', labelFr: 'Chèque', labelEn: 'Check', labelAr: 'شيك', color: '#3B82F6', sortOrder: 2 },
-    { category: 'PAYMENT_METHOD', code: 'VIREMENT', labelFr: 'Virement', labelEn: 'Bank Transfer', labelAr: 'تحويل بنكي', color: '#8B5CF6', sortOrder: 3 },
-    { category: 'CAISSE_TYPE', code: 'PRINCIPALE', labelFr: 'Caisse Principale', labelEn: 'Main Cash Desk', labelAr: 'الصندوق الرئيسي', color: '#4F46E5', sortOrder: 1 },
-    { category: 'CAISSE_TYPE', code: 'SCOLARITE', labelFr: 'Caisse Frais Scolarité', labelEn: 'Tuition Cash Desk', labelAr: 'صندوق مصاريف الدراسة', color: '#10B981', sortOrder: 2 },
-    { category: 'CAISSE_TYPE', code: 'SALAIRES', labelFr: 'Caisse Salaires', labelEn: 'Payroll Cash Desk', labelAr: 'صندوق الأجور', color: '#F59E0B', sortOrder: 3 },
-  ];
-
-  for (const est of createdEstablishments) {
-    for (const de of defaultEnums) {
-      await prisma.dynamicEnum.create({
-        data: {
-          ...de,
-          establishmentId: est.id,
-        },
-      });
-    }
-  }
-  console.log('   ✅ Dynamic enums created for all establishments');
-
-  // 10. Create Academic Modules per establishment
-  console.log('📦 Creating academic modules...');
-  const allAcademicModules: any[] = [];
-  for (const establishment of createdEstablishments) {
-    const moduleNames = ['Sciences', 'Lettres et Langues', 'Mathématiques'];
-    for (const name of moduleNames) {
-      const existing = await prisma.academicModule.findFirst({
-        where: { name, establishmentId: establishment.id },
-      });
-      if (!existing) {
-        const mod = await prisma.academicModule.create({
-          data: {
-            name,
-            establishmentId: establishment.id,
-          },
-        });
-        allAcademicModules.push(mod);
-      }
-    }
-  }
-  console.log(`   ✅ ${allAcademicModules.length} academic modules created`);
-
-  // 11. Create Matieres
-  console.log('📖 Creating subjects...');
-  const createdMatieres = await Promise.all(
-    matieres.map(async (m, idx) => {
-      const module = allAcademicModules[idx % allAcademicModules.length];
-      const existing = await prisma.matiere.findFirst({ where: { name: m.name, moduleId: module.id } });
-      if (existing) {
-        return prisma.matiere.update({ where: { id: existing.id }, data: { coefficient: m.coefficient } });
-      }
-      return prisma.matiere.create({
-        data: { ...m, moduleId: module.id },
-      });
-    }),
-  );
-  console.log(`   ✅ ${createdMatieres.length} subjects created`);
-
-  // 12. Create Users for Admin, Teachers, Students, Parents, Employees
-  console.log('👥 Creating users...');
-
   const adminRole = createdRoles.find((r) => r.code === 'ADMIN')!;
   const teacherRole = createdRoles.find((r) => r.code === 'TEACHER')!;
   const studentRole = createdRoles.find((r) => r.code === 'STUDENT')!;
   const parentRole = createdRoles.find((r) => r.code === 'PARENT')!;
   const employeeRole = createdRoles.find((r) => r.code === 'EMPLOYEE')!;
 
-  // Create Admin Users
-  const adminUsers = [];
-  for (let i = 0; i < 3; i++) {
-    const user = await prisma.user.create({
-      data: {
-        email: `admin${i + 1}@school.dz`,
-        username: `admin${i + 1}`,
-        firstName: randomPick(firstNames),
-        lastName: randomPick(lastNames),
-        password: hashedPassword,
+  // 7. Create 4 Tenants with Settings and Subscriptions
+  console.log('🏢 7. Creating 4 Tenants with Settings & Subscriptions...');
+  const createdTenants = [];
+  for (let i = 0; i < tenantDefinitions.length; i++) {
+    const tDef = tenantDefinitions[i];
+    const tenantUser = await prisma.user.upsert({
+      where: { email: tDef.email },
+      update: { password: commonPassword, isActive: true },
+      create: {
+        email: tDef.email,
+        username: tDef.username,
+        firstName: tDef.firstName,
+        lastName: tDef.lastName,
+        password: commonPassword,
+        isRoot: false,
         isActive: true,
       },
     });
+
+    const tenant = await prisma.tenant.create({
+      data: { userId: tenantUser.id },
+    });
+
+    await prisma.user.update({
+      where: { id: tenantUser.id },
+      data: { tenantId: tenant.id },
+    });
+
+    await prisma.tenantSettings.create({
+      data: {
+        tenantId: tenant.id,
+        currency: Currency.TND,
+        language: Language.FR,
+        theme: Theme.LIGHT,
+        timezone: 'Africa/Tunis',
+        dateFormat: 'DD/MM/YYYY',
+      },
+    });
+
+    // Subscriptions: Tenant 0 -> Free, Tenant 1 -> Basic, Tenant 2 -> Premium, Tenant 3 -> Enterprise
+    await prisma.tenantSubscription.create({
+      data: {
+        tenantId: tenant.id,
+        planId: createdPlans[i].id,
+        status: SubscriptionStatus.ACTIVE,
+        startDate: new Date('2024-09-01'),
+        endDate: new Date('2026-09-01'),
+      },
+    });
+
+    createdTenants.push(tenant);
+  }
+  console.log(`   ✅ 4 Tenants created with active subscriptions.`);
+
+  // 8. Create 8 Establishments across the 4 Tenants
+  console.log('🏫 8. Creating 8 Establishments (2 per tenant)...');
+  const createdEstablishments = [];
+  for (const estDef of establishmentDefinitions) {
+    const tenant = createdTenants[estDef.tenantIndex];
+    const est = await prisma.establishment.create({
+      data: {
+        name: estDef.name,
+        slug: estDef.slug,
+        category: estDef.category,
+        tenantId: tenant.id,
+        country: 'TN',
+        timezone: 'Africa/Tunis',
+        phone: estDef.phone,
+        email: estDef.email,
+        address: estDef.address,
+      },
+    });
+    createdEstablishments.push(est);
+
+    // Assign Super Admin as SUPER_ADMIN to this establishment
     await prisma.userRoleAssignment.create({
       data: {
-        userId: user.id,
-        roleId: adminRole.id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
+        userId: superAdmin.id,
+        roleId: superAdminRole.id,
+        establishmentId: est.id,
       },
     });
-    adminUsers.push(user);
   }
-  console.log(`   ✅ ${adminUsers.length} admin users created`);
+  console.log(`   ✅ 8 Establishments created. Super Admin assigned to all.`);
 
-  // Create Teacher Users
-  const teacherUsers = [];
-  for (let i = 0; i < 10; i++) {
-    const user = await prisma.user.create({
-      data: {
-        email: `teacher${i + 1}@school.dz`,
-        username: `teacher${i + 1}`,
-        firstName: randomPick(firstNames),
-        lastName: randomPick(lastNames),
-        password: hashedPassword,
-        isActive: true,
-      },
-    });
-    await prisma.userRoleAssignment.create({
-      data: {
-        userId: user.id,
-        roleId: teacherRole.id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    teacherUsers.push(user);
-  }
-  console.log(`   ✅ ${teacherUsers.length} teacher users created`);
+  // 9. Loop over ALL 8 establishments to populate complete isolated data
+  console.log('🚀 9. Populating Academic Years, Classes, Users, Attendance, and Finance per establishment...');
 
-  // Create Parent Users
-  const parentUsers = [];
-  for (let i = 0; i < 15; i++) {
-    const user = await prisma.user.create({
-      data: {
-        email: `parent${i + 1}@school.dz`,
-        username: `parent${i + 1}`,
-        firstName: randomPick(firstNames),
-        lastName: randomPick(lastNames),
-        password: hashedPassword,
-        isActive: true,
-      },
-    });
-    await prisma.userRoleAssignment.create({
-      data: {
-        userId: user.id,
-        roleId: parentRole.id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    parentUsers.push(user);
-  }
-  console.log(`   ✅ ${parentUsers.length} parent users created`);
+  const defaultDynamicEnums = [
+    { category: 'STUDENT_STATUS', code: 'INSCRIT', labelFr: 'Inscrit', labelEn: 'Enrolled', labelAr: 'مسجل', color: '#242F40', sortOrder: 1 },
+    { category: 'STUDENT_STATUS', code: 'RADIE', labelFr: 'Radié', labelEn: 'Expelled', labelAr: 'مفصول', color: '#363636', sortOrder: 2 },
+    { category: 'STUDENT_STATUS', code: 'SUSPENDU', labelFr: 'Suspendu', labelEn: 'Suspended', labelAr: 'موقوف', color: '#CCA43B', sortOrder: 3 },
+    { category: 'STUDENT_STATUS', code: 'DIPLOME', labelFr: 'Diplômé', labelEn: 'Graduated', labelAr: 'متخرج', color: '#242F40', sortOrder: 4 },
+    { category: 'PAYMENT_METHOD', code: 'ESPECES', labelFr: 'Espèces', labelEn: 'Cash', labelAr: 'نقدا', color: '#242F40', sortOrder: 1 },
+    { category: 'PAYMENT_METHOD', code: 'CHEQUE', labelFr: 'Chèque', labelEn: 'Check', labelAr: 'شيك', color: '#363636', sortOrder: 2 },
+    { category: 'PAYMENT_METHOD', code: 'VIREMENT', labelFr: 'Virement', labelEn: 'Bank Transfer', labelAr: 'تحويل بنكي', color: '#CCA43B', sortOrder: 3 },
+    { category: 'CAISSE_TYPE', code: 'PRINCIPALE', labelFr: 'Caisse Principale', labelEn: 'Main Cash Desk', labelAr: 'الصندوق الرئيسي', color: '#242F40', sortOrder: 1 },
+    { category: 'CAISSE_TYPE', code: 'SCOLARITE', labelFr: 'Caisse Frais Scolarité', labelEn: 'Tuition Cash Desk', labelAr: 'صندوق مصاريف الدراسة', color: '#CCA43B', sortOrder: 2 },
+    { category: 'CAISSE_TYPE', code: 'CANTINE', labelFr: 'Caisse Cantine', labelEn: 'Canteen Cash Desk', labelAr: 'صندوق المطعم', color: '#363636', sortOrder: 3 },
+  ];
 
-  // Create Student Users
-  const studentUsers = [];
-  for (let i = 0; i < 30; i++) {
-    const user = await prisma.user.create({
-      data: {
-        email: `student${i + 1}@school.dz`,
-        username: `student${i + 1}`,
-        firstName: randomPick(firstNames),
-        lastName: randomPick(lastNames),
-        password: hashedPassword,
-        isActive: true,
-      },
-    });
-    await prisma.userRoleAssignment.create({
-      data: {
-        userId: user.id,
-        roleId: studentRole.id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    studentUsers.push(user);
-  }
-  console.log(`   ✅ ${studentUsers.length} student users created`);
+  let totalClassesCreated = 0;
+  let totalStudentsCreated = 0;
+  let totalTeachersCreated = 0;
+  let totalPaymentsCreated = 0;
+  let totalExamsCreated = 0;
 
-  // Create Employee Users
-  const employeeUsers = [];
-  for (let i = 0; i < 5; i++) {
-    const user = await prisma.user.create({
-      data: {
-        email: `employee${i + 1}@school.dz`,
-        username: `employee${i + 1}`,
-        firstName: randomPick(firstNames),
-        lastName: randomPick(lastNames),
-        password: hashedPassword,
-        isActive: true,
-      },
-    });
-    await prisma.userRoleAssignment.create({
-      data: {
-        userId: user.id,
-        roleId: employeeRole.id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    employeeUsers.push(user);
-  }
-  console.log(`   ✅ ${employeeUsers.length} employee users created`);
+  for (let estIdx = 0; estIdx < createdEstablishments.length; estIdx++) {
+    const est = createdEstablishments[estIdx];
+    const prefix = `est${estIdx + 1}`;
 
-  // 11. Create Students
-  console.log('🎓 Creating students...');
-  const createdStudents = [];
-  for (let i = 0; i < studentUsers.length; i++) {
-      const student = await prisma.student.create({
-      data: {
-        firstName: studentUsers[i].firstName,
-        lastName: studentUsers[i].lastName,
-        phone: `06${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
-        registrationNumber: generateMatricule('REG', i + 1),
-        dateOfBirth: randomDate(new Date('2005-01-01'), new Date('2015-12-31')),
-        gender: Math.random() > 0.5 ? 'MALE' : 'FEMALE',
-        address: randomPick(addresses),
-        userId: studentUsers[i].id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    createdStudents.push(student);
-  }
-  console.log(`   ✅ ${createdStudents.length} students created`);
+    // A. Dynamic Enums
+    for (const de of defaultDynamicEnums) {
+      await prisma.dynamicEnum.create({
+        data: { ...de, establishmentId: est.id },
+      });
+    }
 
-  // 12. Create Parents
-  console.log('👨‍👩‍👧 Creating parents...');
-  const createdParents = [];
-  for (let i = 0; i < parentUsers.length; i++) {
-    const parent = await prisma.parent.create({
-      data: {
-        firstName: parentUsers[i].firstName,
-        lastName: parentUsers[i].lastName,
-        email: parentUsers[i].email,
-        phone: `05${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
-        occupation: randomPick(['Ingénieur', 'Médecin', 'Enseignant', 'Commerçant', 'Fonctionnaire', 'Infirmier']),
-        userId: parentUsers[i].id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    createdParents.push(parent);
-  }
-  console.log(`   ✅ ${createdParents.length} parents created`);
-
-  // 13. Create Teachers
-  console.log('👩‍🏫 Creating teachers...');
-  const createdTeachers = [];
-  for (let i = 0; i < teacherUsers.length; i++) {
-    const teacher = await prisma.teacher.create({
-      data: {
-        firstName: teacherUsers[i].firstName,
-        lastName: teacherUsers[i].lastName,
-        email: teacherUsers[i].email,
-        phone: `05${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
-        specialization: randomPick(matieres.map((m) => m.name)),
-        hireDate: randomDate(new Date('2015-01-01'), new Date('2023-12-31')),
-        address: randomPick(addresses),
-        userId: teacherUsers[i].id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    createdTeachers.push(teacher);
-  }
-  console.log(`   ✅ ${createdTeachers.length} teachers created`);
-
-  // 14. Create Employees
-  console.log('👔 Creating employees...');
-  const createdEmployees = [];
-  for (let i = 0; i < employeeUsers.length; i++) {
-    const employee = await prisma.employee.create({
-      data: {
-        firstName: employeeUsers[i].firstName,
-        lastName: employeeUsers[i].lastName,
-        email: employeeUsers[i].email,
-        phone: `05${String(Math.floor(Math.random() * 100000000)).padStart(8, '0')}`,
-        position: randomPick(['Secrétaire', 'Comptable', 'Surveillant', 'Assistant', 'Technicien']),
-        hireDate: randomDate(new Date('2015-01-01'), new Date('2023-12-31')),
-        userId: employeeUsers[i].id,
-        establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-      },
-    });
-    createdEmployees.push(employee);
-  }
-  console.log(`   ✅ ${createdEmployees.length} employees created`);
-
-  // 15. Create Academic Years
-  console.log('📅 Creating academic years...');
-  const academicYears = await Promise.all([
-    prisma.academicYear.create({
+    // B. Academic Years (2024-2025 Current, 2023-2024 Past, 2025-2026 Future)
+    const currentYear = await prisma.academicYear.create({
       data: {
         name: '2024-2025',
         startDate: new Date('2024-09-01'),
         endDate: new Date('2025-06-30'),
         isCurrent: true,
-        establishmentId: createdEstablishments[0].id,
+        establishmentId: est.id,
       },
-    }),
-    prisma.academicYear.create({
+    });
+    await prisma.academicYear.create({
       data: {
         name: '2023-2024',
         startDate: new Date('2023-09-01'),
         endDate: new Date('2024-06-30'),
         isCurrent: false,
-        establishmentId: createdEstablishments[0].id,
+        establishmentId: est.id,
       },
-    }),
-  ]);
-  console.log(`   ✅ ${academicYears.length} academic years created`);
+    });
+    await prisma.academicYear.create({
+      data: {
+        name: '2025-2026',
+        startDate: new Date('2025-09-01'),
+        endDate: new Date('2026-06-30'),
+        isCurrent: false,
+        establishmentId: est.id,
+      },
+    });
 
-  // 16. Create Academic Periods
-  console.log('📆 Creating academic periods...');
-  const periods = [];
-  for (const year of academicYears) {
-    const p1 = await prisma.academicPeriod.create({
+    // C. Academic Periods for current year
+    const trimester1 = await prisma.academicPeriod.create({
       data: {
-        name: 'Trimestre 1',
-        type: 'TRIMESTER',
-        startDate: year.startDate,
-        endDate: new Date(new Date(year.startDate).setMonth(new Date(year.startDate).getMonth() + 3)),
-        academicYearId: year.id,
+        name: '1er Trimestre',
+        type: PeriodType.TRIMESTER,
+        startDate: new Date('2024-09-01'),
+        endDate: new Date('2024-11-30'),
+        isCurrent: false,
+        sortOrder: 1,
+        academicYearId: currentYear.id,
       },
     });
-    const p2 = await prisma.academicPeriod.create({
+    const trimester2 = await prisma.academicPeriod.create({
       data: {
-        name: 'Trimestre 2',
-        type: 'TRIMESTER',
-        startDate: new Date(new Date(year.startDate).setMonth(new Date(year.startDate).getMonth() + 3)),
-        endDate: new Date(new Date(year.startDate).setMonth(new Date(year.startDate).getMonth() + 6)),
-        academicYearId: year.id,
+        name: '2ème Trimestre',
+        type: PeriodType.TRIMESTER,
+        startDate: new Date('2024-12-01'),
+        endDate: new Date('2025-02-28'),
+        isCurrent: true,
+        sortOrder: 2,
+        academicYearId: currentYear.id,
       },
     });
-    const p3 = await prisma.academicPeriod.create({
+    await prisma.academicPeriod.create({
       data: {
-        name: 'Trimestre 3',
-        type: 'TRIMESTER',
-        startDate: new Date(new Date(year.startDate).setMonth(new Date(year.startDate).getMonth() + 6)),
-        endDate: year.endDate,
-        academicYearId: year.id,
+        name: '3ème Trimestre',
+        type: PeriodType.TRIMESTER,
+        startDate: new Date('2025-03-01'),
+        endDate: new Date('2025-06-30'),
+        isCurrent: false,
+        sortOrder: 3,
+        academicYearId: currentYear.id,
       },
     });
-    periods.push(p1, p2, p3);
-  }
-  console.log(`   ✅ ${periods.length} academic periods created`);
 
-  // 17. Create Rooms
-  console.log('🏠 Creating rooms...');
-  const createdRooms = await Promise.all(
-    roomNames.map((name, i) =>
-      prisma.room.create({
+    // D. Academic Modules & Matieres for this establishment
+    const acadModules = await Promise.all([
+      prisma.academicModule.create({ data: { name: 'Pôle Scientifique', establishmentId: est.id } }),
+      prisma.academicModule.create({ data: { name: 'Pôle Littéraire & Langues', establishmentId: est.id } }),
+      prisma.academicModule.create({ data: { name: 'Pôle Développement & Arts', establishmentId: est.id } }),
+    ]);
+
+    const estMatieres = [];
+    for (let mIdx = 0; mIdx < matieresCatalog.length; mIdx++) {
+      const mDef = matieresCatalog[mIdx];
+      const targetMod = acadModules[mIdx % acadModules.length];
+      const mat = await prisma.matiere.create({
         data: {
-          name,
-          code: `ROOM${String(i + 1).padStart(3, '0')}`,
-          capacity: Math.floor(Math.random() * 30) + 20,
-          type: i < 12 ? 'CLASSROOM' : i < 14 ? 'LABORATORY' : 'OTHER',
-          establishmentId: createdEstablishments[i % createdEstablishments.length].id,
-        },
-      }),
-    ),
-  );
-  console.log(`   ✅ ${createdRooms.length} rooms created`);
-
-  // 18. Create Classes
-  console.log('📚 Creating classes...');
-  const createdClasses = [];
-  const currentYear = academicYears[0];
-  const selectedLevels = createdClassLevels.slice(8, 15); // 6ème to Terminale
-
-  for (const level of selectedLevels) {
-    for (let i = 0; i < 2; i++) {
-      const cls = await prisma.class.create({
-        data: {
-          name: `${level.name} ${String.fromCharCode(65 + i)}`,
-          code: `${level.name.replace(/\s/g, '')}${String.fromCharCode(65 + i)}`,
-          classLevelId: level.id,
-          academicYearId: currentYear.id,
-          establishmentId: createdEstablishments[0].id,
-          periodType: 'TRIMESTER',
-          maxStudents: 40,
+          name: mDef.name,
+          code: `${mDef.code}_${prefix.toUpperCase()}`,
+          coefficient: mDef.coefficient,
+          moduleId: targetMod.id,
         },
       });
-      createdClasses.push(cls);
+      estMatieres.push(mat);
     }
-  }
-  console.log(`   ✅ ${createdClasses.length} classes created`);
 
-  // 19. Assign Students to Classes
-  console.log('🔗 Assigning students to classes...');
-  for (let i = 0; i < createdStudents.length; i++) {
-    const cls = createdClasses[i % createdClasses.length];
-    await prisma.studentClassAssignment.create({
+    // E. Rooms
+    const rooms = await Promise.all([
+      prisma.room.create({ data: { name: `Salle 101 (${est.slug})`, code: `R101_${prefix}`, capacity: 30, type: RoomType.CLASSROOM, establishmentId: est.id } }),
+      prisma.room.create({ data: { name: `Salle 102 (${est.slug})`, code: `R102_${prefix}`, capacity: 30, type: RoomType.CLASSROOM, establishmentId: est.id } }),
+      prisma.room.create({ data: { name: `Laboratoire Informatique`, code: `LAB_INF_${prefix}`, capacity: 25, type: RoomType.LABORATORY, establishmentId: est.id } }),
+      prisma.room.create({ data: { name: `Bibliothèque & Documentation`, code: `BIB_${prefix}`, capacity: 40, type: RoomType.LIBRARY, establishmentId: est.id } }),
+    ]);
+
+    // F. Classes appropriate for Category
+    let levelSubset: typeof createdClassLevels = [];
+    if (est.category === EstablishmentCategory.DAYCARE) {
+      levelSubset = createdClassLevels.slice(0, 3); // Petite, Moyenne, Grande Section
+    } else if (est.category === EstablishmentCategory.SCHOOL) {
+      levelSubset = createdClassLevels.slice(3, 8); // CP, CE1, CE2, CM1, CM2
+    } else if (est.category === EstablishmentCategory.MIDDLE_SCHOOL) {
+      levelSubset = createdClassLevels.slice(8, 12); // 6ème, 5ème, 4ème, 3ème
+    } else {
+      levelSubset = createdClassLevels.slice(12, 15); // Seconde, Première, Terminale
+    }
+
+    const estClasses = [];
+    for (const lvl of levelSubset) {
+      const clsA = await prisma.class.create({
+        data: {
+          name: `${lvl.name} A`,
+          code: `${lvl.name.replace(/\s/g, '').toUpperCase()}_A_${prefix}`,
+          classLevelId: lvl.id,
+          academicYearId: currentYear.id,
+          establishmentId: est.id,
+          periodType: PeriodType.TRIMESTER,
+          maxStudents: 32,
+        },
+      });
+      estClasses.push(clsA);
+      totalClassesCreated++;
+    }
+
+    // Link modules to classes
+    for (const cls of estClasses) {
+      for (const mod of acadModules) {
+        await prisma.classModuleAssignment.create({
+          data: { classId: cls.id, moduleId: mod.id },
+        });
+      }
+    }
+
+    // G. Staff: 1 Admin, 3 Teachers, 1 Employee
+    const adminUser = await prisma.user.create({
       data: {
-        studentId: createdStudents[i].id,
-        classId: cls.id,
-        academicYearId: currentYear.id,
-        assignedAt: randomDate(new Date('2024-09-01'), new Date('2024-09-15')),
+        email: `admin_${est.slug}@school.tn`,
+        username: `admin_${est.slug}`,
+        firstName: randomPick(tunisianFirstNames),
+        lastName: randomPick(tunisianLastNames),
+        password: commonPassword,
+        tenantId: est.tenantId,
+        isActive: true,
       },
     });
-  }
-  console.log('   ✅ Students assigned to classes');
+    await prisma.userRoleAssignment.create({
+      data: { userId: adminUser.id, roleId: adminRole.id, establishmentId: est.id },
+    });
 
-  // 20. Create Sessions
-  console.log('⏰ Creating sessions...');
-  const createdSessions = [];
-  for (const cls of createdClasses) {
-    for (let day = 1; day <= 5; day++) {
-      for (let slot = 0; slot < 6; slot++) {
+    const estTeachers = [];
+    for (let tIdx = 0; tIdx < 3; tIdx++) {
+      const tFirstName = randomPick(tunisianFirstNames);
+      const tLastName = randomPick(tunisianLastNames);
+      const tUser = await prisma.user.create({
+        data: {
+          email: `prof${tIdx + 1}_${est.slug}@school.tn`,
+          username: `prof${tIdx + 1}_${est.slug}`,
+          firstName: tFirstName,
+          lastName: tLastName,
+          password: commonPassword,
+          tenantId: est.tenantId,
+          isActive: true,
+        },
+      });
+      await prisma.userRoleAssignment.create({
+        data: { userId: tUser.id, roleId: teacherRole.id, establishmentId: est.id },
+      });
+
+      const teacher = await prisma.teacher.create({
+        data: {
+          firstName: tFirstName,
+          lastName: tLastName,
+          email: tUser.email,
+          phone: `+216 9${Math.floor(1000000 + Math.random() * 9000000)}`,
+          hireDate: new Date('2023-09-01'),
+          specialization: estMatieres[tIdx % estMatieres.length].name,
+          userId: tUser.id,
+          establishmentId: est.id,
+        },
+      });
+
+      // Contract
+      const contract = await prisma.teacherContract.create({
+        data: {
+          teacherId: teacher.id,
+          contractType: ContractType.FULL_TIME,
+          startDate: new Date('2023-09-01'),
+          salary: 1200 + tIdx * 250,
+          currency: Currency.TND,
+        },
+      });
+
+      // Teacher Matieres
+      await prisma.teacherMatiere.create({
+        data: { teacherId: teacher.id, matiereId: estMatieres[tIdx % estMatieres.length].id },
+      });
+
+      // Teacher payment
+      await prisma.teacherPayment.create({
+        data: {
+          teacherId: teacher.id,
+          contractId: contract.id,
+          period: 'Janvier 2025',
+          amount: contract.salary,
+          currency: Currency.TND,
+          calculatedAmount: contract.salary,
+          status: PaymentStatus.PAID,
+          paidAt: new Date('2025-01-30'),
+        },
+      });
+
+      estTeachers.push(teacher);
+      totalTeachersCreated++;
+    }
+
+    // 1 Employee (Comptable)
+    const empUser = await prisma.user.create({
+      data: {
+        email: `compta_${est.slug}@school.tn`,
+        username: `compta_${est.slug}`,
+        firstName: randomPick(tunisianFirstNames),
+        lastName: randomPick(tunisianLastNames),
+        password: commonPassword,
+        tenantId: est.tenantId,
+        isActive: true,
+      },
+    });
+    await prisma.userRoleAssignment.create({
+      data: { userId: empUser.id, roleId: employeeRole.id, establishmentId: est.id },
+    });
+    await prisma.employee.create({
+      data: {
+        firstName: empUser.firstName,
+        lastName: empUser.lastName,
+        email: empUser.email,
+        phone: `+216 7${Math.floor(1000000 + Math.random() * 9000000)}`,
+        position: 'Responsable Financier & Comptable',
+        hireDate: new Date('2022-09-01'),
+        userId: empUser.id,
+        establishmentId: est.id,
+      },
+    });
+
+    // H. Parents (3 parents per establishment)
+    const estParents = [];
+    for (let pIdx = 0; pIdx < 3; pIdx++) {
+      const pUser = await prisma.user.create({
+        data: {
+          email: `parent${pIdx + 1}_${est.slug}@parent.tn`,
+          username: `parent${pIdx + 1}_${est.slug}`,
+          firstName: randomPick(tunisianFirstNames),
+          lastName: randomPick(tunisianLastNames),
+          password: commonPassword,
+          tenantId: est.tenantId,
+          isActive: true,
+        },
+      });
+      await prisma.userRoleAssignment.create({
+        data: { userId: pUser.id, roleId: parentRole.id, establishmentId: est.id },
+      });
+      const parent = await prisma.parent.create({
+        data: {
+          firstName: pUser.firstName,
+          lastName: pUser.lastName,
+          email: pUser.email,
+          phone: `+216 2${Math.floor(1000000 + Math.random() * 9000000)}`,
+          occupation: randomPick(['Cadre de banque', 'Médecin spécialiste', 'Enseignant universitaire', 'Architecte', 'Chef d\'entreprise']),
+          userId: pUser.id,
+          establishmentId: est.id,
+        },
+      });
+      estParents.push(parent);
+    }
+
+    // I. Students (6 students per establishment)
+    const estStudents = [];
+    for (let sIdx = 0; sIdx < 6; sIdx++) {
+      const sFirstName = randomPick(tunisianFirstNames);
+      const sLastName = randomPick(tunisianLastNames);
+      const sUser = await prisma.user.create({
+        data: {
+          email: `eleve${sIdx + 1}_${est.slug}@school.tn`,
+          username: `eleve${sIdx + 1}_${est.slug}`,
+          firstName: sFirstName,
+          lastName: sLastName,
+          password: commonPassword,
+          tenantId: est.tenantId,
+          isActive: true,
+        },
+      });
+      await prisma.userRoleAssignment.create({
+        data: { userId: sUser.id, roleId: studentRole.id, establishmentId: est.id },
+      });
+
+      const student = await prisma.student.create({
+        data: {
+          firstName: sFirstName,
+          lastName: sLastName,
+          phone: `+216 5${Math.floor(1000000 + Math.random() * 9000000)}`,
+          registrationNumber: generateMatricule(`ELV-${estIdx + 1}-`, sIdx + 1),
+          dateOfBirth: new Date(2010 + (sIdx % 8), (sIdx * 2) % 12, 15),
+          gender: sIdx % 2 === 0 ? 'MALE' : 'FEMALE',
+          address: `${10 + sIdx} Avenue de Carthage, ${estDef.city}`,
+          userId: sUser.id,
+          establishmentId: est.id,
+        },
+      });
+
+      // Assign student to class
+      const targetClass = estClasses[sIdx % estClasses.length];
+      await prisma.studentClassAssignment.create({
+        data: {
+          studentId: student.id,
+          classId: targetClass.id,
+          academicYearId: currentYear.id,
+        },
+      });
+
+      // Link to parent
+      const parent = estParents[sIdx % estParents.length];
+      await prisma.studentParent.create({
+        data: {
+          studentId: student.id,
+          parentId: parent.id,
+          relation: sIdx % 2 === 0 ? 'father' : 'mother',
+        },
+      });
+
+      // Student Payments
+      await prisma.studentPayment.create({
+        data: {
+          studentId: student.id,
+          parentId: parent.id,
+          amount: 250 + (sIdx % 3) * 100,
+          currency: Currency.TND,
+          method: PaymentMethod.CASH,
+          status: PaymentStatus.PAID,
+          paidAt: new Date('2024-10-05'),
+          reference: `REC-${prefix.toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          notes: 'Frais de scolarité Trimestre 1',
+        },
+      });
+      totalPaymentsCreated++;
+
+      estStudents.push(student);
+      totalStudentsCreated++;
+    }
+
+    // J. Caisses & Financial Transactions
+    const caissePrincipale = await prisma.caisse.create({
+      data: {
+        name: 'Caisse Principale',
+        type: CaisseType.MAIN,
+        balance: 15400.0,
+        currency: Currency.TND,
+        establishmentId: est.id,
+      },
+    });
+    const caisseScolarite = await prisma.caisse.create({
+      data: {
+        name: 'Caisse Frais Scolarité',
+        type: CaisseType.TUITION,
+        balance: 38200.0,
+        currency: Currency.TND,
+        establishmentId: est.id,
+      },
+    });
+
+    await prisma.financialTransaction.create({
+      data: {
+        caisseId: caisseScolarite.id,
+        type: TransactionType.INCOME,
+        amount: 4500.0,
+        balance: 38200.0,
+        category: 'Frais de scolarité',
+        description: 'Encaissement groupé rentrée scolaire',
+        performedBy: empUser.id,
+      },
+    });
+    await prisma.financialTransaction.create({
+      data: {
+        caisseId: caissePrincipale.id,
+        type: TransactionType.EXPENSE,
+        amount: 850.0,
+        balance: 14550.0,
+        category: 'Fournitures pédagogiques',
+        description: 'Achat de consommables et fournitures didactiques',
+        performedBy: empUser.id,
+      },
+    });
+
+    // K. Sessions & Lessons for each class
+    for (const cls of estClasses) {
+      for (let sSlot = 0; sSlot < 2; sSlot++) {
+        const sessionDate = new Date('2024-11-15');
+        sessionDate.setDate(sessionDate.getDate() + sSlot * 3);
+
         const session = await prisma.session.create({
           data: {
             classId: cls.id,
-            periodId: periods[0].id,
+            periodId: trimester1.id,
             academicYearId: currentYear.id,
-            date: randomDate(new Date('2024-09-16'), new Date('2024-12-15')),
-            startTime: new Date(2024, 0, 1, 8 + slot, 0),
-            endTime: new Date(2024, 0, 1, 9 + slot, 0),
+            roomId: rooms[sSlot % rooms.length].id,
+            teacherId: estTeachers[sSlot % estTeachers.length].id,
+            date: sessionDate,
+            startTime: new Date(2024, 10, 15, 8 + sSlot * 2, 0),
+            endTime: new Date(2024, 10, 15, 10 + sSlot * 2, 0),
           },
         });
-        createdSessions.push(session);
+
+        // Lesson
+        await prisma.lesson.create({
+          data: {
+            sessionId: session.id,
+            matiereId: estMatieres[sSlot % estMatieres.length].id,
+            title: randomPick(lessonTitles),
+            content: 'Développement du cours théorique suivi d\'exercices d\'application dirigés.',
+            objectives: 'Maîtriser les notions clés du programme et réussir les applications pratiques.',
+            createdBy: estTeachers[sSlot % estTeachers.length].userId,
+          },
+        });
+
+        // Attendance records for students in class
+        const classStudents = await prisma.studentClassAssignment.findMany({
+          where: { classId: cls.id },
+        });
+        for (const cs of classStudents) {
+          await prisma.studentAttendance.create({
+            data: {
+              studentId: cs.studentId,
+              sessionId: session.id,
+              status: AttendanceStatus.PRESENT,
+              markedBy: `Prof. ${estTeachers[sSlot % estTeachers.length].lastName}`,
+            },
+          });
+        }
       }
-    }
-  }
-  console.log(`   ✅ ${createdSessions.length} sessions created`);
 
-  // 21. Create Lessons
-  console.log('📝 Creating lessons...');
-  const createdLessons = [];
-  const lessonSessions = createdSessions.slice(0, 50);
-  for (let i = 0; i < lessonSessions.length; i++) {
-    const matiere = randomPick(createdMatieres);
-    const teacher = randomPick(createdTeachers);
-    const lesson = await prisma.lesson.create({
-      data: {
-        sessionId: lessonSessions[i].id,
-        matiereId: matiere.id,
-        title: randomPick(lessonTitles),
-        content: 'Contenu de la leçon à compléter.',
-        objectives: 'Objectifs pédagogiques de la leçon.',
-        createdBy: teacher.userId,
-      },
-    });
-    createdLessons.push(lesson);
-  }
-  console.log(`   ✅ ${createdLessons.length} lessons created`);
-
-  // 22. Create Student Attendance
-  console.log('📋 Creating student attendance records...');
-  const attendanceRecords = [];
-  const attendanceSessions = createdSessions.slice(0, 100);
-
-  for (const session of attendanceSessions) {
-    const studentsInClass = await prisma.studentClassAssignment.findMany({
-      where: { classId: session.classId },
-    });
-
-    for (const assignment of studentsInClass) {
-      const rand = Math.random();
-      let status: string;
-      if (rand < 0.85) status = 'PRESENT';
-      else if (rand < 0.92) status = 'ABSENT';
-      else if (rand < 0.97) status = 'LATE';
-      else status = 'EXCUSED';
-
-      const record = await prisma.studentAttendance.create({
-        data: {
-          studentId: assignment.studentId,
-          sessionId: session.id,
-          status: status as any,
-        },
-      });
-      attendanceRecords.push(record);
-    }
-  }
-  console.log(`   ✅ ${attendanceRecords.length} attendance records created`);
-
-  // 23. Create Teacher Attendance
-  console.log('👩‍🏫 Creating teacher attendance records...');
-  const teacherAttendanceRecords = [];
-  const startDate = new Date('2024-09-16');
-  const endDate = new Date('2024-12-15');
-  for (const teacher of createdTeachers) {
-    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-      if (d.getDay() === 0 || d.getDay() === 6) continue;
-
-      const rand = Math.random();
-      let status: string;
-      if (rand < 0.92) status = 'PRESENT';
-      else if (rand < 0.96) status = 'ABSENT';
-      else status = 'LATE';
-
-      const record = await prisma.teacherAttendance.create({
-        data: {
-          teacherId: teacher.id,
-          date: new Date(d),
-          status: status as any,
-        },
-      });
-      teacherAttendanceRecords.push(record);
-    }
-  }
-  console.log(`   ✅ ${teacherAttendanceRecords.length} teacher attendance records created`);
-
-  // 24. Create Exams
-  console.log('📝 Creating exams...');
-  const createdExams = [];
-  const examTypes = ['QUIZ', 'MIDTERM', 'FINAL', 'HOMEWORK'];
-  const examStatuses = ['DRAFT', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED'];
-
-  for (const cls of createdClasses.slice(0, 5)) {
-    for (const matiere of createdMatieres.slice(0, 4)) {
+      // L. Exam and Grades
       const exam = await prisma.exam.create({
         data: {
-          title: `Examen ${matiere.name} - ${cls.name}`,
-          description: `Examen de ${matiere.name} pour la classe ${cls.name}`,
-          type: randomPick(examTypes) as any,
+          title: `Contrôle Continu Trimestre 1 - ${cls.name}`,
+          description: 'Épreuve d\'évaluation sommative des acquis du 1er trimestre',
+          type: ExamType.MIDTERM,
           maxScore: 20,
-          duration: randomPick([60, 90, 120]),
+          duration: 90,
+          status: ExamStatus.COMPLETED,
           classId: cls.id,
-          matiereId: matiere.id,
-          periodId: periods[0].id,
+          matiereId: estMatieres[0].id,
+          periodId: trimester1.id,
           academicYearId: currentYear.id,
-          establishmentId: createdEstablishments[0].id,
-          status: randomPick(examStatuses) as any,
-          startTime: randomDate(new Date('2024-10-01'), new Date('2024-12-15')),
+          establishmentId: est.id,
+          startTime: new Date('2024-11-20T09:00:00Z'),
         },
       });
-      createdExams.push(exam);
+      totalExamsCreated++;
+
+      const enrolled = await prisma.studentClassAssignment.findMany({ where: { classId: cls.id } });
+      for (const enr of enrolled) {
+        await prisma.note.create({
+          data: {
+            studentId: enr.studentId,
+            examId: exam.id,
+            matiereId: estMatieres[0].id,
+            periodId: trimester1.id,
+            academicYearId: currentYear.id,
+            value: Math.floor(10 + Math.random() * 9), // 10 to 18
+            maxValue: 20,
+            coefficient: estMatieres[0].coefficient,
+            comment: 'Bon travail et investissement sérieux.',
+          },
+        });
+      }
     }
-  }
-  console.log(`   ✅ ${createdExams.length} exams created`);
 
-  // 25. Create Notes/Grades
-  console.log('📊 Creating grades...');
-  const createdNotes = [];
-  for (const exam of createdExams) {
-    const classObj = await prisma.class.findUnique({ where: { id: exam.classId } });
-    if (!classObj) continue;
-
-    const students = await prisma.studentClassAssignment.findMany({
-      where: { classId: exam.classId },
-    });
-
-    for (const assignment of students) {
-      if (!exam.matiereId || !exam.periodId || !exam.academicYearId) continue;
-      const matiere = await prisma.matiere.findUnique({ where: { id: exam.matiereId } });
-      if (!matiere) continue;
-
-      const note = await prisma.note.create({
+    // M. School Holidays
+    const holidaysData = [
+      { name: 'Fête de l\'Évacuation', startDate: new Date('2024-10-15'), endDate: new Date('2024-10-15') },
+      { name: 'Vacances de la Mi-Trimestre 1', startDate: new Date('2024-10-28'), endDate: new Date('2024-11-03') },
+      { name: 'Vacances d\'Hiver & Fin d\'Année', startDate: new Date('2024-12-21'), endDate: new Date('2025-01-05') },
+      { name: 'Fête de la Révolution & Jeunesse', startDate: new Date('2025-01-14'), endDate: new Date('2025-01-14') },
+      { name: 'Vacances de Printemps', startDate: new Date('2025-03-15'), endDate: new Date('2025-03-30') },
+      { name: 'Fête de l\'Indépendance', startDate: new Date('2025-03-20'), endDate: new Date('2025-03-20') },
+      { name: 'Fête des Martyrs', startDate: new Date('2025-04-09'), endDate: new Date('2025-04-09') },
+      { name: 'Fête du Travail', startDate: new Date('2025-05-01'), endDate: new Date('2025-05-01') },
+    ];
+    for (const h of holidaysData) {
+      await prisma.holiday.create({
         data: {
-          studentId: assignment.studentId,
-          matiereId: exam.matiereId,
-          periodId: exam.periodId,
-          academicYearId: exam.academicYearId,
-          examId: exam.id,
-          value: Math.floor(Math.random() * 16) + 4,
-          maxValue: 20,
-          coefficient: matiere.coefficient,
-          comment: randomPick(['Excellent', 'Bien', 'Passable', 'Insuffisant', '']),
+          name: h.name,
+          startDate: h.startDate,
+          endDate: h.endDate,
+          establishmentId: est.id,
         },
       });
-      createdNotes.push(note);
     }
   }
-  console.log(`   ✅ ${createdNotes.length} grades created`);
 
-  // 26. Create Caisse
-  console.log('💰 Creating caisses...');
-  const createdCaisses = await Promise.all([
-    prisma.caisse.create({
-      data: {
-        name: 'Caisse Principale',
-        type: 'MAIN',
-        balance: 50000,
-        currency: 'TND',
-        establishmentId: createdEstablishments[0].id,
-      },
-    }),
-    prisma.caisse.create({
-      data: {
-        name: 'Caisse Petite',
-        type: 'PETTY_CASH',
-        balance: 5000,
-        currency: 'TND',
-        establishmentId: createdEstablishments[0].id,
-      },
-    }),
-    prisma.caisse.create({
-      data: {
-        name: 'Compte Bancaire',
-        type: 'SALARY',
-        balance: 200000,
-        currency: 'TND',
-        establishmentId: createdEstablishments[0].id,
-      },
-    }),
-  ]);
-  console.log(`   ✅ ${createdCaisses.length} caisses created`);
-
-  // 27. Create Student Payments
-  console.log('💳 Creating student payments...');
-  const paymentStatuses = ['PAID', 'PENDING', 'PARTIAL', 'OVERDUE'];
-  const feeTypes = ['Frais de scolarité', 'Frais d\'inscription', 'Assurance', 'Cantine', 'Transport'];
-
-  const createdPayments = [];
-  for (const student of createdStudents) {
-    const numPayments = Math.floor(Math.random() * 3) + 1;
-    for (let i = 0; i < numPayments; i++) {
-      const payment = await prisma.studentPayment.create({
-        data: {
-          studentId: student.id,
-          parentId: createdParents[studentUsers.indexOf(studentUsers.find((u) => u.id === student.userId)!) % createdParents.length].id,
-          amount: randomPick([50, 100, 150, 200, 250]),
-          currency: 'TND',
-          method: randomPick(['CASH', 'BANK_TRANSFER', 'CHECK']) as any,
-          status: randomPick(paymentStatuses) as any,
-          paidAt: randomDate(new Date('2024-09-01'), new Date('2024-12-15')),
-          reference: `PAY${String(Math.floor(Math.random() * 100000)).padStart(5, '0')}`,
-          notes: 'Paiement frais de scolarité',
-        },
-      });
-      createdPayments.push(payment);
-    }
-  }
-  console.log(`   ✅ ${createdPayments.length} student payments created`);
-
-  // 28. Create Teacher Contracts
-  console.log('📝 Creating teacher contracts...');
-  const createdContracts = [];
-  for (const teacher of createdTeachers) {
-    const contract = await prisma.teacherContract.create({
-      data: {
-        teacherId: teacher.id,
-        contractType: 'MONTHLY',
-        startDate: randomDate(new Date('2023-01-01'), new Date('2024-01-01')),
-        salary: randomPick([500, 600, 700, 800]),
-        currency: 'TND',
-      },
+  // 10. Direct Messages and Notifications
+  console.log('💬 10. Creating Sample Conversations and Notifications...');
+  const sampleTeacher = await prisma.user.findFirst({ where: { username: { startsWith: 'prof1_' } } });
+  const sampleStudent = await prisma.user.findFirst({ where: { username: { startsWith: 'eleve1_' } } });
+  if (sampleTeacher && sampleStudent) {
+    const conv = await prisma.conversation.create({
+      data: { title: 'Assistance Pédagogique', type: 'DIRECT' },
     });
-    createdContracts.push(contract);
-  }
-  console.log(`   ✅ ${createdContracts.length} teacher contracts created`);
-
-  // 29. Create Teacher Payments
-  console.log('👩‍🏫 Creating teacher payments...');
-  const createdTeacherPayments = [];
-  for (let i = 0; i < createdTeachers.length; i++) {
-    const payment = await prisma.teacherPayment.create({
-      data: {
-        teacherId: createdTeachers[i].id,
-        contractId: createdContracts[i].id,
-        period: 'Décembre 2024',
-        amount: createdContracts[i].salary,
-        currency: 'TND',
-        calculatedAmount: createdContracts[i].salary,
-        status: randomPick(['PENDING', 'PAID']) as any,
-        paidAt: new Date('2024-12-28'),
-      },
-    });
-    createdTeacherPayments.push(payment);
-  }
-  console.log(`   ✅ ${createdTeacherPayments.length} teacher payments created`);
-
-  // 29. Create Financial Transactions
-  console.log('📊 Creating financial transactions...');
-  const transactionTypes = ['INCOME', 'EXPENSE'];
-  const transactionCategories = ['Frais de scolarité', 'Salaires', 'Fournitures', 'Équipement', 'Maintenance', 'Autres'];
-
-  const createdTransactions = [];
-  for (let i = 0; i < 30; i++) {
-    const type = randomPick(transactionTypes);
-    const transaction = await prisma.financialTransaction.create({
-      data: {
-        caisseId: createdCaisses[0].id,
-        type: type as any,
-        amount: type === 'INCOME' ? randomPick([50, 100, 150]) : randomPick([20, 50, 80]),
-        balance: 50000 + (i * 100),
-        category: randomPick(transactionCategories),
-        description: `Transaction ${i + 1}`,
-        performedBy: superAdmin.id,
-      },
-    });
-    createdTransactions.push(transaction);
-  }
-  console.log(`   ✅ ${createdTransactions.length} financial transactions created`);
-
-  // 30. Create Conversations and Messages
-  console.log('💬 Creating conversations and messages...');
-  const conversations = [];
-  for (let i = 0; i < 5; i++) {
-    const conversation = await prisma.conversation.create({
-      data: {
-        type: 'DIRECT',
-      },
-    });
-
     await prisma.conversationParticipant.createMany({
       data: [
-        { conversationId: conversation.id, userId: teacherUsers[i % teacherUsers.length].id },
-        { conversationId: conversation.id, userId: studentUsers[i % studentUsers.length].id },
+        { conversationId: conv.id, userId: sampleTeacher.id },
+        { conversationId: conv.id, userId: sampleStudent.id },
       ],
     });
+    await prisma.message.create({
+      data: {
+        conversationId: conv.id,
+        senderId: sampleTeacher.id,
+        content: 'Bonjour, n\'oublie pas de réviser les exercices de géométrie pour la séance de demain.',
+        type: 'TEXT',
+        isRead: true,
+      },
+    });
+    await prisma.message.create({
+      data: {
+        conversationId: conv.id,
+        senderId: sampleStudent.id,
+        content: 'Bien reçu Monsieur, j\'ai terminé les applications numéro 4 et 5.',
+        type: 'TEXT',
+        isRead: false,
+      },
+    });
+  }
 
-    // Create messages
-    for (let j = 0; j < 5; j++) {
-      await prisma.message.create({
-        data: {
-          conversationId: conversation.id,
-          senderId: j % 2 === 0 ? teacherUsers[i % teacherUsers.length].id : studentUsers[i % studentUsers.length].id,
-          content: `Message ${j + 1} dans la conversation ${i + 1}`,
-          type: 'TEXT',
-          isRead: Math.random() > 0.5,
+  // 17. Seed Meetings Suite (LiveKit WebRTC Rooms, Agenda Points with Votes, Participants)
+  console.log('📹 17. Creating Meetings Suite for All 8 Establishments...');
+  let totalMeetingsCreated = 0;
+  for (const est of createdEstablishments) {
+    const estTeachers = await prisma.teacher.findMany({
+      where: { establishmentId: est.id },
+      include: { user: true },
+      take: 4,
+    });
+    const estParents = await prisma.parent.findMany({
+      where: { establishmentId: est.id },
+      include: { user: true },
+      take: 3,
+    });
+
+    // Meeting 1: Conseil de Classe (SCHEDULED, ONLINE)
+    await prisma.meeting.create({
+      data: {
+        establishmentId: est.id,
+        createdById: superAdmin.id,
+        subject: `Conseil de Classe — ${est.name}`,
+        type: MeetingType.CLASS_COUNCIL,
+        date: new Date(Date.now() + 86400000 * 2),
+        startTime: '14:00',
+        endTime: '15:30',
+        duration: 90,
+        mode: MeetingMode.ONLINE,
+        location: 'Visioconférence LiveKit HD',
+        description: 'Examen des moyennes trimestrielles, assiduité et orientations pédagogiques.',
+        status: MeetingStatus.SCHEDULED,
+        isOnline: true,
+        roomName: `school-room-${est.slug}-council`,
+        points: {
+          create: [
+            {
+              title: 'Approbation des bilans de classe et félicitations du conseil',
+              description: 'Examen des notes et propositions de mentions honorifiques.',
+              isVote: true,
+              sortOrder: 1,
+            },
+            {
+              title: 'Mesures d’accompagnement et soutien scolaire',
+              description: 'Organisation des séances de rattrapage en sciences et langues.',
+              isVote: false,
+              sortOrder: 2,
+            },
+          ],
         },
-      });
-    }
-    conversations.push(conversation);
-  }
-  console.log(`   ✅ ${conversations.length} conversations with messages created`);
-
-  // 31. Create Notifications
-  console.log('🔔 Creating notifications...');
-  const notificationTypes = ['IN_APP', 'EMAIL', 'SMS'];
-  const notificationTitles = [
-    'Bienvenue sur BSofts School',
-    'Rappel: Réunion parents-professeurs',
-    'Nouveau bulletin disponible',
-    'Paiement reçu avec succès',
-    'Mise à jour du système',
-  ];
-
-  const createdNotifications = [];
-  for (const user of studentUsers.slice(0, 10)) {
-    for (let i = 0; i < 3; i++) {
-      const notification = await prisma.notification.create({
-        data: {
-          userId: user.id,
-          title: randomPick(notificationTitles),
-          content: `Contenu de la notification ${i + 1}`,
-          type: randomPick(notificationTypes) as any,
-          isRead: Math.random() > 0.5,
+        participants: {
+          create: [
+            {
+              name: 'Direction Pédagogique',
+              email: est.email || `admin@${est.slug}.tn`,
+              role: MeetingParticipantRole.HOST,
+              userId: superAdmin.id,
+            },
+            ...estTeachers.map((t, idx) => ({
+              name: `${t.firstName} ${t.lastName}`,
+              email: t.email || `teacher${idx}@${est.slug}.tn`,
+              role: MeetingParticipantRole.MODERATOR,
+              userId: t.userId,
+            })),
+          ],
         },
-      });
-      createdNotifications.push(notification);
-    }
-  }
-  console.log(`   ✅ ${createdNotifications.length} notifications created`);
-
-  // 32. Create Audit Logs
-  console.log('📝 Creating audit logs...');
-  const auditActions = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT'];
-  const auditEntities = ['User', 'Student', 'Teacher', 'Class', 'Exam', 'Payment'];
-
-  const createdAuditLogs = [];
-  for (let i = 0; i < 50; i++) {
-    const log = await prisma.auditLog.create({
-      data: {
-        userId: superAdmin.id,
-        action: randomPick(auditActions),
-        entity: randomPick(auditEntities),
-        entityId: superAdmin.id,
-        ipAddress: '127.0.0.1',
-        userAgent: 'Mozilla/5.0',
       },
     });
-    createdAuditLogs.push(log);
-  }
-  console.log(`   ✅ ${createdAuditLogs.length} audit logs created`);
 
-  // 33. Create Tenant Subscriptions
-  console.log('💳 Creating tenant subscriptions...');
-  const subscriptionStatuses: SubscriptionStatus[] = [
-    SubscriptionStatus.ACTIVE,
-    SubscriptionStatus.ACTIVE,
-    SubscriptionStatus.SUSPENDED,
-    SubscriptionStatus.EXPIRED,
-  ];
-  const createdSubscriptions = [];
-  for (let i = 0; i < createdTenants.length; i++) {
-    const plan = createdPlans[i % createdPlans.length];
-    const status = subscriptionStatuses[i % subscriptionStatuses.length];
-    const startDate = new Date('2025-09-01');
-    const endDate = new Date('2026-09-01');
-    const sub = await prisma.tenantSubscription.create({
+    // Meeting 2: Conseil Pédagogique (IN_PROGRESS, LIVE with cast votes)
+    const m2 = await prisma.meeting.create({
       data: {
-        tenantId: createdTenants[i].id,
-        planId: plan.id,
-        status,
-        startDate,
-        endDate,
-      },
-    });
-    createdSubscriptions.push(sub);
-  }
-  console.log(`   ✅ ${createdSubscriptions.length} tenant subscriptions created`);
-
-  // 34. Create SaaS Plan Features
-  console.log('✨ Creating plan features...');
-  const planFeatures = [
-    { planId: createdPlans[0].id, code: 'max_students', value: '50', description: 'Maximum 50 students' },
-    { planId: createdPlans[0].id, code: 'max_teachers', value: '5', description: 'Maximum 5 teachers' },
-    { planId: createdPlans[0].id, code: 'reports', value: 'basic', description: 'Basic reporting' },
-    { planId: createdPlans[1].id, code: 'max_students', value: '200', description: 'Maximum 200 students' },
-    { planId: createdPlans[1].id, code: 'max_teachers', value: '20', description: 'Maximum 20 teachers' },
-    { planId: createdPlans[1].id, code: 'reports', value: 'advanced', description: 'Advanced reporting' },
-    { planId: createdPlans[1].id, code: 'sms', value: 'true', description: 'SMS notifications' },
-    { planId: createdPlans[2].id, code: 'max_students', value: 'unlimited', description: 'Unlimited students' },
-    { planId: createdPlans[2].id, code: 'max_teachers', value: 'unlimited', description: 'Unlimited teachers' },
-    { planId: createdPlans[2].id, code: 'reports', value: 'full', description: 'Full reporting' },
-    { planId: createdPlans[2].id, code: 'sms', value: 'true', description: 'SMS notifications' },
-    { planId: createdPlans[2].id, code: 'support', value: 'priority', description: 'Priority support' },
-    { planId: createdPlans[2].id, code: 'api', value: 'true', description: 'API access' },
-    { planId: createdPlans[3].id, code: 'max_students', value: 'unlimited', description: 'Unlimited students' },
-    { planId: createdPlans[3].id, code: 'custom_domain', value: 'true', description: 'Custom domain' },
-    { planId: createdPlans[3].id, code: 'white_label', value: 'true', description: 'White label branding' },
-  ];
-  const createdPlanFeatures = [];
-  for (const f of planFeatures) {
-    const feat = await prisma.saaSPlanFeature.create({ data: f });
-    createdPlanFeatures.push(feat);
-  }
-  console.log(`   ✅ ${createdPlanFeatures.length} plan features created`);
-
-  // 35. Create StudentParent relations
-  console.log('👨‍👩‍👧 Creating student-parent relations...');
-  const createdStudentParents = [];
-  for (let i = 0; i < createdStudents.length; i++) {
-    const parentIdx = i % createdParents.length;
-    const sp = await prisma.studentParent.create({
-      data: {
-        studentId: createdStudents[i].id,
-        parentId: createdParents[parentIdx].id,
-        relation: i % 3 === 0 ? 'father' : i % 3 === 1 ? 'mother' : 'guardian',
-      },
-    });
-    createdStudentParents.push(sp);
-  }
-  console.log(`   ✅ ${createdStudentParents.length} student-parent relations created`);
-
-  // 36. Create TeacherMatiere relations
-  console.log('👩‍🏫 Creating teacher-subject relations...');
-  const createdTeacherMatieres = [];
-  for (const teacher of createdTeachers) {
-    const numSubjects = 2 + Math.floor(Math.random() * 2);
-    const shuffled = [...createdMatieres].sort(() => 0.5 - Math.random());
-    for (let i = 0; i < numSubjects; i++) {
-      const tm = await prisma.teacherMatiere.create({
-        data: {
-          teacherId: teacher.id,
-          matiereId: shuffled[i].id,
+        establishmentId: est.id,
+        createdById: superAdmin.id,
+        subject: `Conseil Pédagogique & Innovation — ${est.name}`,
+        type: MeetingType.PEDAGOGICAL,
+        date: new Date(),
+        startTime: '10:00',
+        endTime: '12:00',
+        duration: 120,
+        mode: MeetingMode.ONLINE,
+        location: 'Visioconférence LiveKit HD',
+        description: 'Séance collégiale en direct : Déploiement des outils numériques et calendrier des épreuves.',
+        status: MeetingStatus.IN_PROGRESS,
+        isOnline: true,
+        roomName: `school-room-${est.slug}-pedagogical`,
+        points: {
+          create: [
+            {
+              title: 'Adoption du calendrier définitif des épreuves de contrôle',
+              description: 'Validation à la majorité des dates proposées par les départements.',
+              isVote: true,
+              sortOrder: 1,
+            },
+            {
+              title: 'Projet d’activités culturelles et sorties pédagogiques',
+              description: 'Planning des clubs robotique et visites éducatives.',
+              isVote: true,
+              sortOrder: 2,
+            },
+          ],
         },
-      });
-      createdTeacherMatieres.push(tm);
-    }
-  }
-  console.log(`   ✅ ${createdTeacherMatieres.length} teacher-subject relations created`);
-
-  // 37. Create ClassModuleAssignment
-  console.log('📚 Creating class-module assignments...');
-  const createdClassModuleAssignments = [];
-  for (const cls of createdClasses) {
-    for (const mod of allAcademicModules.slice(0, 2)) {
-      const cma = await prisma.classModuleAssignment.create({
-        data: {
-          classId: cls.id,
-          moduleId: mod.id,
+        participants: {
+          create: [
+            {
+              name: 'Directeur des Études',
+              email: `direction@${est.slug}.tn`,
+              role: MeetingParticipantRole.HOST,
+              userId: superAdmin.id,
+              status: ParticipantStatus.ATTENDED,
+            },
+            ...estTeachers.map((t, idx) => ({
+              name: `${t.firstName} ${t.lastName}`,
+              email: t.email || `prof${idx}@${est.slug}.tn`,
+              role: MeetingParticipantRole.PRESENTER,
+              userId: t.userId,
+              status: ParticipantStatus.ATTENDED,
+            })),
+          ],
         },
-      });
-      createdClassModuleAssignments.push(cma);
-    }
-  }
-  console.log(`   ✅ ${createdClassModuleAssignments.length} class-module assignments created`);
-
-  // 38. Create Holidays
-  console.log('🏖️ Creating holidays...');
-  const holidayData = [
-    { name: 'Rentrée scolaire', startDate: new Date('2025-09-01'), endDate: new Date('2025-09-01') },
-    { name: 'Journée de la République', startDate: new Date('2025-10-15'), endDate: new Date('2025-10-15') },
-    { name: 'Toussaint', startDate: new Date('2025-11-01'), endDate: new Date('2025-11-01') },
-    { name: 'Vacances d\'hiver', startDate: new Date('2025-12-20'), endDate: new Date('2026-01-04') },
-    { name: 'Journée de l\'École', startDate: new Date('2026-01-16'), endDate: new Date('2026-01-16') },
-    { name: 'Vacances d\'hiver (suite)', startDate: new Date('2026-02-14'), endDate: new Date('2026-02-22') },
-    { name: 'Journée des Martyrs', startDate: new Date('2026-04-09'), endDate: new Date('2026-04-09') },
-    { name: 'Vacances de Pâques', startDate: new Date('2026-04-10'), endDate: new Date('2026-04-20') },
-    { name: 'Fête du Travail', startDate: new Date('2026-05-01'), endDate: new Date('2026-05-01') },
-    { name: 'Vacances d\'été', startDate: new Date('2026-06-15'), endDate: new Date('2026-09-01') },
-  ];
-  const createdHolidays = [];
-  for (const h of holidayData) {
-    for (const establishment of createdEstablishments) {
-      const existing = await prisma.holiday.findFirst({
-        where: { name: h.name, establishmentId: establishment.id },
-      });
-      if (!existing) {
-        const holiday = await prisma.holiday.create({
-          data: {
-            name: h.name,
-            startDate: h.startDate,
-            endDate: h.endDate,
-            establishmentId: establishment.id,
-          },
-        });
-        createdHolidays.push(holiday);
-      }
-    }
-  }
-  console.log(`   ✅ ${createdHolidays.length} holidays created`);
-
-  // 39. Create TeacherLeave
-  console.log('🏖️ Creating teacher leaves...');
-  const leaveReasons = [
-    'Congé maladie', 'Congé familial', 'Congé annuel', 'Congé de maternité', 'Raison personnelle',
-  ];
-  const leaveTypes = ['SICK', 'PERSONAL', 'VACATION', 'MATERNITY', 'OTHER'] as const;
-  const leaveStatuses = ['APPROVED', 'APPROVED', 'PENDING', 'REJECTED'] as const;
-  const createdTeacherLeaves = [];
-  for (let i = 0; i < 5; i++) {
-    const teacher = createdTeachers[i % createdTeachers.length];
-    const leave = await prisma.teacherLeave.create({
-      data: {
-        teacherId: teacher.id,
-        type: leaveTypes[i],
-        startDate: randomDate(new Date('2025-10-01'), new Date('2026-03-01')),
-        endDate: randomDate(new Date('2026-03-01'), new Date('2026-06-01')),
-        reason: leaveReasons[i],
-        status: leaveStatuses[i],
+      },
+      include: {
+        points: true,
+        participants: true,
       },
     });
-    createdTeacherLeaves.push(leave);
-  }
-  console.log(`   ✅ ${createdTeacherLeaves.length} teacher leaves created`);
 
-  // 40. Create Login Logs
-  console.log('🔐 Creating login logs...');
-  const loginIps = ['127.0.0.1', '192.168.1.100', '192.168.1.101', '10.0.0.50', '10.0.0.51'];
-  const allUsers = [superAdmin, ...tenantUsers, ...adminUsers, ...teacherUsers, ...studentUsers];
-  const createdLoginLogs = [];
-  for (let i = 0; i < 20; i++) {
-    const user = allUsers[i % allUsers.length];
-    const log = await prisma.loginLog.create({
+    // Cast sample votes on Meeting 2 points
+    if (m2.points.length > 0 && m2.participants.length > 1) {
+      const pt1 = m2.points[0];
+      const p1 = m2.participants[0];
+      const p2 = m2.participants[1];
+      await prisma.meetingVote.createMany({
+        data: [
+          { pointId: pt1.id, participantId: p1.id, value: VoteValue.YES },
+          { pointId: pt1.id, participantId: p2.id, value: VoteValue.YES },
+        ],
+        skipDuplicates: true,
+      });
+    }
+
+    // Meeting 3: Réunion Parents-Professeurs (SCHEDULED, HYBRID)
+    await prisma.meeting.create({
       data: {
-        userId: user.id,
-        ipAddress: randomPick(loginIps),
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        success: Math.random() > 0.15,
+        establishmentId: est.id,
+        createdById: superAdmin.id,
+        subject: `Rencontre Parents-Enseignants Trimestre 1 — ${est.name}`,
+        type: MeetingType.PARENT_TEACHER,
+        date: new Date(Date.now() + 86400000 * 5),
+        startTime: '16:00',
+        endTime: '18:00',
+        duration: 120,
+        mode: MeetingMode.HYBRID,
+        location: 'Amphithéâtre Principal & Reclassement WebRTC',
+        description: 'Échanges individuels et collectifs avec les représentants des parents d’élèves.',
+        status: MeetingStatus.SCHEDULED,
+        isOnline: true,
+        roomName: `school-room-${est.slug}-parents`,
+        points: {
+          create: [
+            {
+              title: 'Présentation des indicateurs de réussite globale du trimestre',
+              description: 'Taux de réussite et assiduité par section.',
+              isVote: false,
+              sortOrder: 1,
+            },
+          ],
+        },
+        participants: {
+          create: [
+            {
+              name: 'Coordinateur des Cycles',
+              email: `coordination@${est.slug}.tn`,
+              role: MeetingParticipantRole.HOST,
+            },
+            ...estParents.map((p, idx) => ({
+              name: `${p.firstName} ${p.lastName}`,
+              email: p.email || `parent${idx}@${est.slug}.tn`,
+              role: MeetingParticipantRole.ATTENDEE,
+              userId: p.userId,
+            })),
+          ],
+        },
       },
     });
-    createdLoginLogs.push(log);
-  }
-  console.log(`   ✅ ${createdLoginLogs.length} login logs created`);
 
-  // 41. Create Grading Configs
-  console.log('📊 Creating grading configs...');
-  const createdGradingConfigs = [];
-  for (const establishment of createdEstablishments) {
-    for (const classLevel of createdClassLevels.slice(0, 3)) {
-      const existing = await prisma.gradingConfig.findFirst({
-        where: { establishmentId: establishment.id, classLevelId: classLevel.id },
-      });
-      if (!existing) {
-        const config = await prisma.gradingConfig.create({
-          data: {
-            establishmentId: establishment.id,
-            classLevelId: classLevel.id,
-            name: `Config ${classLevel.name} - ${establishment.name}`,
-            scaleType: 'NUMERIC',
-            minScore: 0,
-            maxScore: 20,
-            passThreshold: 10,
-            isDefault: true,
-          },
-        });
-        createdGradingConfigs.push(config);
-      }
-    }
+    totalMeetingsCreated += 3;
   }
-  console.log(`   ✅ ${createdGradingConfigs.length} grading configs created`);
+  console.log(`   ✅ ${totalMeetingsCreated} meetings populated with LiveKit rooms, points & votes.`);
 
-  // Summary
-  console.log('\n🎉 Seeding complete!');
-  console.log('\n📋 Summary:');
-  console.log(`   - ${createdModules.length} modules`);
-  console.log(`   - ${createdPermissions.length} permissions`);
-  console.log(`   - ${createdPlans.length} plans`);
-  console.log(`   - ${createdPlanFeatures.length} plan features`);
-  console.log(`   - ${createdRoles.length} roles`);
-  console.log(`   - ${createdClassLevels.length} class levels`);
-  console.log(`   - ${createdMatieres.length} subjects`);
-  console.log(`   - ${createdTenants.length} tenants`);
-  console.log(`   - ${createdEstablishments.length} establishments`);
-  console.log(`   - ${createdSubscriptions.length} tenant subscriptions`);
-  console.log(`   - ${adminUsers.length} admin users`);
-  console.log(`   - ${teacherUsers.length} teacher users`);
-  console.log(`   - ${parentUsers.length} parent users`);
-  console.log(`   - ${studentUsers.length} student users`);
-  console.log(`   - ${employeeUsers.length} employee users`);
-  console.log(`   - ${createdStudents.length} students`);
-  console.log(`   - ${createdParents.length} parents`);
-  console.log(`   - ${createdTeachers.length} teachers`);
-  console.log(`   - ${createdEmployees.length} employees`);
-  console.log(`   - ${createdStudentParents.length} student-parent relations`);
-  console.log(`   - ${createdTeacherMatieres.length} teacher-subject relations`);
-  console.log(`   - ${createdClassModuleAssignments.length} class-module assignments`);
-  console.log(`   - ${academicYears.length} academic years`);
-  console.log(`   - ${periods.length} academic periods`);
-  console.log(`   - ${createdGradingConfigs.length} grading configs`);
-  console.log(`   - ${createdRooms.length} rooms`);
-  console.log(`   - ${createdClasses.length} classes`);
-  console.log(`   - ${createdSessions.length} sessions`);
-  console.log(`   - ${createdLessons.length} lessons`);
-  console.log(`   - ${attendanceRecords.length} student attendance records`);
-  console.log(`   - ${teacherAttendanceRecords.length} teacher attendance records`);
-  console.log(`   - ${createdTeacherLeaves.length} teacher leaves`);
-  console.log(`   - ${createdHolidays.length} holidays`);
-  console.log(`   - ${createdExams.length} exams`);
-  console.log(`   - ${createdNotes.length} grades`);
-  console.log(`   - ${createdCaisses.length} caisses`);
-  console.log(`   - ${createdPayments.length} student payments`);
-  console.log(`   - ${createdTeacherPayments.length} teacher payments`);
-  console.log(`   - ${createdTransactions.length} financial transactions`);
-  console.log(`   - ${conversations.length} conversations`);
-  console.log(`   - ${createdNotifications.length} notifications`);
-  console.log(`   - ${createdAuditLogs.length} audit logs`);
-  console.log(`   - ${createdLoginLogs.length} login logs`);
-  console.log('\n🔑 Login credentials:');
-  console.log('   - Root Admin: bsofts.contact@gmail.com / Ahmed123*');
-  console.log('   - Tenant 1 Admin: tenant1@bsofts.com / Admin@123');
-  console.log('   - Tenant 2 Admin: tenant2@bsofts.com / Admin@123');
-  console.log('   - Admin: admin1@school.dz / Admin@123');
-  console.log('   - Teacher: teacher1@school.dz / Admin@123');
-  console.log('   - Student: student1@school.dz / Admin@123');
-  console.log('   - Parent: parent1@school.dz / Admin@123');
+  console.log('\n======================================================');
+  console.log('🎉 MULTI-TENANT SEED COMPLETED SUCCESSFULLY!');
+  console.log('======================================================');
+  console.log(`   - Tenants: 4 (Hannibal, Al-Amel, Ibn Khaldoun, Étoile Brillante)`);
+  console.log(`   - Establishments: 8 across Daycare, School, Middle & High School`);
+  console.log(`   - Classes: ${totalClassesCreated} fully linked`);
+  console.log(`   - Teachers: ${totalTeachersCreated} with contracts & matieres`);
+  console.log(`   - Students: ${totalStudentsCreated} enrolled in classes & linked to parents`);
+  console.log(`   - Student Payments: ${totalPaymentsCreated} in TND`);
+  console.log(`   - Exams: ${totalExamsCreated} with student grades`);
+  console.log('\n🔑 ACCESS CREDENTIALS FOR TESTING:');
+  console.log('   👑 Root Admin:          bsofts.contact@gmail.com   / Ahmed123* (Assigned to all 8 establishments)');
+  console.log('   🏢 Tenant 1 (Hannibal):  tenant1@bsofts.com         / Admin@123');
+  console.log('   🏢 Tenant 2 (Al-Amel):   tenant2@bsofts.com         / Admin@123');
+  console.log('   🏢 Tenant 3 (Khaldoun):  tenant3@bsofts.com         / Admin@123');
+  console.log('   🏢 Tenant 4 (Étoile):    tenant4@bsofts.com         / Admin@123');
+  console.log('   🏫 School Admins:        admin_<slug>@school.tn     / Admin@123');
+  console.log('   👩‍🏫 Teachers:             prof1_<slug>@school.tn     / Admin@123');
+  console.log('   🎓 Students:             eleve1_<slug>@school.tn    / Admin@123');
+  console.log('   👨‍👩‍👧 Parents:              parent1_<slug>@parent.tn   / Admin@123');
+  console.log('======================================================\n');
 }
 
 main()

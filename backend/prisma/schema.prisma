@@ -259,6 +259,7 @@ model Establishment {
   profitLosses        ProfitLoss[]
   graduationConfigs   GraduationConfig[]
   dynamicEnums        DynamicEnum[]
+  meetings            Meeting[]
 
   @@index([tenantId])
 }
@@ -322,6 +323,8 @@ model User {
   teacher                  Teacher?
   employee                 Employee?
   conversationParticipants ConversationParticipant[]
+  createdMeetings          Meeting[]                 @relation("MeetingCreator")
+  meetingParticipants      MeetingParticipant[]
 }
 
 model Role {
@@ -1873,3 +1876,168 @@ model DynamicEnum {
   @@unique([establishmentId, category, code])
   @@index([establishmentId, category])
 }
+
+// ============================================================
+// MEETINGS & LIVEKIT WEBRTC CONFERENCING
+// ============================================================
+
+enum MeetingType {
+  GENERAL
+  PARENT_TEACHER
+  STAFF
+  DISCIPLINE
+  PEDAGOGICAL
+  BOARD
+}
+
+enum MeetingMode {
+  IN_PERSON
+  ONLINE
+  HYBRID
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum MeetingParticipantRole {
+  HOST
+  MODERATOR
+  PRESENTER
+  ATTENDEE
+}
+
+enum ParticipantStatus {
+  INVITED
+  ACCEPTED
+  DECLINED
+  ATTENDED
+  ABSENT
+}
+
+enum MeetingPointStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+}
+
+enum VoteValue {
+  YES
+  NO
+  ABSTAIN
+}
+
+model Meeting {
+  id              String        @id @default(uuid())
+  establishmentId String
+  establishment   Establishment @relation(fields: [establishmentId], references: [id], onDelete: Cascade)
+  createdById     String?
+  createdBy       User?         @relation("MeetingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  subject         String
+  type            MeetingType   @default(GENERAL)
+  date            DateTime
+  startTime       String
+  endTime         String?
+  duration        Int           @default(60)
+  mode            MeetingMode   @default(ONLINE)
+  location        String?
+  description     String?
+  status          MeetingStatus @default(SCHEDULED)
+  isOnline        Boolean       @default(true)
+  roomName        String        @unique
+  recordingUrl    String?
+  summary         String?
+
+  participants    MeetingParticipant[]
+  points          MeetingPoint[]
+  documents       MeetingDocument[]
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  // Audit & Soft-Delete
+  isDeleted       Boolean       @default(false)
+  deletedAt       DateTime?
+
+  @@index([establishmentId])
+  @@index([date])
+  @@index([status])
+}
+
+model MeetingParticipant {
+  id              String                 @id @default(uuid())
+  meetingId       String
+  meeting         Meeting                @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?                  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  name            String
+  email           String
+  role            MeetingParticipantRole @default(ATTENDEE)
+  status          ParticipantStatus      @default(INVITED)
+  token           String                 @unique @default(uuid())
+  joinedAt        DateTime?
+  leftAt          DateTime?
+  handRaised      Boolean                @default(false)
+
+  votes           MeetingVote[]
+
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  @@index([meetingId])
+  @@index([email])
+}
+
+model MeetingPoint {
+  id          String             @id @default(uuid())
+  meetingId   String
+  meeting     Meeting            @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  title       String
+  description String?
+  isVote      Boolean            @default(false)
+  sortOrder   Int                @default(0)
+  status      MeetingPointStatus @default(PENDING)
+
+  votes       MeetingVote[]
+
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@index([meetingId])
+}
+
+model MeetingVote {
+  id            String             @id @default(uuid())
+  pointId       String
+  point         MeetingPoint       @relation(fields: [pointId], references: [id], onDelete: Cascade)
+  participantId String
+  participant   MeetingParticipant @relation(fields: [participantId], references: [id], onDelete: Cascade)
+
+  value         VoteValue          @default(ABSTAIN)
+  createdAt     DateTime           @default(now())
+
+  @@unique([pointId, participantId])
+  @@index([pointId])
+}
+
+model MeetingDocument {
+  id          String   @id @default(uuid())
+  meetingId   String
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  title       String
+  fileUrl     String
+  fileType    String?
+  sizeBytes   Int?
+
+  uploadedAt  DateTime @default(now())
+
+  @@index([meetingId])
+}
+

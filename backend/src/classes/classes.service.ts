@@ -85,7 +85,7 @@ export class ClassesService {
         academicYearId: dto.academicYearId,
         name: dto.name,
         code: dto.code,
-        periodType: dto.periodType as any,
+        periodType: ((dto.periodType || 'TRIMESTER').toUpperCase()) as any,
         maxStudents: dto.maxStudents ?? 30,
         gradingConfigId: dto.gradingConfigId,
       },

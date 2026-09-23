@@ -9,10 +9,13 @@ export class StudentPaymentsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryStudentPaymentDto) {
-    const { page = 1, limit = 10, search, studentId, parentId, status, method, sortBy, sortOrder } = query;
+    const { page = 1, limit = 10, search, studentId, parentId, status, method, establishmentId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.student = { ...(where.student || {}), establishmentId };
+    }
     if (studentId) where.studentId = studentId;
     if (parentId) where.parentId = parentId;
     if (status) where.status = status;

@@ -59,6 +59,11 @@ export class QueryStudentAttendanceDto extends PaginationQueryDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  establishmentId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   studentId?: string;
 
   @ApiProperty({ required: false })

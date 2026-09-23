@@ -54,6 +54,8 @@ import { UploadModule } from './upload/upload.module';
 import { MailModule } from './mail/mail.module';
 import { HomeworkModule } from './homework/homework.module';
 import { DynamicEnumsModule } from './dynamic-enums/dynamic-enums.module';
+import { LivekitModule } from './livekit/livekit.module';
+import { MeetingsModule } from './meetings/meetings.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -124,6 +126,8 @@ import {
     MailModule,
     HomeworkModule,
     DynamicEnumsModule,
+    LivekitModule,
+    MeetingsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       global: true,

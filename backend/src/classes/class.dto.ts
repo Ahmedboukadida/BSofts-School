@@ -26,9 +26,10 @@ export class CreateClassDto {
   @IsString()
   code?: string;
 
-  @ApiProperty({ enum: ['TRIMESTER', 'SEMESTER'] })
+  @ApiProperty({ enum: ['TRIMESTER', 'SEMESTER'], required: false, default: 'TRIMESTER' })
+  @IsOptional()
   @IsEnum(['TRIMESTER', 'SEMESTER'])
-  periodType: string;
+  periodType?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

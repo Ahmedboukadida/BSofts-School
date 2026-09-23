@@ -33,12 +33,15 @@ export class ReportsService {
     const where: any = {};
     if (dto.establishmentId) where.establishmentId = dto.establishmentId;
 
+    const paymentWhere: any = { status: 'PAID' };
+    if (dto.establishmentId) paymentWhere.student = { establishmentId: dto.establishmentId };
+
     const [studentCount, teacherCount, classCount, paymentTotal, examCount] = await Promise.all([
       this.prisma.student.count({ where }),
       this.prisma.teacher.count({ where }),
       this.prisma.class.count({ where }),
       this.prisma.studentPayment.aggregate({
-        where: { ...where, status: 'PAID' },
+        where: paymentWhere,
         _sum: { amount: true },
         _count: true,
       }),
@@ -60,7 +63,12 @@ export class ReportsService {
 
   private async attendanceReport(dto: GenerateReportDto) {
     const where: any = {};
-    if (dto.classId) where.student = { classAssignments: { some: { classId: dto.classId } } };
+    if (dto.establishmentId) {
+      where.student = { establishmentId: dto.establishmentId };
+    }
+    if (dto.classId) {
+      where.student = { ...(where.student || {}), classAssignments: { some: { classId: dto.classId } } };
+    }
     if (dto.startDate) where.date = { gte: new Date(dto.startDate) };
     if (dto.endDate) where.date = { lte: new Date(dto.endDate) };
 
@@ -84,8 +92,9 @@ export class ReportsService {
 
   private async examResultsReport(dto: GenerateReportDto) {
     const where: any = {};
-    if (dto.academicYearId || dto.classId) {
+    if (dto.academicYearId || dto.classId || dto.establishmentId) {
       where.exam = {};
+      if (dto.establishmentId) where.exam.establishmentId = dto.establishmentId;
       if (dto.academicYearId) where.exam.academicYearId = dto.academicYearId;
       if (dto.classId) where.exam.classId = dto.classId;
     }
@@ -114,7 +123,7 @@ export class ReportsService {
 
   private async financialReport(dto: GenerateReportDto) {
     const where: any = {};
-    if (dto.establishmentId) where.establishmentId = dto.establishmentId;
+    if (dto.establishmentId) where.caisse = { establishmentId: dto.establishmentId };
     if (dto.startDate) where.createdAt = { gte: new Date(dto.startDate) };
     if (dto.endDate) where.createdAt = { lte: new Date(dto.endDate) };
 
@@ -146,6 +155,7 @@ export class ReportsService {
     const where: any = {};
     if (dto.classId) where.classId = dto.classId;
     if (dto.academicYearId) where.academicYearId = dto.academicYearId;
+    if (dto.establishmentId) where.student = { establishmentId: dto.establishmentId };
 
     const assignments = await this.prisma.studentClassAssignment.findMany({
       where,
@@ -169,7 +179,10 @@ export class ReportsService {
 
   private async teacherPerformanceReport(dto: GenerateReportDto) {
     const teachers = await this.prisma.teacher.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(dto.establishmentId ? { establishmentId: dto.establishmentId } : {}),
+      },
       include: {
         sessions: {
           include: {
@@ -195,6 +208,7 @@ export class ReportsService {
   private async classPerformanceReport(dto: GenerateReportDto) {
     const where: any = {};
     if (dto.classId) where.id = dto.classId;
+    if (dto.establishmentId) where.establishmentId = dto.establishmentId;
 
     const classes = await this.prisma.class.findMany({
       where,
@@ -218,7 +232,7 @@ export class ReportsService {
 
   private async paymentCollectionReport(dto: GenerateReportDto) {
     const where: any = {};
-    if (dto.establishmentId) where.establishmentId = dto.establishmentId;
+    if (dto.establishmentId) where.student = { establishmentId: dto.establishmentId };
     if (dto.startDate) where.createdAt = { gte: new Date(dto.startDate) };
     if (dto.endDate) where.createdAt = { lte: new Date(dto.endDate) };
 
@@ -238,6 +252,78 @@ export class ReportsService {
         totalCollected,
         byStatus,
       },
+    };
+  }
+
+  async getDashboardStats(establishmentId?: string) {
+    const estFilter: any = establishmentId ? { establishmentId } : {};
+    const studentEstFilter: any = establishmentId ? { student: { establishmentId } } : {};
+
+    const [
+      studentCount,
+      teacherCount,
+      classCount,
+      paidPayments,
+      pendingPayments,
+      attendances,
+      recentStudents,
+    ] = await Promise.all([
+      this.prisma.student.count({
+        where: { ...estFilter, isDeleted: false },
+      }),
+      this.prisma.teacher.count({
+        where: { ...estFilter, isActive: true, isDeleted: false },
+      }),
+      this.prisma.class.count({
+        where: { ...estFilter, isActive: true },
+      }),
+      this.prisma.studentPayment.aggregate({
+        where: { ...studentEstFilter, status: 'PAID' },
+        _sum: { amount: true },
+      }),
+      this.prisma.studentPayment.aggregate({
+        where: { ...studentEstFilter, status: 'PENDING' },
+        _sum: { amount: true },
+      }),
+      this.prisma.studentAttendance.groupBy({
+        by: ['status'],
+        where: { ...studentEstFilter },
+        _count: { status: true },
+      }),
+      this.prisma.student.findMany({
+        where: { ...estFilter, isDeleted: false },
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          classAssignments: {
+            take: 1,
+            include: { class: { select: { id: true, name: true } } },
+          },
+        },
+      }),
+    ]);
+
+    const totalAttendance = attendances.reduce((acc, cur) => acc + cur._count.status, 0);
+    const presentAttendance = attendances.find(a => a.status === 'PRESENT')?._count.status || 0;
+    const attendanceRate = totalAttendance > 0
+      ? Math.round((presentAttendance / totalAttendance) * 1000) / 10
+      : 100.0;
+
+    return {
+      students: studentCount,
+      teachers: teacherCount,
+      classes: classCount,
+      revenueTND: Number(paidPayments._sum.amount || 0),
+      pendingTND: Number(pendingPayments._sum.amount || 0),
+      attendanceRate,
+      recentStudents: recentStudents.map(s => ({
+        id: s.id,
+        firstName: s.firstName,
+        lastName: s.lastName,
+        registrationNumber: s.registrationNumber,
+        className: s.classAssignments?.[0]?.class?.name || 'Non assigné',
+        createdAt: s.createdAt,
+      })),
     };
   }
 }

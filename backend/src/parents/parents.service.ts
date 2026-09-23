@@ -358,15 +358,30 @@ export class ParentsService {
       if (existingUser) {
         userId = existingUser.id;
       } else {
-        const hashedPassword = await bcrypt.hash('Parent@123', 10);
+        const est = await this.prisma.establishment.findUnique({
+          where: { id: establishmentId },
+          select: { tenantId: true },
+        });
+
+        const baseUsername = dto.email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') || 'parent';
+        let uniqueUsername = `${baseUsername}_${Math.floor(1000 + Math.random() * 9000)}`;
+        const userWithUsername = await this.prisma.user.findUnique({ where: { username: uniqueUsername } });
+        if (userWithUsername) {
+          uniqueUsername = `${baseUsername}_${Date.now()}`;
+        }
+
+        const tempPassword = (dto as any).password || `Par_${Math.random().toString(36).slice(-8)}!${Math.floor(10 + Math.random() * 90)}`;
+        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+
         const newUser = await this.prisma.user.create({
           data: {
             email: dto.email,
-            username: dto.email.split('@')[0],
+            username: uniqueUsername,
             password: hashedPassword,
             firstName: dto.firstName,
             lastName: dto.lastName,
             phone: dto.phone,
+            tenantId: est?.tenantId,
           },
         });
         userId = newUser.id;

@@ -74,6 +74,7 @@ export class AuthResponseDto {
     lastName: string;
     isRoot: boolean;
     establishmentId?: string;
+    tenantId?: string;
     userRoles?: unknown[];
     student?: unknown;
     parent?: unknown;

@@ -40,6 +40,30 @@ export class CreateEmployeeDto {
 
   @ApiProperty({ required: false })
   @IsOptional()
+  @IsString()
+  matricule?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  contractType?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  salaryTnd?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  isActive?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
   @IsDateString()
   hireDate?: string;
 
@@ -79,6 +103,30 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsString()
   position?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  matricule?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  department?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  contractType?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  salaryTnd?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  hireDate?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()

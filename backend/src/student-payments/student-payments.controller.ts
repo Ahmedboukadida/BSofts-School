@@ -21,7 +21,10 @@ export class StudentPaymentsController {
   @Permissions('payments:list')
   @ApiOperation({ summary: 'List all student payments' })
   @ApiResponse({ status: 200, description: 'Student payments retrieved successfully' })
-  findAll(@Query() query: QueryStudentPaymentDto) {
+  findAll(@Query() query: QueryStudentPaymentDto, @CurrentUser() user: any) {
+    if (!query.establishmentId && !user?.isRoot && user?.establishmentId) {
+      query.establishmentId = user.establishmentId;
+    }
     return this.service.findAll(query);
   }
 
