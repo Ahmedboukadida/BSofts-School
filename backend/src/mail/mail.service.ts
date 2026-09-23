@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
+import * as dns from 'node:dns';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendEmailDto, CreateSmtpConfigDto } from './mail.dto';
 import { SmtpConfigEntity, MailSendResultEntity } from './mail.entity';
@@ -97,7 +98,9 @@ export class MailService {
       socketTimeout: 15000,
       // Force IPv4 socket resolution to prevent ENETUNREACH on cloud containers without IPv6 routing (Render, AWS)
       // @ts-ignore
-      family: 4,
+      lookup: (hostname: string, _options: any, callback: any) => {
+        dns.lookup(hostname, { family: 4 }, callback);
+      },
       tls: {
         rejectUnauthorized: false,
       },
@@ -152,8 +155,11 @@ export class MailService {
         connectionTimeout: 10000,
         greetingTimeout: 10000,
         socketTimeout: 15000,
+        // Force IPv4 lookup to prevent ENETUNREACH on cloud environments without IPv6 routing
         // @ts-ignore
-        family: 4,
+        lookup: (hostname: string, _options: any, callback: any) => {
+          dns.lookup(hostname, { family: 4 }, callback);
+        },
         tls: { rejectUnauthorized: false },
       });
       return tr.sendMail({
