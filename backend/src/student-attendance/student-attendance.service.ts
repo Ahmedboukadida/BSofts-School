@@ -205,7 +205,10 @@ export class StudentAttendanceService {
         }
 
         const currentPeriod = await this.prisma.academicPeriod.findFirst({
-          where: { academicYearId: currentYear.id },
+          where: {
+            academicYearId: currentYear.id,
+            ...(cls?.establishmentId ? { academicYear: { establishmentId: cls.establishmentId } } : {}),
+          },
           orderBy: { createdAt: 'asc' },
         });
 

@@ -31,7 +31,9 @@ async function bootstrap() {
       if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
         return callback(null, true);
       }
-      if (origin.endsWith('.vercel.app')) {
+      // Match specific bsofts-school preview branches on vercel or exact origin
+      const isOfficialVercelPreview = /^https:\/\/bsofts-school(-[a-z0-9-]+)?\.vercel\.app$/.test(origin);
+      if (isOfficialVercelPreview) {
         return callback(null, true);
       }
       return callback(null, false);

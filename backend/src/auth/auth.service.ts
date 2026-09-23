@@ -63,8 +63,17 @@ export class AuthService {
     // Log successful login
     await this.logLoginAttempt(user.id, true, ip, userAgent);
 
+    // Determine primary establishment
+    const establishmentId =
+      user.userRoles?.[0]?.establishmentId ||
+      user.teacher?.establishmentId ||
+      user.student?.establishmentId ||
+      user.employee?.establishmentId ||
+      user.parent?.establishmentId ||
+      null;
+
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.username);
+    const tokens = await this.generateTokens(user.id, user.email, user.username, establishmentId);
 
     return {
       accessToken: tokens.accessToken,
@@ -250,19 +259,38 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
     try {
+      const refreshSecret =
+        process.env.JWT_REFRESH_SECRET ||
+        (process.env.JWT_SECRET ? `${process.env.JWT_SECRET}_refresh` : 'bsofts-school-jwt-refresh-secret-key');
+
       const payload = this.jwtService.verify(refreshToken, {
-        secret: process.env.JWT_SECRET as string,
+        secret: refreshSecret,
       });
 
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
+        include: {
+          userRoles: { select: { establishmentId: true, role: true } },
+          student: { select: { establishmentId: true } },
+          teacher: { select: { establishmentId: true } },
+          employee: { select: { establishmentId: true } },
+          parent: { select: { establishmentId: true } },
+        },
       });
 
       if (!user || !user.isActive) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const tokens = await this.generateTokens(user.id, user.email, user.username);
+      const establishmentId =
+        user.userRoles?.[0]?.establishmentId ||
+        user.teacher?.establishmentId ||
+        user.student?.establishmentId ||
+        user.employee?.establishmentId ||
+        user.parent?.establishmentId ||
+        null;
+
+      const tokens = await this.generateTokens(user.id, user.email, user.username, establishmentId);
 
       return {
         accessToken: tokens.accessToken,
@@ -274,9 +302,10 @@ export class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           isRoot: user.isRoot,
+          establishmentId: establishmentId || undefined,
         },
       };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
   }
@@ -322,15 +351,28 @@ export class AuthService {
     userId: string,
     email: string | null,
     username: string | null,
+    establishmentId?: string | null,
+    tenantId?: string | null,
   ) {
-    const payload = { sub: userId, email, username };
+    const payload = {
+      sub: userId,
+      email,
+      username,
+      establishmentId: establishmentId || null,
+      tenantId: tenantId || null,
+    };
+
+    const refreshSecret =
+      process.env.JWT_REFRESH_SECRET ||
+      (process.env.JWT_SECRET ? `${process.env.JWT_SECRET}_refresh` : 'bsofts-school-jwt-refresh-secret-key');
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        expiresIn: '15m',
+        expiresIn: (process.env.JWT_EXPIRATION as any) || '15m',
       }),
       this.jwtService.signAsync(payload, {
-        expiresIn: '7d',
+        secret: refreshSecret,
+        expiresIn: (process.env.JWT_REFRESH_EXPIRATION as any) || '7d',
       }),
     ]);
 

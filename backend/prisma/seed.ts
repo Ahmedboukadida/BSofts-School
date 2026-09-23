@@ -515,15 +515,18 @@ async function main() {
   console.log(`   ✅ ${createdClassLevels.length} class levels ready.`);
 
   // 6. Create Super Admin Root User
-  console.log('👤 6. Creating Super Admin User (bsofts.contact@gmail.com)...');
-  const rootPassword = await bcrypt.hash('Ahmed123*', 10);
-  const commonPassword = await bcrypt.hash('Admin@123', 10);
+  const rootEmail = process.env.SEED_ROOT_EMAIL || 'bsofts.contact@gmail.com';
+  const rootRawPassword = process.env.SEED_ROOT_PASSWORD || 'Ahmed123*';
+  const commonRawPassword = process.env.SEED_COMMON_PASSWORD || 'Admin@123';
+  console.log(`👤 6. Creating Super Admin User (${rootEmail})...`);
+  const rootPassword = await bcrypt.hash(rootRawPassword, 10);
+  const commonPassword = await bcrypt.hash(commonRawPassword, 10);
 
   const superAdmin = await prisma.user.upsert({
-    where: { email: 'bsofts.contact@gmail.com' },
+    where: { email: rootEmail },
     update: { password: rootPassword, isRoot: true, isActive: true },
     create: {
-      email: 'bsofts.contact@gmail.com',
+      email: rootEmail,
       username: 'bsofts_root',
       firstName: 'BSofts',
       lastName: 'Root',
@@ -561,11 +564,6 @@ async function main() {
 
     const tenant = await prisma.tenant.create({
       data: { userId: tenantUser.id },
-    });
-
-    await prisma.user.update({
-      where: { id: tenantUser.id },
-      data: { tenantId: tenant.id },
     });
 
     await prisma.tenantSettings.create({

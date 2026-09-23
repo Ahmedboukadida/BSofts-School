@@ -133,12 +133,18 @@ import {
       global: true,
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET') || 'bsofts-school-jwt-secret-2026-production-key',
-        signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRATION') as any) || '15m',
-        },
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const secret = configService.get<string>('JWT_SECRET');
+        if (!secret && process.env.NODE_ENV === 'production') {
+          throw new Error('FATAL: JWT_SECRET environment variable is missing in production mode!');
+        }
+        return {
+          secret: secret || 'bsofts-school-jwt-secret-2026-development-only-key',
+          signOptions: {
+            expiresIn: (configService.get<string>('JWT_EXPIRATION') as any) || '15m',
+          },
+        };
+      },
     }),
   ],
   controllers: [AppController],

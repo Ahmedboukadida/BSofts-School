@@ -52,8 +52,14 @@ export class MailService {
     return nodemailer.createTransport({
       host,
       port,
-      secure,
+      secure: secure || port === 465,
       auth: user ? { user, pass } : undefined,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false,
+      },
     });
   }
 

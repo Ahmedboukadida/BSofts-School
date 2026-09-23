@@ -32,9 +32,16 @@ export const MAX_UPLOAD_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 @Injectable()
 export class UploadService {
   private readonly logger = new Logger(UploadService.name);
-  private readonly baseUploadDir = path.join(process.cwd(), 'uploads');
+  private readonly baseUploadDir: string;
 
   constructor(private readonly prisma: PrismaService) {
+    const frontendPublic = path.resolve(process.cwd(), '..', 'frontend', 'public');
+    if (fs.existsSync(frontendPublic)) {
+      this.baseUploadDir = path.join(frontendPublic, 'uploads');
+    } else {
+      this.baseUploadDir = path.join(process.cwd(), 'uploads');
+    }
+
     if (!fs.existsSync(this.baseUploadDir)) {
       fs.mkdirSync(this.baseUploadDir, { recursive: true });
     }

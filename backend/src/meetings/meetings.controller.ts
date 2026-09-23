@@ -21,11 +21,13 @@ import {
   HandRaiseDto,
 } from './meeting.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @ApiTags('Meetings & Live Video')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('meetings')
 export class MeetingsController {
   constructor(private readonly service: MeetingsService) {}
@@ -39,6 +41,7 @@ export class MeetingsController {
 
   @Post()
   @ApiOperation({ summary: 'Schedule a new meeting' })
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN', 'TEACHER')
   @ApiResponse({ status: 201, description: 'Meeting created successfully' })
   create(@Body() dto: CreateMeetingDto, @CurrentUser() user?: any) {
     return this.service.create(dto, user);
@@ -53,6 +56,7 @@ export class MeetingsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update meeting details or status' })
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN', 'TEACHER')
   @ApiResponse({ status: 200, description: 'Meeting updated successfully' })
   update(@Param('id') id: string, @Body() dto: UpdateMeetingDto, @CurrentUser() user?: any) {
     return this.service.update(id, dto, user);
@@ -60,6 +64,8 @@ export class MeetingsController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Archive/delete meeting' })
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiResponse({ status: 200, description: 'Meeting deleted successfully' })
   @ApiResponse({ status: 200, description: 'Meeting deleted successfully' })
   remove(@Param('id') id: string, @CurrentUser() user?: any) {
     return this.service.remove(id, user);
