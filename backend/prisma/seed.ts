@@ -488,18 +488,20 @@ async function main() {
     PARENT: ['students:list', 'students:read', 'grades:list', 'grades:read', 'payments:list', 'payments:read', 'attendance:list', 'attendance:read'],
   };
 
+  const rolePermissionsToInsert: Array<{ roleId: string; permissionId: string }> = [];
   for (const role of createdRoles) {
     const permCodes = rolePermissionsMap[role.code] || [];
     const perms = createdPermissions.filter((p) => permCodes.includes(p.code));
     for (const perm of perms) {
-      await prisma.rolePermission.upsert({
-        where: { roleId_permissionId: { roleId: role.id, permissionId: perm.id } },
-        update: {},
-        create: { roleId: role.id, permissionId: perm.id },
-      });
+      rolePermissionsToInsert.push({ roleId: role.id, permissionId: perm.id });
     }
   }
-  console.log(`   ✅ ${createdRoles.length} roles initialized with permissions.`);
+
+  await prisma.rolePermission.createMany({
+    data: rolePermissionsToInsert,
+    skipDuplicates: true,
+  });
+  console.log(`   ✅ ${createdRoles.length} roles initialized with ${rolePermissionsToInsert.length} permissions.`);
 
   // 5. Create Class Levels
   console.log('📚 5. Creating Class Levels...');

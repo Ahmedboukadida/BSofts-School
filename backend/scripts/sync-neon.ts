@@ -104,13 +104,14 @@ function seedNeon() {
   console.log('?? [NEON SYNC] Seeding Initial Structural Data to Neon');
   console.log('============================================================');
 
+  const directUrl = NEON_URL.replace('-pooler', '');
   try {
     execSync('npx tsx prisma/seed.ts', {
       cwd: rootDir,
       stdio: 'inherit',
       env: {
         ...process.env,
-        DATABASE_URL: NEON_URL,
+        DATABASE_URL: directUrl,
       },
     });
     console.log('\n? Neon database seeded successfully with base system entities!');
