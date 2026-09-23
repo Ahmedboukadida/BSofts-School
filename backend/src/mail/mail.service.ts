@@ -63,6 +63,9 @@ export class MailService {
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
+      // Force IPv4 socket resolution to prevent ENETUNREACH on cloud containers without IPv6 routing (Render, AWS)
+      // @ts-ignore
+      family: 4,
       tls: {
         rejectUnauthorized: false,
       },
@@ -133,7 +136,9 @@ export class MailService {
       });
     } catch (error: any) {
       let friendlyError = error.message;
-      if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKETTIMEDOUT') {
+      if (error.message?.includes('ENETUNREACH') || error.code === 'ENETUNREACH') {
+        friendlyError = `Erreur réseau (ENETUNREACH IPv6). La passerelle a été reconfigurée pour forcer l'IPv4. Veuillez réessayer l'envoi vers ${hostUsed}:${portUsed}.`;
+      } else if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKETTIMEDOUT') {
         if (hostUsed.includes('gmail')) {
           friendlyError = "Délai d'attente dépassé (Connection timeout). Sur Render et les serveurs cloud, le port 587 vers Gmail est fréquemment bloqué. Veuillez basculer sur le port 465 avec 'Sécurisé SSL : Oui' et utiliser un Mot de passe d'application Google (16 caractères généré depuis https://myaccount.google.com/apppasswords).";
         } else {
@@ -219,58 +224,66 @@ export class MailService {
         },
       });
 
-      // 2. If establishmentId is provided, upsert establishment record
+      // 2. If establishmentId is provided and valid in DB, also upsert establishment record
       if (establishmentId && establishmentId !== 'global') {
-        const existing = await this.prisma.smtpConfig.findFirst({
-          where: { establishmentId },
+        const est = await this.prisma.establishment.findUnique({
+          where: { id: establishmentId },
         });
 
-        let saved;
-        if (existing) {
-          saved = await this.prisma.smtpConfig.update({
-            where: { id: existing.id },
-            data: {
-              host: dto.host,
-              port: dto.port,
-              user: dto.user,
-              password: dto.password,
-              fromName: dto.fromName,
-              fromEmail: dto.fromEmail,
-              isSecure: dto.isSecure ?? (dto.port === 465),
-              isDefault: true,
-            },
+        if (est) {
+          const existing = await this.prisma.smtpConfig.findFirst({
+            where: { establishmentId },
           });
+
+          let saved;
+          if (existing) {
+            saved = await this.prisma.smtpConfig.update({
+              where: { id: existing.id },
+              data: {
+                host: dto.host,
+                port: dto.port,
+                user: dto.user,
+                password: dto.password,
+                fromName: dto.fromName,
+                fromEmail: dto.fromEmail,
+                isSecure: dto.isSecure ?? (dto.port === 465),
+                isDefault: true,
+              },
+            });
+          } else {
+            saved = await this.prisma.smtpConfig.create({
+              data: {
+                establishmentId,
+                host: dto.host,
+                port: dto.port,
+                user: dto.user,
+                password: dto.password,
+                fromName: dto.fromName,
+                fromEmail: dto.fromEmail,
+                isSecure: dto.isSecure ?? (dto.port === 465),
+                isDefault: true,
+              },
+            });
+          }
+
+          if (actor?.id) {
+            await this.prisma.auditLog.create({
+              data: {
+                userId: actor.id,
+                actorSnapshot: `${actor.firstName || ''} ${actor.lastName || ''} (@${actor.email || actor.username || 'unknown'}) [${actor.role || 'USER'}]`.trim(),
+                action: 'CONFIGURE_SMTP',
+                entity: 'SmtpConfig',
+                entityId: saved.id,
+                status: 'SUCCESS',
+                newValues: { host: dto.host, port: dto.port, fromEmail: dto.fromEmail, establishmentId, tenantId: actor.tenantId },
+              },
+            }).catch(err => this.logger.warn(`Failed to write audit log: ${err.message}`));
+          }
+
+          return new SmtpConfigEntity(saved);
         } else {
-          saved = await this.prisma.smtpConfig.create({
-            data: {
-              establishmentId,
-              host: dto.host,
-              port: dto.port,
-              user: dto.user,
-              password: dto.password,
-              fromName: dto.fromName,
-              fromEmail: dto.fromEmail,
-              isSecure: dto.isSecure ?? (dto.port === 465),
-              isDefault: true,
-            },
-          });
+          this.logger.warn(`Establishment ID ${establishmentId} does not exist in DB (session may be in global mode). Persisted as platform-wide SMTP configuration.`);
         }
-
-        if (actor?.id) {
-          await this.prisma.auditLog.create({
-            data: {
-              userId: actor.id,
-              actorSnapshot: `${actor.firstName || ''} ${actor.lastName || ''} (@${actor.email || actor.username || 'unknown'}) [${actor.role || 'USER'}]`.trim(),
-              action: 'CONFIGURE_SMTP',
-              entity: 'SmtpConfig',
-              entityId: saved.id,
-              status: 'SUCCESS',
-              newValues: { host: dto.host, port: dto.port, fromEmail: dto.fromEmail, establishmentId, tenantId: actor.tenantId },
-            },
-          }).catch(err => this.logger.warn(`Failed to write audit log: ${err.message}`));
-        }
-
-        return new SmtpConfigEntity(saved);
       }
 
       return new SmtpConfigEntity({

@@ -840,7 +840,7 @@ async function main() {
       const contract = await prisma.teacherContract.create({
         data: {
           teacherId: teacher.id,
-          contractType: ContractType.FULL_TIME,
+          contractType: ContractType.MONTHLY,
           startDate: new Date('2023-09-01'),
           salary: 1200 + tIdx * 250,
           currency: Currency.TND,

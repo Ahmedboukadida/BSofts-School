@@ -1,3 +1,4 @@
+import * as dns from 'node:dns';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -5,6 +6,11 @@ import { AllExceptionsFilter } from './common/filters';
 import { AppValidationPipe } from './common/pipes';
 import { PrismaService } from './prisma/prisma.service';
 import { Logger } from '@nestjs/common';
+
+// Force IPv4 first across all DNS lookups to avoid ENETUNREACH errors on cloud container hosts without IPv6 routing (Render, Docker, AWS)
+try {
+  dns.setDefaultResultOrder('ipv4first');
+} catch (e) {}
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
