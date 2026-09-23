@@ -10,12 +10,22 @@ export class MailService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getTransporter(establishmentId?: string): Promise<{ transporter: nodemailer.Transporter; host: string; port: number }> {
+  async resolveConfig(establishmentId?: string): Promise<{
+    host: string;
+    port: number;
+    secure: boolean;
+    user: string;
+    pass: string;
+    fromName: string;
+    fromEmail: string;
+  }> {
     let host = process.env.SMTP_HOST || 'smtp.gmail.com';
-    let port = parseInt(process.env.SMTP_PORT || '587', 10);
-    let secure = process.env.SMTP_SECURE === 'true';
+    let port = parseInt(process.env.SMTP_PORT || (host.includes('gmail') ? '465' : '587'), 10);
+    let secure = process.env.SMTP_SECURE === 'true' || port === 465;
     let user = process.env.SMTP_USER || '';
     let pass = process.env.SMTP_PASSWORD || '';
+    let fromName = 'BSofts School';
+    let fromEmail = process.env.SMTP_FROM || 'no-reply@bsofts-school.com';
 
     let config = establishmentId
       ? await this.prisma.smtpConfig.findFirst({
@@ -33,10 +43,12 @@ export class MailService {
         if (platformSetting?.value) {
           const parsed = JSON.parse(platformSetting.value);
           host = parsed.host || host;
-          port = parsed.port ? parseInt(parsed.port, 10) : port;
-          secure = parsed.isSecure ?? secure;
+          port = parsed.port ? parseInt(parsed.port, 10) : (host.includes('gmail') ? 465 : port);
+          secure = parsed.isSecure ?? (port === 465);
           user = parsed.user || user;
           pass = parsed.password || pass;
+          if (parsed.fromName) fromName = parsed.fromName;
+          if (parsed.fromEmail) fromEmail = parsed.fromEmail;
         }
       } catch (err) {
         // Fallback to env variables
@@ -44,9 +56,11 @@ export class MailService {
     } else {
       host = config.host;
       port = config.port;
-      secure = config.isSecure;
+      secure = config.isSecure || config.port === 465;
       user = config.user;
       pass = config.password;
+      if (config.fromName) fromName = config.fromName;
+      if (config.fromEmail) fromEmail = config.fromEmail;
     }
 
     if (!user || !pass) {
@@ -55,11 +69,17 @@ export class MailService {
       );
     }
 
+    return { host, port, secure, user, pass, fromName, fromEmail };
+  }
+
+  async getTransporter(establishmentId?: string): Promise<{ transporter: nodemailer.Transporter; host: string; port: number }> {
+    const config = await this.resolveConfig(establishmentId);
+
     const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: secure || port === 465,
-      auth: { user, pass },
+      host: config.host,
+      port: config.port,
+      secure: config.secure || config.port === 465,
+      auth: { user: config.user, pass: config.pass },
       connectionTimeout: 10000,
       greetingTimeout: 10000,
       socketTimeout: 15000,
@@ -71,49 +91,56 @@ export class MailService {
       },
     });
 
-    return { transporter, host, port };
+    return { transporter, host: config.host, port: config.port };
   }
 
   async sendMail(dto: SendEmailDto, establishmentId?: string, actor?: any): Promise<MailSendResultEntity> {
-    let hostUsed = 'inconnu';
-    let portUsed = 587;
+    let resolved;
     try {
-      const { transporter, host, port } = await this.getTransporter(establishmentId);
-      hostUsed = host;
-      portUsed = port;
+      resolved = await this.resolveConfig(establishmentId);
+    } catch (cfgErr: any) {
+      return new MailSendResultEntity({ success: false, error: cfgErr.message });
+    }
 
-      let fromHeader = process.env.SMTP_FROM || 'BSofts School <no-reply@bsofts-school.com>';
-      const config = establishmentId
-        ? await this.prisma.smtpConfig.findFirst({
-            where: { establishmentId, isDefault: true },
-          })
-        : await this.prisma.smtpConfig.findFirst({
-            where: { isDefault: true },
-          });
+    const { host, port, secure, user, pass, fromName, fromEmail } = resolved;
+    const fromHeader = `"${fromName}" <${fromEmail}>`;
 
-      if (config?.fromEmail) {
-        fromHeader = `"${config.fromName || 'BSofts School'}" <${config.fromEmail}>`;
-      } else {
-        try {
-          const platformSetting = await this.prisma.platformSetting.findUnique({
-            where: { key: 'SMTP_CONFIG' },
-          });
-          if (platformSetting?.value) {
-            const parsed = JSON.parse(platformSetting.value);
-            if (parsed.fromEmail) {
-              fromHeader = `"${parsed.fromName || 'BSofts School'}" <${parsed.fromEmail}>`;
-            }
-          }
-        } catch (e) {}
-      }
-
-      const info = await transporter.sendMail({
+    const sendWithParams = async (targetPort: number, isSecure: boolean) => {
+      const tr = nodemailer.createTransport({
+        host,
+        port: targetPort,
+        secure: isSecure,
+        auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 15000,
+        // @ts-ignore
+        family: 4,
+        tls: { rejectUnauthorized: false },
+      });
+      return tr.sendMail({
         from: fromHeader,
         to: dto.to,
         subject: dto.subject,
         text: dto.text,
         html: dto.html,
       });
+    };
+
+    try {
+      let info;
+      try {
+        info = await sendWithParams(port, secure);
+      } catch (firstAttemptErr: any) {
+        // If port 587 timed out on Gmail, automatically fallback to port 465 with SSL
+        const isTimeout = firstAttemptErr.message?.includes('timeout') || firstAttemptErr.code === 'ETIMEDOUT' || firstAttemptErr.code === 'ESOCKETTIMEDOUT';
+        if (host.includes('gmail') && port === 587 && isTimeout) {
+          this.logger.warn(`Port 587 timed out on cloud network. Retrying automatically on Port 465 with SSL...`);
+          info = await sendWithParams(465, true);
+        } else {
+          throw firstAttemptErr;
+        }
+      }
 
       // Write Audit Log on success
       if (actor?.id) {
@@ -137,12 +164,12 @@ export class MailService {
     } catch (error: any) {
       let friendlyError = error.message;
       if (error.message?.includes('ENETUNREACH') || error.code === 'ENETUNREACH') {
-        friendlyError = `Erreur réseau (ENETUNREACH IPv6). La passerelle a été reconfigurée pour forcer l'IPv4. Veuillez réessayer l'envoi vers ${hostUsed}:${portUsed}.`;
+        friendlyError = `Erreur réseau (ENETUNREACH IPv6). La passerelle a été reconfigurée pour forcer l'IPv4. Veuillez réessayer l'envoi vers ${host}:${port}.`;
       } else if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKETTIMEDOUT') {
-        if (hostUsed.includes('gmail')) {
+        if (host.includes('gmail')) {
           friendlyError = "Délai d'attente dépassé (Connection timeout). Sur Render et les serveurs cloud, le port 587 vers Gmail est fréquemment bloqué. Veuillez basculer sur le port 465 avec 'Sécurisé SSL : Oui' et utiliser un Mot de passe d'application Google (16 caractères généré depuis https://myaccount.google.com/apppasswords).";
         } else {
-          friendlyError = `Délai d'attente dépassé (Connection timeout) vers ${hostUsed}:${portUsed}. Vérifiez le port et l'accessibilité réseau de votre serveur SMTP.`;
+          friendlyError = `Délai d'attente dépassé (Connection timeout) vers ${host}:${port}. Vérifiez le port et l'accessibilité réseau de votre serveur SMTP.`;
         }
       } else if (error.message?.includes('Invalid login') || error.message?.includes('535') || error.message?.includes('Username and Password not accepted')) {
         friendlyError = "Identifiants SMTP rejetés par le serveur (535). Pour Gmail, vous devez utiliser un 'Mot de passe d'application' (16 caractères sans espaces) généré sur votre compte Google, et non le mot de passe habituel de votre compte.";

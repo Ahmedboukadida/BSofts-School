@@ -649,6 +649,7 @@ async function main() {
 
   for (let estIdx = 0; estIdx < createdEstablishments.length; estIdx++) {
     const est = createdEstablishments[estIdx];
+    const estDef = establishmentDefinitions[estIdx];
     const prefix = `est${estIdx + 1}`;
 
     // A. Dynamic Enums
