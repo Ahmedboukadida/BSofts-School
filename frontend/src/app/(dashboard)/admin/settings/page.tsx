@@ -58,14 +58,15 @@ export default function SaaSPlatformSettingsPage() {
 
   // SMTP Configuration State
   const [smtpConfig, setSmtpConfig] = useState({
-    host: '',
-    port: 587,
+    host: 'smtp.gmail.com',
+    port: 465,
     user: '',
     password: '',
     fromName: 'BSofts School',
     fromEmail: '',
-    isSecure: false,
+    isSecure: true,
     isDefault: true,
+    resendApiKey: '',
   });
   const [testEmail, setTestEmail] = useState('');
   const [isTestingSmtp, setIsTestingSmtp] = useState(false);
@@ -94,14 +95,15 @@ export default function SaaSPlatformSettingsPage() {
       .then((res) => {
         if (res.data) {
           setSmtpConfig({
-            host: res.data.host || '',
-            port: res.data.port || 587,
+            host: res.data.host || 'smtp.gmail.com',
+            port: res.data.port || 465,
             user: res.data.user || '',
             password: res.data.password || '',
             fromName: res.data.fromName || 'BSofts School',
             fromEmail: res.data.fromEmail || '',
-            isSecure: Boolean(res.data.isSecure),
+            isSecure: res.data.isSecure !== undefined ? Boolean(res.data.isSecure) : true,
             isDefault: true,
+            resendApiKey: res.data.resendApiKey || '',
           });
         }
       })
@@ -545,8 +547,8 @@ export default function SaaSPlatformSettingsPage() {
               Recommandation pour Gmail & Hébergement Cloud (Render / Vercel) :
             </span>
             <ul className="list-disc list-inside text-text-secondary space-y-0.5 pl-1">
-              <li>Pour Gmail, configurez l'hôte sur <code className="font-mono text-text-primary font-bold">smtp.gmail.com</code> et le port sur <code className="font-mono text-text-primary font-bold">465</code> avec <code className="font-mono text-text-primary font-bold">SSL Sécurisé : Coché</code>. Le port 587 est fréquemment filtré par les pare-feux cloud.</li>
-              <li>Utilisez un <strong>Mot de passe d'application Google (16 caractères)</strong> généré depuis <em>Compte Google &gt; Sécurité &gt; Mots de passe des applications</em>, et non le mot de passe habituel de votre compte.</li>
+              <li>Pour Gmail, configurez l&apos;hôte sur <code className="font-mono text-text-primary font-bold">smtp.gmail.com</code> et le port sur <code className="font-mono text-text-primary font-bold">465</code> avec <code className="font-mono text-text-primary font-bold">SSL Sécurisé : Coché</code>. Le port 587 est fréquemment filtré par les pare-feux cloud.</li>
+              <li>Utilisez un <strong>Mot de passe d&apos;application Google (16 caractères)</strong> généré depuis <em>Compte Google &gt; Sécurité &gt; Mots de passe des applications</em>, et non le mot de passe habituel de votre compte.</li>
             </ul>
           </div>
 
@@ -634,10 +636,23 @@ export default function SaaSPlatformSettingsPage() {
             />
           </div>
 
+          <div className="p-3.5 rounded-xl border border-border bg-surface-elevated/40 mb-4">
+            <Input
+              label="Clé API Resend (Alternative HTTPS pour contourner le pare-feu Render Free)"
+              type="password"
+              placeholder="re_xxxxxxxxxxxxxx (Optionnel)"
+              value={smtpConfig.resendApiKey}
+              onChange={(e) => setSmtpConfig({ ...smtpConfig, resendApiKey: e.target.value })}
+            />
+            <p className="text-[11px] text-text-secondary mt-1.5 leading-relaxed">
+              Sur les hébergements cloud gratuits (Render Free), les ports SMTP sortants (25, 465, 587) sont bloqués. Vous pouvez renseigner une clé API gratuite <a href="https://resend.com" target="_blank" rel="noreferrer" className="text-brand font-bold underline">Resend.com</a> (3 000 emails/mois offerts) pour expédier immédiatement vos emails via HTTPS (Port 443) sans aucun blocage réseau.
+            </p>
+          </div>
+
           {/* Test de Connexion SMTP */}
           <div className="p-4 rounded-xl bg-surface border border-border flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="flex-1">
-              <span className="text-xs font-bold text-text-primary block">Tester l'Envoi SMTP en Temps Réel</span>
+              <span className="text-xs font-bold text-text-primary block">Tester l&apos;Envoi SMTP en Temps Réel</span>
               <span className="text-[11px] text-text-secondary">
                 Envoie un email de diagnostic immédiat pour valider la délivrabilité.
               </span>

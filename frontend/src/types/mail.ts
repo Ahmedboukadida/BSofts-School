@@ -8,6 +8,7 @@ export interface SmtpConfig {
   fromEmail: string;
   isSecure: boolean;
   isDefault: boolean;
+  resendApiKey?: string;
   createdAt: string;
   updatedAt: string;
 }

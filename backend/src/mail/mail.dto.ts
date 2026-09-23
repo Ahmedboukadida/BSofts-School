@@ -56,6 +56,11 @@ export class CreateSmtpConfigDto {
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
+
+  @ApiProperty({ description: 'Optional Resend API key for cloud HTTPS dispatch', required: false })
+  @IsOptional()
+  @IsString()
+  resendApiKey?: string;
 }
 
 export class TestSmtpDto {

@@ -32,6 +32,9 @@ export class SmtpConfigEntity {
   @ApiProperty()
   isDefault: boolean;
 
+  @ApiProperty({ required: false })
+  resendApiKey?: string;
+
   @ApiProperty()
   createdAt: Date;
 

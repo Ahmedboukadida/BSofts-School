@@ -15,21 +15,13 @@ import {
   Hand,
   Copy,
   Check,
-  Radio,
-  Clock,
-  Shield,
-  MessageSquare,
   AlertCircle,
-  ExternalLink,
-  ChevronRight,
   LogOut,
-  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
-import type { MeetingItem, MeetingParticipantItem, MeetingPointItem } from '@/types';
+import type { MeetingItem, MeetingParticipantItem } from '@/types';
 
 interface LiveMeetingPageProps {
   params: Promise<{ id: string }>;
@@ -39,7 +31,7 @@ export default function LiveMeetingRoomPage({ params }: LiveMeetingPageProps) {
   const resolvedParams = use(params);
   const meetingId = resolvedParams.id;
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user: _user } = useAuthStore();
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +147,7 @@ export default function LiveMeetingRoomPage({ params }: LiveMeetingPageProps) {
       <div className="min-h-screen bg-[#242F40] text-[#FFFFFF] flex flex-col items-center justify-center p-6">
         <div className="w-12 h-12 border-3 border-[#CCA43B] border-t-transparent rounded-full animate-spin mb-4" />
         <h2 className="text-base font-bold">Connexion à la salle LiveKit...</h2>
-        <p className="text-xs text-[#E5E5E5]/70 mt-1">Initialisation du flux WebRTC et vérification des jetons d'accès</p>
+        <p className="text-xs text-[#E5E5E5]/70 mt-1">Initialisation du flux WebRTC et vérification des jetons d&apos;accès</p>
       </div>
     );
   }
@@ -331,7 +323,7 @@ export default function LiveMeetingRoomPage({ params }: LiveMeetingPageProps) {
 
                 {(!meeting?.points || meeting.points.length === 0) ? (
                   <div className="p-6 text-center text-xs text-[#E5E5E5]/50 bg-[#FFFFFF]/5 rounded-xl border border-[#FFFFFF]/10">
-                    Aucun point formel n'a été enregistré pour cette séance.
+                    Aucun point formel n&apos;a été enregistré pour cette séance.
                   </div>
                 ) : (
                   meeting.points.map((point, index) => {

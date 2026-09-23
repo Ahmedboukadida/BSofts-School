@@ -1,4 +1,4 @@
-import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, BadRequestException, NotFoundException, Inject } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendEmailDto, CreateSmtpConfigDto } from './mail.dto';
 import { SmtpConfigEntity, MailSendResultEntity } from './mail.entity';
@@ -8,7 +8,7 @@ import * as nodemailer from 'nodemailer';
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
 
   async resolveConfig(establishmentId?: string): Promise<{
     host: string;
@@ -18,6 +18,7 @@ export class MailService {
     pass: string;
     fromName: string;
     fromEmail: string;
+    resendApiKey?: string;
   }> {
     let host = process.env.SMTP_HOST || 'smtp.gmail.com';
     let port = parseInt(process.env.SMTP_PORT || (host.includes('gmail') ? '465' : '587'), 10);
@@ -26,6 +27,7 @@ export class MailService {
     let pass = process.env.SMTP_PASSWORD || '';
     let fromName = 'BSofts School';
     let fromEmail = process.env.SMTP_FROM || 'no-reply@bsofts-school.com';
+    let resendApiKey = process.env.RESEND_API_KEY || '';
 
     let config = establishmentId
       ? await this.prisma.smtpConfig.findFirst({
@@ -49,6 +51,7 @@ export class MailService {
           pass = parsed.password || pass;
           if (parsed.fromName) fromName = parsed.fromName;
           if (parsed.fromEmail) fromEmail = parsed.fromEmail;
+          if (parsed.resendApiKey) resendApiKey = parsed.resendApiKey;
         }
       } catch (err) {
         // Fallback to env variables
@@ -70,14 +73,15 @@ export class MailService {
         pass = pass.replace(/\s+/g, '');
       }
     }
+    if (resendApiKey) resendApiKey = resendApiKey.trim();
 
-    if (!user || !pass) {
+    if (!resendApiKey && (!user || !pass)) {
       throw new BadRequestException(
-        "Configuration SMTP incomplète : adresse email (utilisateur) et mot de passe d'application manquants. Veuillez les renseigner dans Paramètres > Configuration SMTP."
+        "Configuration messagerie incomplète : veuillez renseigner vos identifiants SMTP ou une clé API Resend dans Paramètres > Configuration SMTP."
       );
     }
 
-    return { host, port, secure, user, pass, fromName, fromEmail };
+    return { host, port, secure, user, pass, fromName, fromEmail, resendApiKey };
   }
 
   async getTransporter(establishmentId?: string): Promise<{ transporter: nodemailer.Transporter; host: string; port: number }> {
@@ -110,8 +114,34 @@ export class MailService {
       return new MailSendResultEntity({ success: false, error: cfgErr.message });
     }
 
-    const { host, port, secure, user, pass, fromName, fromEmail } = resolved;
+    const { host, port, secure, user, pass, fromName, fromEmail, resendApiKey } = resolved;
     const fromHeader = `"${fromName}" <${fromEmail}>`;
+
+    const sendViaResend = async (apiKey: string) => {
+      const isCustomDomain = fromEmail && !fromEmail.includes('@gmail.com') && !fromEmail.includes('@yahoo.com') && !fromEmail.includes('@outlook.com');
+      const sender = isCustomDomain ? fromHeader : `BSofts School <onboarding@resend.dev>`;
+
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: sender,
+          to: [dto.to],
+          subject: dto.subject,
+          text: dto.text,
+          html: dto.html,
+        }),
+      });
+
+      const body: any = await res.json();
+      if (!res.ok) {
+        throw new Error(body.message || body.error?.message || 'Erreur lors de l’envoi via Resend API');
+      }
+      return { messageId: body.id };
+    };
 
     const sendWithParams = async (targetPort: number, isSecure: boolean) => {
       const tr = nodemailer.createTransport({
@@ -136,17 +166,26 @@ export class MailService {
     };
 
     try {
-      let info;
-      try {
-        info = await sendWithParams(port, secure);
-      } catch (firstAttemptErr: any) {
-        // If port 587 timed out on Gmail, automatically fallback to port 465 with SSL
-        const isTimeout = firstAttemptErr.message?.includes('timeout') || firstAttemptErr.code === 'ETIMEDOUT' || firstAttemptErr.code === 'ESOCKETTIMEDOUT';
-        if (host.includes('gmail') && port === 587 && isTimeout) {
-          this.logger.warn(`Port 587 timed out on cloud network. Retrying automatically on Port 465 with SSL...`);
-          info = await sendWithParams(465, true);
-        } else {
-          throw firstAttemptErr;
+      let info: { messageId?: string } = {};
+
+      if (resendApiKey) {
+        this.logger.log(`Dispatching email to ${dto.to} via Resend HTTPS API (Port 443)...`);
+        info = await sendViaResend(resendApiKey);
+      } else {
+        try {
+          info = await sendWithParams(port, secure);
+        } catch (firstAttemptErr: any) {
+          // If port 587 timed out on Gmail, automatically fallback to port 465 with SSL
+          const isTimeout =
+            firstAttemptErr.message?.includes('timeout') ||
+            firstAttemptErr.code === 'ETIMEDOUT' ||
+            firstAttemptErr.code === 'ESOCKETTIMEDOUT';
+          if (host.includes('gmail') && port === 587 && isTimeout) {
+            this.logger.warn(`Port 587 timed out on cloud network. Retrying automatically on Port 465 with SSL...`);
+            info = await sendWithParams(465, true);
+          } else {
+            throw firstAttemptErr;
+          }
         }
       }
 
@@ -174,11 +213,7 @@ export class MailService {
       if (error.message?.includes('ENETUNREACH') || error.code === 'ENETUNREACH') {
         friendlyError = `Erreur réseau (ENETUNREACH IPv6). La passerelle a été reconfigurée pour forcer l'IPv4. Veuillez réessayer l'envoi vers ${host}:${port}.`;
       } else if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKETTIMEDOUT') {
-        if (host.includes('gmail')) {
-          friendlyError = "Délai d'attente dépassé (Connection timeout). Sur Render et les serveurs cloud, le port 587 vers Gmail est fréquemment bloqué. Veuillez basculer sur le port 465 avec 'Sécurisé SSL : Oui' et utiliser un Mot de passe d'application Google (16 caractères généré depuis https://myaccount.google.com/apppasswords).";
-        } else {
-          friendlyError = `Délai d'attente dépassé (Connection timeout) vers ${host}:${port}. Vérifiez le port et l'accessibilité réseau de votre serveur SMTP.`;
-        }
+        friendlyError = "Délai d'attente dépassé (Connection timeout). Sur le plan gratuit de Render, les ports SMTP sortants (25, 465, 587) sont bloqués au niveau du pare-feu cloud. Solutions : 1) Renseignez une clé API Resend gratuite dans Paramètres > Configuration SMTP (fonctionne sur port 443 HTTPS sans aucun blocage), ou 2) Démarrez le backend en local ou passez Render sur un plan payant (Starter $7/mois).";
       } else if (error.message?.includes('Invalid login') || error.message?.includes('535') || error.message?.includes('Username and Password not accepted')) {
         friendlyError = "Identifiants SMTP rejetés par le serveur (535). Pour Gmail, vous devez utiliser un 'Mot de passe d'application' (16 caractères sans espaces) généré sur votre compte Google, et non le mot de passe habituel de votre compte.";
       }
@@ -225,13 +260,14 @@ export class MailService {
           id: 'platform-global',
           establishmentId: establishmentId || 'global',
           host: parsed.host || '',
-          port: parsed.port || 587,
+          port: parsed.port || 465,
           user: parsed.user || '',
           password: parsed.password || '',
           fromName: parsed.fromName || 'BSofts School',
           fromEmail: parsed.fromEmail || '',
-          isSecure: parsed.isSecure ?? false,
+          isSecure: parsed.isSecure ?? true,
           isDefault: true,
+          resendApiKey: parsed.resendApiKey || '',
           createdAt: new Date(),
           updatedAt: new Date(),
         });

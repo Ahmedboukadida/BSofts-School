@@ -10,18 +10,12 @@ import {
   Clock,
   RotateCcw,
   Building2,
-  ExternalLink,
-  MapPin,
   Trash2,
   Radio,
   Vote,
-  FileText,
   Copy,
   Check,
-  ChevronRight,
-  Shield,
   Search,
-  Filter,
   AlertCircle,
   Eye,
 } from 'lucide-react';
@@ -33,7 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import api from '@/lib/api';
 import { useEstablishmentStore } from '@/store/establishment-store';
 import { useAuthStore } from '@/store/auth-store';
-import type { MeetingItem, MeetingType, MeetingMode, MeetingStatus } from '@/types';
+import type { MeetingItem, MeetingType, MeetingMode } from '@/types';
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
   GENERAL: 'Assemblée Générale',
@@ -60,7 +54,7 @@ const MEETING_TYPE_COLORS: Record<string, { bg: string; text: string; border: st
 export default function CommunityMeetingsPage() {
   const router = useRouter();
   const { currentEstablishmentId } = useEstablishmentStore();
-  const { user } = useAuthStore();
+  const { user: _user } = useAuthStore();
 
   const [meetings, setMeetings] = useState<MeetingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -367,7 +361,7 @@ export default function CommunityMeetingsPage() {
               <option value="CLASS_COUNCIL">Conseil de Classe</option>
               <option value="STAFF">Réunion du Personnel</option>
               <option value="DISCIPLINE">Conseil de Discipline</option>
-              <option value="BOARD">Conseil d'Administration</option>
+              <option value="BOARD">Conseil d&apos;Administration</option>
               <option value="GENERAL">Assemblée Générale</option>
             </select>
 
@@ -505,7 +499,7 @@ export default function CommunityMeetingsPage() {
                         {pointsCount > 0 && (
                           <div className="flex items-center gap-1.5 text-[#242F40] font-medium">
                             <Vote className="w-3.5 h-3.5 text-[#CCA43B]" />
-                            <span>{pointsCount} point{pointsCount > 1 ? 's' : ''} à l'ordre du jour</span>
+                            <span>{pointsCount} point{pointsCount > 1 ? 's' : ''} à l&apos;ordre du jour</span>
                           </div>
                         )}
 
@@ -612,7 +606,7 @@ export default function CommunityMeetingsPage() {
                 <option value="CLASS_COUNCIL">Conseil de Classe</option>
                 <option value="STAFF">Réunion du Personnel</option>
                 <option value="DISCIPLINE">Conseil de Discipline</option>
-                <option value="BOARD">Conseil d'Administration</option>
+                <option value="BOARD">Conseil d&apos;Administration</option>
                 <option value="GENERAL">Assemblée Générale</option>
               </select>
             </div>
@@ -709,7 +703,7 @@ export default function CommunityMeetingsPage() {
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold text-[#242F40] flex items-center gap-1.5">
                 <Vote className="w-3.5 h-3.5 text-[#CCA43B]" />
-                Points à l'ordre du jour & Résolutions
+                Points à l&apos;ordre du jour &amp; Résolutions
               </label>
               <button
                 type="button"
