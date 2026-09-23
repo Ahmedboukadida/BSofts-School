@@ -34,10 +34,10 @@ export default function SaaSPlatformSettingsPage() {
     supportPhone: '+216 71 890 000',
     logoUrl: '/brand/bsofts-logo.png',
 
-    // Colors & Theme
-    primaryColor: '#2563EB',
-    secondaryColor: '#4F46E5',
-    accentColor: '#10B981',
+    // Colors & Theme (Strict 5-color palette)
+    primaryColor: '#242F40',
+    secondaryColor: '#CCA43B',
+    accentColor: '#363636',
     themeDefault: 'LIGHT' as 'LIGHT' | 'DARK' | 'SYSTEM',
 
     // Localization & Currency
@@ -521,7 +521,7 @@ export default function SaaSPlatformSettingsPage() {
         <Card className="p-6 border border-border">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-border pb-3">
             <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
-              <Mail className="w-5 h-5 text-sky-600" />
+              <Mail className="w-5 h-5 text-brand" />
               Serveur de Messagerie SMTP (Emails Transactionnels & Notifications)
             </h2>
             <Button
@@ -535,9 +535,20 @@ export default function SaaSPlatformSettingsPage() {
             </Button>
           </div>
 
-          <p className="text-xs text-text-secondary mb-4">
-            Ces paramètres sont enregistrés dans la table <code className="font-mono text-brand">SmtpConfig</code> et utilisés dynamiquement pour l’envoi des alertes d’absence, bulletins de paie, reçus de scolarité et réinitialisations de mot de passe.
+          <p className="text-xs text-text-secondary mb-3">
+            Ces paramètres sont enregistrés dynamiquement dans la base de données (<code className="font-mono text-brand">PlatformSetting</code> et <code className="font-mono text-brand">SmtpConfig</code>) pour l’envoi des alertes d’absence, bulletins de paie, reçus et réinitialisations de mot de passe.
           </p>
+
+          <div className="p-3.5 rounded-xl border border-brand/30 bg-brand/5 mb-4 text-xs text-text-primary space-y-1">
+            <span className="font-bold block text-brand flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 text-brand" />
+              Recommandation pour Gmail & Hébergement Cloud (Render / Vercel) :
+            </span>
+            <ul className="list-disc list-inside text-text-secondary space-y-0.5 pl-1">
+              <li>Pour Gmail, configurez l'hôte sur <code className="font-mono text-text-primary font-bold">smtp.gmail.com</code> et le port sur <code className="font-mono text-text-primary font-bold">465</code> avec <code className="font-mono text-text-primary font-bold">SSL Sécurisé : Coché</code>. Le port 587 est fréquemment filtré par les pare-feux cloud.</li>
+              <li>Utilisez un <strong>Mot de passe d'application Google (16 caractères)</strong> généré depuis <em>Compte Google &gt; Sécurité &gt; Mots de passe des applications</em>, et non le mot de passe habituel de votre compte.</li>
+            </ul>
+          </div>
 
           {smtpStatus && (
             <div
@@ -566,9 +577,16 @@ export default function SaaSPlatformSettingsPage() {
             <Input
               label="Port SMTP *"
               type="number"
-              placeholder="587 ou 465"
+              placeholder="465 ou 587"
               value={smtpConfig.port}
-              onChange={(e) => setSmtpConfig({ ...smtpConfig, port: Number(e.target.value) })}
+              onChange={(e) => {
+                const p = Number(e.target.value);
+                setSmtpConfig({
+                  ...smtpConfig,
+                  port: p,
+                  isSecure: p === 465,
+                });
+              }}
             />
             <div className="flex flex-col justify-end">
               <label className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface border border-border cursor-pointer h-[42px]">
@@ -579,7 +597,7 @@ export default function SaaSPlatformSettingsPage() {
                   className="rounded text-brand focus:ring-brand w-4 h-4"
                 />
                 <span className="text-xs font-bold text-text-primary">
-                  Activer SSL / TLS Sécurisé (Port 465)
+                  Activer SSL / TLS Sécurisé (Recommandé : Port 465)
                 </span>
               </label>
             </div>

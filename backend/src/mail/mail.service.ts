@@ -10,7 +10,7 @@ export class MailService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  async getTransporter(establishmentId?: string): Promise<nodemailer.Transporter> {
+  async getTransporter(establishmentId?: string): Promise<{ transporter: nodemailer.Transporter; host: string; port: number }> {
     let host = process.env.SMTP_HOST || 'smtp.gmail.com';
     let port = parseInt(process.env.SMTP_PORT || '587', 10);
     let secure = process.env.SMTP_SECURE === 'true';
@@ -49,23 +49,35 @@ export class MailService {
       pass = config.password;
     }
 
-    return nodemailer.createTransport({
+    if (!user || !pass) {
+      throw new BadRequestException(
+        "Configuration SMTP incomplète : adresse email (utilisateur) et mot de passe d'application manquants. Veuillez les renseigner dans Paramètres > Configuration SMTP."
+      );
+    }
+
+    const transporter = nodemailer.createTransport({
       host,
       port,
       secure: secure || port === 465,
-      auth: user ? { user, pass } : undefined,
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
+      auth: { user, pass },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
       tls: {
         rejectUnauthorized: false,
       },
     });
+
+    return { transporter, host, port };
   }
 
   async sendMail(dto: SendEmailDto, establishmentId?: string, actor?: any): Promise<MailSendResultEntity> {
+    let hostUsed = 'inconnu';
+    let portUsed = 587;
     try {
-      const transporter = await this.getTransporter(establishmentId);
+      const { transporter, host, port } = await this.getTransporter(establishmentId);
+      hostUsed = host;
+      portUsed = port;
 
       let fromHeader = process.env.SMTP_FROM || 'BSofts School <no-reply@bsofts-school.com>';
       const config = establishmentId
@@ -120,12 +132,23 @@ export class MailService {
         messageId: info.messageId,
       });
     } catch (error: any) {
-      this.logger.error(`Mail dispatch failed: ${error.message}`);
+      let friendlyError = error.message;
+      if (error.message?.includes('timeout') || error.code === 'ETIMEDOUT' || error.code === 'ESOCKETTIMEDOUT') {
+        if (hostUsed.includes('gmail')) {
+          friendlyError = "Délai d'attente dépassé (Connection timeout). Sur Render et les serveurs cloud, le port 587 vers Gmail est fréquemment bloqué. Veuillez basculer sur le port 465 avec 'Sécurisé SSL : Oui' et utiliser un Mot de passe d'application Google (16 caractères généré depuis https://myaccount.google.com/apppasswords).";
+        } else {
+          friendlyError = `Délai d'attente dépassé (Connection timeout) vers ${hostUsed}:${portUsed}. Vérifiez le port et l'accessibilité réseau de votre serveur SMTP.`;
+        }
+      } else if (error.message?.includes('Invalid login') || error.message?.includes('535') || error.message?.includes('Username and Password not accepted')) {
+        friendlyError = "Identifiants SMTP rejetés par le serveur (535). Pour Gmail, vous devez utiliser un 'Mot de passe d'application' (16 caractères sans espaces) généré sur votre compte Google, et non le mot de passe habituel de votre compte.";
+      }
+
+      this.logger.error(`Mail dispatch failed: ${friendlyError}`);
       if (actor?.id) {
         await this.prisma.systemLog.create({
           data: {
             level: 'ERROR',
-            message: `Mail dispatch failed to ${dto.to}: ${error.message}`,
+            message: `Mail dispatch failed to ${dto.to}: ${friendlyError}`,
             stack: error.stack,
             context: 'MailService.sendMail',
             userId: actor.id,
@@ -134,7 +157,7 @@ export class MailService {
       }
       return new MailSendResultEntity({
         success: false,
-        error: error.message,
+        error: friendlyError,
       });
     }
   }
@@ -180,27 +203,58 @@ export class MailService {
 
   async saveConfig(establishmentId: string | undefined, dto: CreateSmtpConfigDto, actor?: any): Promise<SmtpConfigEntity> {
     try {
-      if (establishmentId) {
-        if (dto.isDefault) {
-          await this.prisma.smtpConfig.updateMany({
-            where: { establishmentId },
-            data: { isDefault: false },
+      // 1. Always sync to global PlatformSetting so any establishment without custom config inherits it
+      await this.prisma.platformSetting.upsert({
+        where: { key: 'SMTP_CONFIG' },
+        update: {
+          value: JSON.stringify(dto),
+          category: 'COMMUNICATION',
+          isPublic: false,
+        },
+        create: {
+          key: 'SMTP_CONFIG',
+          value: JSON.stringify(dto),
+          category: 'COMMUNICATION',
+          isPublic: false,
+        },
+      });
+
+      // 2. If establishmentId is provided, upsert establishment record
+      if (establishmentId && establishmentId !== 'global') {
+        const existing = await this.prisma.smtpConfig.findFirst({
+          where: { establishmentId },
+        });
+
+        let saved;
+        if (existing) {
+          saved = await this.prisma.smtpConfig.update({
+            where: { id: existing.id },
+            data: {
+              host: dto.host,
+              port: dto.port,
+              user: dto.user,
+              password: dto.password,
+              fromName: dto.fromName,
+              fromEmail: dto.fromEmail,
+              isSecure: dto.isSecure ?? (dto.port === 465),
+              isDefault: true,
+            },
+          });
+        } else {
+          saved = await this.prisma.smtpConfig.create({
+            data: {
+              establishmentId,
+              host: dto.host,
+              port: dto.port,
+              user: dto.user,
+              password: dto.password,
+              fromName: dto.fromName,
+              fromEmail: dto.fromEmail,
+              isSecure: dto.isSecure ?? (dto.port === 465),
+              isDefault: true,
+            },
           });
         }
-
-        const created = await this.prisma.smtpConfig.create({
-          data: {
-            establishmentId,
-            host: dto.host,
-            port: dto.port,
-            user: dto.user,
-            password: dto.password,
-            fromName: dto.fromName,
-            fromEmail: dto.fromEmail,
-            isSecure: dto.isSecure ?? true,
-            isDefault: dto.isDefault ?? true,
-          },
-        });
 
         if (actor?.id) {
           await this.prisma.auditLog.create({
@@ -209,46 +263,30 @@ export class MailService {
               actorSnapshot: `${actor.firstName || ''} ${actor.lastName || ''} (@${actor.email || actor.username || 'unknown'}) [${actor.role || 'USER'}]`.trim(),
               action: 'CONFIGURE_SMTP',
               entity: 'SmtpConfig',
-              entityId: created.id,
+              entityId: saved.id,
               status: 'SUCCESS',
               newValues: { host: dto.host, port: dto.port, fromEmail: dto.fromEmail, establishmentId, tenantId: actor.tenantId },
             },
           }).catch(err => this.logger.warn(`Failed to write audit log: ${err.message}`));
         }
 
-        return new SmtpConfigEntity(created);
-      } else {
-        // Global platform setting update
-        await this.prisma.platformSetting.upsert({
-          where: { key: 'SMTP_CONFIG' },
-          update: {
-            value: JSON.stringify(dto),
-            category: 'COMMUNICATION',
-            isPublic: false,
-          },
-          create: {
-            key: 'SMTP_CONFIG',
-            value: JSON.stringify(dto),
-            category: 'COMMUNICATION',
-            isPublic: false,
-          },
-        });
-
-        return new SmtpConfigEntity({
-          id: 'platform-global',
-          establishmentId: 'global',
-          host: dto.host,
-          port: dto.port,
-          user: dto.user,
-          password: dto.password,
-          fromName: dto.fromName,
-          fromEmail: dto.fromEmail,
-          isSecure: dto.isSecure ?? false,
-          isDefault: true,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        return new SmtpConfigEntity(saved);
       }
+
+      return new SmtpConfigEntity({
+        id: 'platform-global',
+        establishmentId: 'global',
+        host: dto.host,
+        port: dto.port,
+        user: dto.user,
+        password: dto.password,
+        fromName: dto.fromName,
+        fromEmail: dto.fromEmail,
+        isSecure: dto.isSecure ?? (dto.port === 465),
+        isDefault: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
     } catch (error: any) {
       if (actor?.id) {
         await this.prisma.systemLog.create({

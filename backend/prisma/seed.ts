@@ -798,7 +798,6 @@ async function main() {
         firstName: randomPick(tunisianFirstNames),
         lastName: randomPick(tunisianLastNames),
         password: commonPassword,
-        tenantId: est.tenantId,
         isActive: true,
       },
     });
@@ -817,7 +816,6 @@ async function main() {
           firstName: tFirstName,
           lastName: tLastName,
           password: commonPassword,
-          tenantId: est.tenantId,
           isActive: true,
         },
       });
@@ -880,7 +878,6 @@ async function main() {
         firstName: randomPick(tunisianFirstNames),
         lastName: randomPick(tunisianLastNames),
         password: commonPassword,
-        tenantId: est.tenantId,
         isActive: true,
       },
     });
@@ -910,7 +907,6 @@ async function main() {
           firstName: randomPick(tunisianFirstNames),
           lastName: randomPick(tunisianLastNames),
           password: commonPassword,
-          tenantId: est.tenantId,
           isActive: true,
         },
       });
@@ -943,7 +939,6 @@ async function main() {
           firstName: sFirstName,
           lastName: sLastName,
           password: commonPassword,
-          tenantId: est.tenantId,
           isActive: true,
         },
       });
