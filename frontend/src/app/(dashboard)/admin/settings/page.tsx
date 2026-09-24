@@ -14,6 +14,7 @@ import {
   Send,
   AlertCircle,
   Video,
+  CreditCard,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,7 +22,6 @@ import { Input } from '@/components/ui/input';
 import api from '@/lib/api';
 
 export default function SaaSPlatformSettingsPage() {
-
   const [isLoading, setIsLoading] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
@@ -82,6 +82,21 @@ export default function SaaSPlatformSettingsPage() {
   const [isTestingLivekit, setIsTestingLivekit] = useState(false);
   const [livekitStatus, setLivekitStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
+  // Platform Payment Gateways State (Level 1: SaaS Subscriptions)
+  const [paymentConfig, setPaymentConfig] = useState({
+    stripeEnabled: false,
+    stripePublicKey: '',
+    stripeSecretKey: '',
+    stripeWebhookSecret: '',
+    clicToPayEnabled: true,
+    clicToPayMerchantId: '',
+    clicToPayApiKey: '',
+    clicToPaySecretKey: '',
+    clicToPayTestMode: true,
+    currency: 'TND',
+  });
+  const [paymentStatus, setPaymentStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
   useEffect(() => {
     api.get('/saas-settings')
       .then((res) => {
@@ -121,7 +136,40 @@ export default function SaaSPlatformSettingsPage() {
         }
       })
       .catch(() => {});
+
+    api.get('/billing/config')
+      .then((res) => {
+        if (res.data) {
+          setPaymentConfig({
+            stripeEnabled: Boolean(res.data.stripeEnabled),
+            stripePublicKey: res.data.stripePublicKey || '',
+            stripeSecretKey: res.data.stripeSecretKey || '',
+            stripeWebhookSecret: res.data.stripeWebhookSecret || '',
+            clicToPayEnabled: res.data.clicToPayEnabled !== undefined ? Boolean(res.data.clicToPayEnabled) : true,
+            clicToPayMerchantId: res.data.clicToPayMerchantId || '',
+            clicToPayApiKey: res.data.clicToPayApiKey || '',
+            clicToPaySecretKey: res.data.clicToPaySecretKey || '',
+            clicToPayTestMode: res.data.clicToPayTestMode !== undefined ? Boolean(res.data.clicToPayTestMode) : true,
+            currency: res.data.currency || 'TND',
+          });
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  const handleSavePaymentConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setPaymentStatus(null);
+    try {
+      await api.put('/billing/config', paymentConfig);
+      setPaymentStatus({ type: 'success', message: 'Passerelles de paiement SaaS (ClicToPay & Stripe) mises à jour avec succès.' });
+    } catch (err: any) {
+      setPaymentStatus({ type: 'error', message: err?.response?.data?.message || 'Erreur lors de la sauvegarde des passerelles de paiement.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSaveSmtp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -767,6 +815,168 @@ export default function SaaSPlatformSettingsPage() {
               <Video className="w-3.5 h-3.5 mr-1.5 text-emerald-600" />
               Tester la Connexion LiveKit
             </Button>
+          </div>
+        </Card>
+
+        {/* Section 7: Passerelles de Paiement SaaS (Niveau 1: Abonnements Plateforme BSofts) */}
+        <Card className="p-6 border border-border">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 border-b border-border pb-3">
+            <h2 className="text-base font-bold text-text-primary flex items-center gap-2">
+              <CreditCard className="w-5 h-5 text-amber-500" />
+              Passerelles de Paiement SaaS (Abonnements Tenants & Établissements)
+            </h2>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={handleSavePaymentConfig}
+              isLoading={isLoading}
+            >
+              <Save className="w-4 h-4 mr-1.5" />
+              Sauvegarder Passerelles
+            </Button>
+          </div>
+
+          <p className="text-xs text-text-secondary mb-4">
+            Configuration dynamique des terminaux d’encaissement pour les abonnements SaaS versés par les établissements scolaires à la plateforme BSofts. Réservé à l’administrateur racine (Root).
+          </p>
+
+          {paymentStatus && (
+            <div
+              className={`p-3.5 rounded-xl border mb-4 flex items-center gap-2 text-xs font-semibold ${
+                paymentStatus.type === 'success'
+                  ? 'bg-emerald-500/10 border-emerald-200 text-emerald-700'
+                  : 'bg-rose-500/10 border-rose-200 text-rose-700'
+              }`}
+            >
+              {paymentStatus.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              )}
+              <span>{paymentStatus.message}</span>
+            </div>
+          )}
+
+          {/* Devise par défaut de la plateforme */}
+          <div className="mb-6 p-4 rounded-xl bg-surface border border-border">
+            <div className="max-w-xs">
+              <label className="text-xs font-bold text-text-primary block mb-1.5">Devise d’encaissement principale SaaS</label>
+              <select
+                className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
+                value={paymentConfig.currency}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, currency: e.target.value })}
+              >
+                <option value="TND">TND — Dinar Tunisien (Millimes)</option>
+                <option value="EUR">EUR — Euro (€)</option>
+                <option value="USD">USD — Dollar US ($)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* ClicToPay Monétique Tunisie */}
+          <div className="mb-6 p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-sm font-bold text-text-primary block flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                  ClicToPay — Monétique Tunisie (SMT)
+                </span>
+                <span className="text-xs text-text-secondary">
+                  Cartes bancaires nationales tunisiennes (GIE Monétique Tunisie / Carte Bancaire & e-Dinar).
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={paymentConfig.clicToPayEnabled}
+                  onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayEnabled: e.target.checked })}
+                />
+                <div className="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <Input
+                label="ID Marchand ClicToPay (Merchant ID)"
+                placeholder="Ex: 1000000000"
+                value={paymentConfig.clicToPayMerchantId}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayMerchantId: e.target.value })}
+              />
+              <Input
+                label="Nom d’Utilisateur API (Username / Key)"
+                placeholder="Ex: merchant_api"
+                value={paymentConfig.clicToPayApiKey}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayApiKey: e.target.value })}
+              />
+              <Input
+                label="Mot de Passe API (Password / Secret)"
+                type="password"
+                placeholder="••••••••••••••••"
+                value={paymentConfig.clicToPaySecretKey}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPaySecretKey: e.target.value })}
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-amber-500/10">
+              <input
+                id="clictopay-test-mode"
+                type="checkbox"
+                className="w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-400"
+                checked={paymentConfig.clicToPayTestMode}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayTestMode: e.target.checked })}
+              />
+              <label htmlFor="clictopay-test-mode" className="text-xs text-text-secondary cursor-pointer">
+                Activer le mode Bac à Sable / Test ClicToPay (SMT Sandbox)
+              </label>
+            </div>
+          </div>
+
+          {/* Stripe International */}
+          <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <span className="text-sm font-bold text-text-primary block flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
+                  Stripe — Cartes Internationales (Visa / Mastercard)
+                </span>
+                <span className="text-xs text-text-secondary">
+                  Encaissement par cartes bancaires internationales et prélèvements SEPA.
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="sr-only peer"
+                  checked={paymentConfig.stripeEnabled}
+                  onChange={(e) => setPaymentConfig({ ...paymentConfig, stripeEnabled: e.target.checked })}
+                />
+                <div className="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              </label>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input
+                label="Clé Publique Stripe (Publishable Key)"
+                placeholder="pk_test_..."
+                value={paymentConfig.stripePublicKey}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, stripePublicKey: e.target.value })}
+              />
+              <Input
+                label="Clé Secrète Stripe (Secret Key)"
+                type="password"
+                placeholder="sk_test_..."
+                value={paymentConfig.stripeSecretKey}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, stripeSecretKey: e.target.value })}
+              />
+              <Input
+                label="Secret Webhook Stripe (Signing Secret)"
+                type="password"
+                placeholder="whsec_..."
+                value={paymentConfig.stripeWebhookSecret}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, stripeWebhookSecret: e.target.value })}
+              />
+            </div>
           </div>
         </Card>
       </form>

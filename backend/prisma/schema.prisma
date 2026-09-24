@@ -64,6 +64,7 @@ model SaaSPlan {
   modules       SaaSPlanModule[]
   features      SaaSPlanFeature[]
   subscriptions TenantSubscription[]
+  invoices      SaaSInvoice[]
 }
 
 model SaaSModule {
@@ -150,6 +151,27 @@ model TenantSubscription {
   @@index([tenantId])
 }
 
+model SaaSInvoice {
+  id           String        @id @default(uuid())
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  planId       String
+  plan         SaaSPlan      @relation(fields: [planId], references: [id])
+  amount       Decimal       @db.Decimal(10, 2)
+  currency     String        @default("TND")
+  gateway      String        // "STRIPE" | "CLIC_TO_PAY"
+  gatewayRef   String?       // Stripe session ID or ClicToPay orderId
+  status       PaymentStatus @default(PENDING)
+  periodMonths Int           @default(1)
+  paidAt       DateTime?
+  metadata     Json?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([tenantId])
+  @@index([status])
+}
+
 model TenantPlanFeatureOverride {
   id          String   @id @default(uuid())
   tenantId    String
@@ -191,6 +213,7 @@ model Tenant {
   establishments       Establishment[]
   subscriptions        TenantSubscription[]
   planFeatureOverrides TenantPlanFeatureOverride[]
+  invoices             SaaSInvoice[]
 }
 
 model TenantSettings {
@@ -414,6 +437,7 @@ enum PaymentMethod {
   CHECK
   STRIPE
   PAYPAL
+  CLIC_TO_PAY
   VISA
   MASTERCARD
   AMERICAN_EXPRESS
@@ -522,19 +546,25 @@ model NotificationConfig {
 }
 
 model PaymentConfig {
-  id                 String          @id @default(uuid())
-  establishmentId    String
-  establishment      Establishment   @relation(fields: [establishmentId], references: [id])
-  allowedMethods     PaymentMethod[]
-  stripeKey          String?
-  stripeSecret       String?
-  paypalClientId     String?
-  paypalSecret       String?
-  latePenaltyPercent Decimal?        @db.Decimal(5, 2)
-  latePenaltyEnabled Boolean         @default(false)
-  blockAccessOnLate  Boolean         @default(false)
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  id                  String          @id @default(uuid())
+  establishmentId     String
+  establishment       Establishment   @relation(fields: [establishmentId], references: [id])
+  allowedMethods      PaymentMethod[]
+  stripeEnabled       Boolean         @default(false)
+  stripeKey           String?
+  stripeSecret        String?
+  paypalClientId      String?
+  paypalSecret        String?
+  clicToPayEnabled    Boolean         @default(false)
+  clicToPayMerchantId String?
+  clicToPayApiKey     String?
+  clicToPaySecretKey  String?
+  clicToPayTestMode   Boolean         @default(true)
+  latePenaltyPercent  Decimal?        @db.Decimal(5, 2)
+  latePenaltyEnabled  Boolean         @default(false)
+  blockAccessOnLate   Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
 
   // Audit & Soft-Delete
   createdBy String?
@@ -544,6 +574,28 @@ model PaymentConfig {
   deletedBy String?
 
   @@index([establishmentId])
+}
+
+model PlatformPaymentConfig {
+  id                  String   @id @default(uuid())
+  isDefault           Boolean  @default(true)
+  currency            String   @default("TND")
+
+  // Stripe platform config
+  stripeEnabled       Boolean  @default(false)
+  stripePublicKey     String?
+  stripeSecretKey     String?
+  stripeWebhookSecret String?
+
+  // ClicToPay platform config
+  clicToPayEnabled    Boolean  @default(false)
+  clicToPayMerchantId String?
+  clicToPayApiKey     String?
+  clicToPaySecretKey  String?
+  clicToPayTestMode   Boolean  @default(true)
+
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 // ============================================================

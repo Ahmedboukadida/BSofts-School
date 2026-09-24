@@ -190,5 +190,67 @@ export class EstablishmentsService {
       },
     });
   }
+
+  async getPaymentConfig(establishmentId: string) {
+    let config = await this.prisma.paymentConfig.findFirst({
+      where: { establishmentId },
+    });
+
+    if (!config) {
+      config = await this.prisma.paymentConfig.create({
+        data: {
+          establishmentId,
+          allowedMethods: ['CASH', 'CHECK', 'BANK_TRANSFER'],
+          stripeEnabled: false,
+          clicToPayEnabled: false,
+          clicToPayTestMode: true,
+        },
+      });
+    }
+
+    return config;
+  }
+
+  async updatePaymentConfig(establishmentId: string, dto: any) {
+    const existing = await this.prisma.paymentConfig.findFirst({
+      where: { establishmentId },
+    });
+
+    if (existing) {
+      return this.prisma.paymentConfig.update({
+        where: { id: existing.id },
+        data: {
+          allowedMethods: dto.allowedMethods ?? existing.allowedMethods,
+          stripeEnabled: dto.stripeEnabled ?? existing.stripeEnabled,
+          stripeKey: dto.stripeKey !== undefined ? dto.stripeKey : existing.stripeKey,
+          stripeSecret: dto.stripeSecret !== undefined ? dto.stripeSecret : existing.stripeSecret,
+          clicToPayEnabled: dto.clicToPayEnabled ?? existing.clicToPayEnabled,
+          clicToPayMerchantId: dto.clicToPayMerchantId !== undefined ? dto.clicToPayMerchantId : existing.clicToPayMerchantId,
+          clicToPayApiKey: dto.clicToPayApiKey !== undefined ? dto.clicToPayApiKey : existing.clicToPayApiKey,
+          clicToPaySecretKey: dto.clicToPaySecretKey !== undefined ? dto.clicToPaySecretKey : existing.clicToPaySecretKey,
+          clicToPayTestMode: dto.clicToPayTestMode ?? existing.clicToPayTestMode,
+          latePenaltyPercent: dto.latePenaltyPercent ?? existing.latePenaltyPercent,
+          latePenaltyEnabled: dto.latePenaltyEnabled ?? existing.latePenaltyEnabled,
+          blockAccessOnLate: dto.blockAccessOnLate ?? existing.blockAccessOnLate,
+        },
+      });
+    }
+
+    return this.prisma.paymentConfig.create({
+      data: {
+        establishmentId,
+        allowedMethods: dto.allowedMethods || ['CASH', 'CHECK', 'BANK_TRANSFER'],
+        stripeEnabled: dto.stripeEnabled ?? false,
+        stripeKey: dto.stripeKey || null,
+        stripeSecret: dto.stripeSecret || null,
+        clicToPayEnabled: dto.clicToPayEnabled ?? false,
+        clicToPayMerchantId: dto.clicToPayMerchantId || null,
+        clicToPayApiKey: dto.clicToPayApiKey || null,
+        clicToPaySecretKey: dto.clicToPaySecretKey || null,
+        clicToPayTestMode: dto.clicToPayTestMode ?? true,
+      },
+    });
+  }
 }
+
 

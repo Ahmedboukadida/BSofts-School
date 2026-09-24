@@ -80,5 +80,25 @@ export class EstablishmentsController {
   restore(@Param('id', ParseUUIDPipe) id: string) {
     return this.establishmentsService.restore(id);
   }
+
+  @Get(':id/payment-config')
+  @Permissions('establishments:read')
+  @ApiOperation({ summary: 'Get payment gateway configuration for an establishment' })
+  @ApiResponse({ status: 200, description: 'Establishment payment configuration' })
+  getPaymentConfig(@Param('id', ParseUUIDPipe) id: string) {
+    return this.establishmentsService.getPaymentConfig(id);
+  }
+
+  @Put(':id/payment-config')
+  @Permissions('establishments:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Update payment gateway configuration for an establishment' })
+  @ApiResponse({ status: 200, description: 'Establishment payment configuration updated' })
+  updatePaymentConfig(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: any,
+  ) {
+    return this.establishmentsService.updatePaymentConfig(id, dto);
+  }
 }
 

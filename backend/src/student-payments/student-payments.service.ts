@@ -275,4 +275,152 @@ export class StudentPaymentsService {
       throw err;
     }
   }
+
+  async createOnlineCheckout(paymentId: string, gateway: 'STRIPE' | 'CLIC_TO_PAY', user?: any) {
+    const payment = await this.prisma.studentPayment.findUnique({
+      where: { id: paymentId },
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            establishmentId: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Paiement avec l'ID ${paymentId} introuvable`);
+    }
+
+    if (payment.status === 'PAID') {
+      throw new BadRequestException('Ce paiement a déjà été réglé.');
+    }
+
+    const config = await this.prisma.paymentConfig.findFirst({
+      where: { establishmentId: payment.student.establishmentId },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://bsofts-school.vercel.app';
+    const amountNum = Number(payment.amount);
+
+    if (gateway === 'STRIPE') {
+      const stripeKey = config?.stripeSecret || process.env.STRIPE_SECRET_KEY;
+      if (!stripeKey) {
+        return {
+          paymentId: payment.id,
+          gateway: 'STRIPE',
+          checkoutUrl: `${frontendUrl}/payments?mockOnline=stripe&paymentId=${payment.id}`,
+          message: 'Mode Test Stripe : Clé secrète établissement non configurée.',
+        };
+      }
+
+      const Stripe = (await import('stripe')).default;
+      const stripe = new Stripe(stripeKey, { apiVersion: '2025-02-24.acacia' as any });
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'eur',
+              product_data: {
+                name: `Frais Scolaires — ${payment.student.firstName} ${payment.student.lastName}`,
+                description: payment.notes || 'Paiement en ligne scolarité',
+              },
+              unit_amount: Math.round(amountNum * 100),
+            },
+            quantity: 1,
+          },
+        ],
+        mode: 'payment',
+        success_url: `${frontendUrl}/payments?status=success&paymentId=${payment.id}`,
+        cancel_url: `${frontendUrl}/payments?status=cancelled&paymentId=${payment.id}`,
+        client_reference_id: payment.id,
+      });
+
+      return {
+        paymentId: payment.id,
+        gateway: 'STRIPE',
+        checkoutUrl: session.url,
+      };
+    } else {
+      const orderNumber = `SCH-${payment.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+      const amountMillimes = Math.round(amountNum * 1000);
+
+      if (config?.clicToPayTestMode || !config?.clicToPayApiKey) {
+        return {
+          paymentId: payment.id,
+          gateway: 'CLIC_TO_PAY',
+          orderNumber,
+          amountMillimes,
+          checkoutUrl: `${frontendUrl}/payments?mockOnline=clictopay&paymentId=${payment.id}&orderNumber=${orderNumber}`,
+          message: 'Mode Test ClicToPay Établissement actif.',
+        };
+      }
+
+      const clicToPayEndpoint = config.clicToPayTestMode
+        ? 'https://test.clictopay.com/payment/rest/register.do'
+        : 'https://clictopay.com/payment/rest/register.do';
+
+      const returnUrl = `${frontendUrl}/api/student-payments/callback/clictopay?paymentId=${payment.id}`;
+
+      try {
+        const params = new URLSearchParams({
+          userName: config.clicToPayMerchantId || '',
+          password: config.clicToPayApiKey || '',
+          orderNumber,
+          amount: amountMillimes.toString(),
+          currency: '788',
+          returnUrl,
+          failUrl: `${frontendUrl}/payments?status=failed`,
+          description: `Frais Scolaires ${payment.student.firstName} ${payment.student.lastName}`,
+        });
+
+        const res = await fetch(`${clicToPayEndpoint}?${params.toString()}`, { method: 'POST' });
+        const data = await res.json();
+        if (data.formUrl) {
+          return {
+            paymentId: payment.id,
+            gateway: 'CLIC_TO_PAY',
+            checkoutUrl: data.formUrl,
+          };
+        }
+      } catch (err: any) {
+        // Fallback to test checkout simulation
+      }
+
+      return {
+        paymentId: payment.id,
+        gateway: 'CLIC_TO_PAY',
+        checkoutUrl: `${frontendUrl}/payments?mockOnline=clictopay&paymentId=${payment.id}&orderNumber=${orderNumber}`,
+      };
+    }
+  }
+
+  async confirmOnlinePayment(paymentId: string, gateway: string, user?: any) {
+    const payment = await this.prisma.studentPayment.findUnique({
+      where: { id: paymentId },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Paiement ${paymentId} introuvable`);
+    }
+
+    const updated = await this.prisma.studentPayment.update({
+      where: { id: paymentId },
+      data: {
+        status: 'PAID',
+        method: gateway === 'STRIPE' ? 'STRIPE' : 'CLIC_TO_PAY',
+        paidAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Paiement en ligne validé avec succès',
+      payment: updated,
+    };
+  }
 }

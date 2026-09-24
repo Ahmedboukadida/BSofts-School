@@ -84,4 +84,27 @@ export class StudentPaymentsController {
     const isPermanent = permanent === 'true';
     return this.service.remove(id, isPermanent, user);
   }
+
+  @Post(':id/checkout')
+  @Permissions('payments:read')
+  @ApiOperation({ summary: 'Initiate online payment for tuition fee via School ClicToPay or Stripe' })
+  @ApiResponse({ status: 201, description: 'Online checkout session generated' })
+  createCheckout(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { gateway: 'CLIC_TO_PAY' | 'STRIPE' },
+    @CurrentUser() user: any,
+  ) {
+    return this.service.createOnlineCheckout(id, body.gateway, user);
+  }
+
+  @Post('confirm-online')
+  @Permissions('payments:read')
+  @ApiOperation({ summary: 'Confirm online student payment' })
+  @ApiResponse({ status: 200, description: 'Payment marked completed' })
+  confirmOnline(
+    @Body() body: { paymentId: string; gateway: string },
+    @CurrentUser() user: any,
+  ) {
+    return this.service.confirmOnlinePayment(body.paymentId, body.gateway, user);
+  }
 }

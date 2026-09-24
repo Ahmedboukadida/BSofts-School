@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { User, Building, Bell, Shield, Palette } from 'lucide-react';
+import { User, Building, Bell, Shield, Palette, CreditCard, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +20,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState(tabParam || 'profile');
 
   useEffect(() => {
-    if (tabParam && ['profile', 'appearance', 'establishment', 'notifications', 'security'].includes(tabParam)) {
+    if (tabParam && ['profile', 'appearance', 'establishment', 'payments', 'notifications', 'security'].includes(tabParam)) {
       setActiveTab(tabParam);
     }
   }, [tabParam]);
@@ -44,6 +44,21 @@ export default function SettingsPage() {
   const [estLoading, setEstLoading] = useState(false);
   const [estMessage, setEstMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // School Online Payments State (Level 2: Student Tuition & Inscriptions)
+  const [payConfig, setPayConfig] = useState({
+    currency: 'TND',
+    clicToPayEnabled: true,
+    clicToPayMerchantId: '',
+    clicToPayApiKey: '',
+    clicToPaySecretKey: '',
+    clicToPayTestMode: true,
+    stripeEnabled: false,
+    stripePublishableKey: '',
+    stripeSecretKey: '',
+  });
+  const [payLoading, setPayLoading] = useState(false);
+  const [payMessage, setPayMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const [emailNotif, setEmailNotif] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('bsofts_notif_email') !== 'false' : true);
   const [smsNotif, setSmsNotif] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('bsofts_notif_sms') === 'true' : false);
   const [attendanceAlert, setAttendanceAlert] = useState(() => typeof window !== 'undefined' ? localStorage.getItem('bsofts_notif_attendance') !== 'false' : true);
@@ -54,6 +69,7 @@ export default function SettingsPage() {
     { id: 'profile', name: t('settings.profile'), icon: User },
     { id: 'appearance', name: t('settings.appearance'), icon: Palette },
     { id: 'establishment', name: t('settings.establishment'), icon: Building },
+    { id: 'payments', name: 'Paiements & Encaissment', icon: CreditCard },
     { id: 'notifications', name: t('settings.notifications'), icon: Bell },
     { id: 'security', name: t('settings.security'), icon: Shield },
   ];
@@ -74,11 +90,38 @@ export default function SettingsPage() {
     }
   }, []);
 
+  const fetchPaymentConfig = useCallback(async (id: string) => {
+    try {
+      const res = await api.get(`/establishments/${id}/payment-config`);
+      if (res.data) {
+        setPayConfig({
+          currency: res.data.currency || 'TND',
+          clicToPayEnabled: res.data.clicToPayEnabled !== undefined ? Boolean(res.data.clicToPayEnabled) : true,
+          clicToPayMerchantId: res.data.clicToPayMerchantId || '',
+          clicToPayApiKey: res.data.clicToPayApiKey || '',
+          clicToPaySecretKey: res.data.clicToPaySecretKey || '',
+          clicToPayTestMode: res.data.clicToPayTestMode !== undefined ? Boolean(res.data.clicToPayTestMode) : true,
+          stripeEnabled: Boolean(res.data.stripeEnabled),
+          stripePublishableKey: res.data.stripePublishableKey || '',
+          stripeSecretKey: res.data.stripeSecretKey || '',
+        });
+      }
+    } catch {
+      // payment config might not exist yet
+    }
+  }, []);
+
   useEffect(() => {
-    if (activeTab === 'establishment') {
+    if (activeTab === 'establishment' || activeTab === 'payments') {
       fetchEstablishment();
     }
   }, [activeTab, fetchEstablishment]);
+
+  useEffect(() => {
+    if (activeTab === 'payments' && estId) {
+      fetchPaymentConfig(estId);
+    }
+  }, [activeTab, estId, fetchPaymentConfig]);
 
   const handleEstablishmentSave = async () => {
     setEstLoading(true);
@@ -96,6 +139,23 @@ export default function SettingsPage() {
       setEstMessage({ type: 'error', text: t('settings.profileFailed') });
     } finally {
       setEstLoading(false);
+    }
+  };
+
+  const handlePaymentSave = async () => {
+    if (!estId) {
+      setPayMessage({ type: 'error', text: 'Veuillez d’abord enregistrer les informations de votre établissement scolaire.' });
+      return;
+    }
+    setPayLoading(true);
+    setPayMessage(null);
+    try {
+      await api.put(`/establishments/${estId}/payment-config`, payConfig);
+      setPayMessage({ type: 'success', text: 'Paramètres d’encaissement scolaire enregistrés avec succès !' });
+    } catch (err: any) {
+      setPayMessage({ type: 'error', text: err?.response?.data?.message || 'Erreur lors de la sauvegarde des paramètres de paiement.' });
+    } finally {
+      setPayLoading(false);
     }
   };
 
@@ -255,6 +315,163 @@ export default function SettingsPage() {
                     </p>
                   )}
                   <Button onClick={handleEstablishmentSave} isLoading={estLoading}>{t('common.saveChanges')}</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'payments' && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-500">
+                    <CreditCard className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-text-primary">Passerelles d'Encaissement Scolaire</h3>
+                    <p className="text-xs text-text-secondary">
+                      Configurez ClicToPay et Stripe pour permettre aux parents de régler les frais de scolarité et inscriptions en ligne.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6 max-w-2xl">
+                  {payMessage && (
+                    <div
+                      className={`p-3.5 rounded-xl border flex items-center gap-2 text-xs font-semibold ${
+                        payMessage.type === 'success'
+                          ? 'bg-emerald-500/10 border-emerald-200 text-emerald-700'
+                          : 'bg-rose-500/10 border-rose-200 text-rose-700'
+                      }`}
+                    >
+                      {payMessage.type === 'success' ? (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      ) : (
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                      )}
+                      <span>{payMessage.text}</span>
+                    </div>
+                  )}
+
+                  {/* Devise */}
+                  <div className="p-4 rounded-xl bg-surface border border-border">
+                    <div className="max-w-xs">
+                      <label className="text-xs font-bold text-text-primary block mb-1.5">Devise d'encaissement des élèves</label>
+                      <select
+                        className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
+                        value={payConfig.currency}
+                        onChange={(e) => setPayConfig({ ...payConfig, currency: e.target.value })}
+                      >
+                        <option value="TND">TND — Dinar Tunisien (Millimes)</option>
+                        <option value="EUR">EUR — Euro (€)</option>
+                        <option value="USD">USD — Dollar US ($)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* ClicToPay Tunisie */}
+                  <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <span className="text-sm font-bold text-text-primary block flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+                          ClicToPay — Monétique Tunisie (SMT)
+                        </span>
+                        <span className="text-xs text-text-secondary">
+                          Paiement en ligne par carte bancaire tunisienne et e-Dinar (Poste Tunisienne).
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={payConfig.clicToPayEnabled}
+                          onChange={(e) => setPayConfig({ ...payConfig, clicToPayEnabled: e.target.checked })}
+                        />
+                        <div className="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                      <Input
+                        label="Merchant ID ClicToPay"
+                        placeholder="Ex: 1000000000"
+                        value={payConfig.clicToPayMerchantId}
+                        onChange={(e) => setPayConfig({ ...payConfig, clicToPayMerchantId: e.target.value })}
+                      />
+                      <Input
+                        label="Nom d'Utilisateur API"
+                        placeholder="Ex: merchant_api"
+                        value={payConfig.clicToPayApiKey}
+                        onChange={(e) => setPayConfig({ ...payConfig, clicToPayApiKey: e.target.value })}
+                      />
+                      <Input
+                        label="Mot de Passe API"
+                        type="password"
+                        placeholder="••••••••"
+                        value={payConfig.clicToPaySecretKey}
+                        onChange={(e) => setPayConfig({ ...payConfig, clicToPaySecretKey: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-amber-500/10">
+                      <input
+                        id="school-clictopay-test"
+                        type="checkbox"
+                        className="w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-400"
+                        checked={payConfig.clicToPayTestMode}
+                        onChange={(e) => setPayConfig({ ...payConfig, clicToPayTestMode: e.target.checked })}
+                      />
+                      <label htmlFor="school-clictopay-test" className="text-xs text-text-secondary cursor-pointer">
+                        Mode Test / Sandbox ClicToPay (simulation de paiement sans débit réel)
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Stripe */}
+                  <div className="p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <span className="text-sm font-bold text-text-primary block flex items-center gap-2">
+                          <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
+                          Stripe — Cartes Internationales
+                        </span>
+                        <span className="text-xs text-text-secondary">
+                          Cartes Visa, Mastercard internationales pour les parents expatriés ou internationaux.
+                        </span>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          className="sr-only peer"
+                          checked={payConfig.stripeEnabled}
+                          onChange={(e) => setPayConfig({ ...payConfig, stripeEnabled: e.target.checked })}
+                        />
+                        <div className="w-11 h-6 bg-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-border after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Input
+                        label="Clé Publique Stripe (Publishable Key)"
+                        placeholder="pk_test_..."
+                        value={payConfig.stripePublishableKey}
+                        onChange={(e) => setPayConfig({ ...payConfig, stripePublishableKey: e.target.value })}
+                      />
+                      <Input
+                        label="Clé Secrète Stripe (Secret Key)"
+                        type="password"
+                        placeholder="sk_test_..."
+                        value={payConfig.stripeSecretKey}
+                        onChange={(e) => setPayConfig({ ...payConfig, stripeSecretKey: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <Button onClick={handlePaymentSave} isLoading={payLoading}>
+                    {t('common.saveChanges')}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

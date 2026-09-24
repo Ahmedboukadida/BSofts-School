@@ -56,6 +56,7 @@ import { HomeworkModule } from './homework/homework.module';
 import { DynamicEnumsModule } from './dynamic-enums/dynamic-enums.module';
 import { LivekitModule } from './livekit/livekit.module';
 import { MeetingsModule } from './meetings/meetings.module';
+import { BillingModule } from './billing/billing.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -130,6 +131,7 @@ import {
     DynamicEnumsModule,
     LivekitModule,
     MeetingsModule,
+    BillingModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       global: true,
