@@ -73,6 +73,7 @@ export class AuthResponseDto {
     firstName: string;
     lastName: string;
     isRoot: boolean;
+    mustChangePassword?: boolean;
     establishmentId?: string;
     tenantId?: string;
     userRoles?: unknown[];
@@ -82,3 +83,51 @@ export class AuthResponseDto {
     employee?: unknown;
   };
 }
+
+export class ChangePasswordDto {
+  @ApiProperty({ description: 'Current password' })
+  @IsNotEmpty()
+  @IsString()
+  currentPassword: string;
+
+  @ApiProperty({ description: 'New password (min 6 characters)' })
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
+export class ForgotPasswordDto {
+  @ApiProperty({ description: 'Registered email address' })
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @ApiProperty({ description: 'Reset token received via email' })
+  @IsNotEmpty()
+  @IsString()
+  token: string;
+
+  @ApiProperty({ description: 'New password (min 6 characters)' })
+  @IsNotEmpty()
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
+export class VerifyEmailDto {
+  @ApiProperty({ description: 'Email verification token' })
+  @IsNotEmpty()
+  @IsString()
+  token: string;
+}
+
+export class VerifyTotpDto {
+  @ApiProperty({ description: '6-digit TOTP code' })
+  @IsNotEmpty()
+  @IsString()
+  code: string;
+}
+

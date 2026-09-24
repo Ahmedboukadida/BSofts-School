@@ -177,4 +177,169 @@ export class NotesService {
       notes: results,
     };
   }
+
+  async getGradebook(classId: string, periodId: string) {
+    const cls = await this.prisma.class.findUnique({
+      where: { id: classId },
+      include: {
+        studentClassAssignments: {
+          include: {
+            student: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                registrationNumber: true,
+              },
+            },
+          },
+        },
+        moduleAssignments: {
+          include: {
+            module: {
+              include: {
+                matieres: {
+                  where: { isDeleted: false },
+                  select: {
+                    id: true,
+                    name: true,
+                    coefficient: true,
+                    maxScore: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!cls) {
+      throw new NotFoundException(`Classe avec l'ID ${classId} introuvable`);
+    }
+
+    const period = await this.prisma.academicPeriod.findUnique({
+      where: { id: periodId },
+      select: { id: true, name: true },
+    });
+
+    if (!period) {
+      throw new NotFoundException(`Période avec l'ID ${periodId} introuvable`);
+    }
+
+    const subjectsMap = new Map<string, { id: string; name: string; coefficient: number; maxScore: number }>();
+    for (const modAssign of cls.moduleAssignments || []) {
+      for (const mat of modAssign.module?.matieres || []) {
+        if (!subjectsMap.has(mat.id)) {
+          subjectsMap.set(mat.id, {
+            id: mat.id,
+            name: mat.name,
+            coefficient: Number(mat.coefficient) || 1,
+            maxScore: Number(mat.maxScore) || 20,
+          });
+        }
+      }
+    }
+    const subjects = Array.from(subjectsMap.values());
+
+    const students = (cls.studentClassAssignments || [])
+      .map((a) => a.student)
+      .filter((s) => Boolean(s));
+
+    const studentIds = students.map((s) => s.id);
+    const notes = await this.prisma.note.findMany({
+      where: {
+        studentId: { in: studentIds },
+        periodId,
+      },
+      include: {
+        matiere: { select: { id: true, name: true, coefficient: true } },
+      },
+    });
+
+    const notesByStudent = new Map<string, typeof notes>();
+    for (const note of notes) {
+      if (!notesByStudent.has(note.studentId)) {
+        notesByStudent.set(note.studentId, []);
+      }
+      notesByStudent.get(note.studentId)!.push(note);
+    }
+
+    const calculatedStudents = students.map((student) => {
+      const studentNotes = notesByStudent.get(student.id) || [];
+      const gradesBySubject: Record<string, { average: number; notes: number[] }> = {};
+
+      let totalWeighted = 0;
+      let totalCoefficients = 0;
+
+      for (const sub of subjects) {
+        const matchingNotes = studentNotes.filter((n) => n.matiereId === sub.id);
+        const values = matchingNotes.map((n) => (Number(n.value) / Number(n.maxValue)) * 20);
+        const subAvg =
+          values.length > 0
+            ? Math.round((values.reduce((a, b) => a + b, 0) / values.length) * 100) / 100
+            : 0;
+
+        gradesBySubject[sub.id] = {
+          average: subAvg,
+          notes: values,
+        };
+
+        if (values.length > 0) {
+          totalWeighted += subAvg * sub.coefficient;
+          totalCoefficients += sub.coefficient;
+        }
+      }
+
+      const overallAverage =
+        totalCoefficients > 0
+          ? Math.round((totalWeighted / totalCoefficients) * 100) / 100
+          : 0;
+
+      let appreciation = 'Passable';
+      if (overallAverage >= 16) appreciation = 'Très Bien';
+      else if (overallAverage >= 14) appreciation = 'Bien';
+      else if (overallAverage >= 12) appreciation = 'Assez Bien';
+      else if (overallAverage < 10) appreciation = 'Insuffisant';
+
+      return {
+        id: student.id,
+        firstName: student.firstName,
+        lastName: student.lastName,
+        registrationNumber: student.registrationNumber,
+        grades: gradesBySubject,
+        overallAverage,
+        appreciation,
+        rank: 0,
+      };
+    });
+
+    calculatedStudents.sort((a, b) => b.overallAverage - a.overallAverage);
+    calculatedStudents.forEach((s, idx) => {
+      s.rank = idx + 1;
+    });
+
+    const averages = calculatedStudents.map((s) => s.overallAverage).filter((avg) => avg > 0);
+    const classAverage =
+      averages.length > 0
+        ? Math.round((averages.reduce((a, b) => a + b, 0) / averages.length) * 100) / 100
+        : 0;
+    const highestAverage = averages.length > 0 ? Math.max(...averages) : 0;
+    const lowestAverage = averages.length > 0 ? Math.min(...averages) : 0;
+
+    return {
+      classId,
+      className: cls.name,
+      periodId,
+      periodName: period.name,
+      subjects,
+      students: calculatedStudents,
+      statistics: {
+        totalStudents: calculatedStudents.length,
+        classAverage,
+        highestAverage,
+        lowestAverage,
+      },
+    };
+  }
 }

@@ -17,8 +17,8 @@ export class MailController {
   @ApiOperation({ summary: 'Send transactional email' })
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN', 'STAFF')
   async sendEmail(@Body() dto: SendEmailDto, @Req() req: any): Promise<MailSendResultEntity> {
-    const isRoot = req.user?.isRoot || req.user?.role === 'ROOT' || req.user?.roles?.includes('ROOT');
-    const establishmentId = isRoot ? undefined : ((req.headers['x-establishment-id'] as string) || req.user?.establishmentId);
+    const isRoot = req?.user?.isRoot || req?.user?.role === 'ROOT' || req?.user?.roles?.includes('ROOT');
+    const establishmentId = isRoot ? undefined : ((req?.headers?.['x-establishment-id'] as string) || req?.user?.establishmentId);
     return this.mailService.sendMail(dto, establishmentId, req.user);
   }
 
@@ -26,8 +26,8 @@ export class MailController {
   @ApiOperation({ summary: 'Test SMTP connectivity and dispatch test message' })
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   async testSmtp(@Body() dto: TestSmtpDto, @Req() req: any): Promise<MailSendResultEntity> {
-    const isRoot = req.user?.isRoot || req.user?.role === 'ROOT' || req.user?.roles?.includes('ROOT');
-    const establishmentId = isRoot ? undefined : ((req.headers['x-establishment-id'] as string) || req.user?.establishmentId);
+    const isRoot = req?.user?.isRoot || req?.user?.role === 'ROOT' || req?.user?.roles?.includes('ROOT');
+    const establishmentId = isRoot ? undefined : ((req?.headers?.['x-establishment-id'] as string) || req?.user?.establishmentId);
     const frontendUrl = process.env.FRONTEND_URL || 'https://bsofts-school.vercel.app';
     const settingsUrl = `${frontendUrl}/admin/settings`;
     return this.mailService.sendMail(
@@ -66,8 +66,11 @@ export class MailController {
   @ApiOperation({ summary: 'Get active SMTP configuration for current establishment or platform' })
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   async getConfig(@Req() req: any): Promise<SmtpConfigEntity | null> {
-    const isRoot = req.user?.isRoot || req.user?.role === 'ROOT' || req.user?.roles?.includes('ROOT');
-    const establishmentId = isRoot ? undefined : ((req.headers['x-establishment-id'] as string) || req.user?.establishmentId);
+    const isRoot = req?.user?.isRoot || req?.user?.role === 'ROOT' || req?.user?.roles?.includes('ROOT');
+    const establishmentId = isRoot ? undefined : ((req?.headers?.['x-establishment-id'] as string) || req?.user?.establishmentId);
+    if (!isRoot && !establishmentId) {
+      throw new BadRequestException('Establishment context required');
+    }
     return this.mailService.getConfig(establishmentId);
   }
 

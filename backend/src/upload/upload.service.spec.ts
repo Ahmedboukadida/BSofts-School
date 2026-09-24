@@ -60,10 +60,22 @@ describe('UploadService', () => {
         originalname: 'test.png',
         mimetype: 'image/png',
         size: 1024,
-        buffer: Buffer.from('png-data'),
+        buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00]),
       };
       await expect(service.saveFile(validFile, '../../../etc')).rejects.toThrow(
         'Invalid upload folder path traversal detected',
+      );
+    });
+
+    it('should reject masqueraded executable files with forbidden magic bytes', async () => {
+      const peFile = {
+        originalname: 'invoice.pdf',
+        mimetype: 'application/pdf',
+        size: 1024,
+        buffer: Buffer.from([0x4d, 0x5a, 0x90, 0x00, 0x03, 0x00]), // Windows MZ header
+      };
+      await expect(service.saveFile(peFile)).rejects.toThrow(
+        'Executable files (Windows PE) are strictly forbidden',
       );
     });
 
@@ -72,7 +84,7 @@ describe('UploadService', () => {
         originalname: 'avatar.png',
         mimetype: 'image/png',
         size: 2048,
-        buffer: Buffer.from('valid-png-data'),
+        buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d]),
       };
       const user = {
         id: 'u1',

@@ -19,9 +19,25 @@ describe('MailService', () => {
 
     prisma = {
       smtpConfig: {
-        findFirst: vi.fn(),
+        findFirst: vi.fn().mockResolvedValue({
+          host: 'smtp.test.com',
+          port: 465,
+          user: 'test@bsofts.com',
+          password: 'pass',
+          fromName: 'BSofts',
+          fromEmail: 'test@bsofts.com',
+          isSecure: true,
+        }),
         updateMany: vi.fn(),
+        update: vi.fn(),
         create: vi.fn(),
+      },
+      platformSetting: {
+        findUnique: vi.fn().mockResolvedValue(null),
+        upsert: vi.fn().mockResolvedValue({ id: 'ps-1' }),
+      },
+      establishment: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'est-1', name: 'Ecole Test' }),
       },
       auditLog: {
         create: vi.fn().mockResolvedValue({ id: 'aud-1' }),
@@ -112,6 +128,7 @@ describe('MailService', () => {
         isDefault: true,
       };
       prisma.smtpConfig.create.mockResolvedValue(newConfig);
+      prisma.smtpConfig.update.mockResolvedValue(newConfig);
 
       const result = await service.saveConfig(
         'est-1',

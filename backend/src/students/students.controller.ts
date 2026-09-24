@@ -50,6 +50,24 @@ export class StudentsController {
     return this.service.create(dto, user);
   }
 
+  @Post('promote')
+  @Permissions('students:update')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Bulk promote students to new class/year' })
+  @ApiResponse({ status: 200, description: 'Students promoted successfully' })
+  promote(
+    @Body() dto: {
+      fromClassId?: string;
+      targetClassId: string;
+      targetAcademicYearId: string;
+      studentIds?: string[];
+      deliberations?: { studentId: string; decision: string }[];
+    },
+    @CurrentUser() user: any,
+  ) {
+    return this.service.promote(dto, user);
+  }
+
   @Put(':id')
   @Permissions('students:update')
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')

@@ -25,6 +25,15 @@ export class BulletinsController {
     return this.service.findAll(query);
   }
 
+  @Post('generate')
+  @Permissions('bulletins:create')
+  @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Calculate and generate bulletins for a class and period' })
+  @ApiResponse({ status: 201, description: 'Class bulletins generated and ranked successfully' })
+  generate(@Body() body: { classId: string; periodId: string }, @CurrentUser() user: any) {
+    return this.service.generateForClass(body.classId, body.periodId, user);
+  }
+
   @Post('generate-class')
   @Permissions('bulletins:create')
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')

@@ -16,6 +16,9 @@ describe('TeachersService', () => {
         delete: vi.fn(),
         count: vi.fn(),
       },
+      matiere: {
+        findFirst: vi.fn().mockResolvedValue(null),
+      },
       auditLog: {
         create: vi.fn().mockResolvedValue({ id: 'aud-1' }),
       },

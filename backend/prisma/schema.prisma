@@ -298,10 +298,17 @@ model User {
   lastName    String
   phone       String?
   avatar      String?
-  isActive    Boolean   @default(true)
-  isRoot      Boolean   @default(false)
-  lastLoginAt DateTime?
-  createdAt   DateTime  @default(now())
+  isActive           Boolean   @default(true)
+  isRoot             Boolean   @default(false)
+  mustChangePassword Boolean   @default(false)
+  lastLoginAt        DateTime?
+  resetPasswordToken     String?
+  resetPasswordExpires   DateTime?
+  emailVerificationToken String?
+  emailVerified          Boolean   @default(false)
+  twoFactorSecret        String?
+  twoFactorEnabled       Boolean   @default(false)
+  createdAt          DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   // Audit & Soft-Delete

@@ -160,7 +160,7 @@ export class TeachersService {
             firstName: dto.firstName,
             lastName: dto.lastName,
             phone: dto.phone,
-            tenantId: est?.tenantId,
+            mustChangePassword: true,
           },
         });
         userId = newUser.id;

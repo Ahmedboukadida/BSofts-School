@@ -269,7 +269,7 @@ export class StudentsService {
             firstName: dto.firstName,
             lastName: dto.lastName,
             phone: dto.phone,
-            tenantId: est?.tenantId,
+            mustChangePassword: true,
           },
         });
         userId = newUser.id;
@@ -517,5 +517,94 @@ export class StudentsService {
     });
 
     return { message: 'Élève restauré avec succès', student: restored };
+  }
+
+  async promote(
+    dto: {
+      fromClassId?: string;
+      targetClassId: string;
+      targetAcademicYearId: string;
+      studentIds?: string[];
+      deliberations?: { studentId: string; decision: string }[];
+    },
+    user?: any,
+  ) {
+    const { targetClassId, targetAcademicYearId, deliberations = [], studentIds = [] } = dto;
+
+    const targetClass = await this.prisma.class.findUnique({
+      where: { id: targetClassId },
+    });
+    if (!targetClass) {
+      throw new NotFoundException(`Classe cible introuvable`);
+    }
+
+    const targetYear = await this.prisma.academicYear.findUnique({
+      where: { id: targetAcademicYearId },
+    });
+    if (!targetYear) {
+      throw new NotFoundException(`Année scolaire cible introuvable`);
+    }
+
+    const effectiveStudents: { studentId: string; isPromoted: boolean }[] = [];
+    if (deliberations.length > 0) {
+      for (const d of deliberations) {
+        effectiveStudents.push({
+          studentId: d.studentId,
+          isPromoted: d.decision === 'PROMOTED' || d.decision === 'RESCUED',
+        });
+      }
+    } else if (studentIds.length > 0) {
+      for (const id of studentIds) {
+        effectiveStudents.push({ studentId: id, isPromoted: true });
+      }
+    } else if (dto.fromClassId) {
+      const assignments = await this.prisma.studentClassAssignment.findMany({
+        where: { classId: dto.fromClassId },
+      });
+      for (const a of assignments) {
+        effectiveStudents.push({ studentId: a.studentId, isPromoted: true });
+      }
+    }
+
+    if (effectiveStudents.length === 0) {
+      throw new BadRequestException('Aucun élève spécifié pour la promotion');
+    }
+
+    let promotedCount = 0;
+    let repeatingCount = 0;
+
+    for (const item of effectiveStudents) {
+      if (item.isPromoted) {
+        await this.prisma.studentClassAssignment.upsert({
+          where: {
+            studentId_academicYearId: {
+              studentId: item.studentId,
+              academicYearId: targetAcademicYearId,
+            },
+          },
+          update: {
+            classId: targetClassId,
+            isPromoted: null,
+          },
+          create: {
+            studentId: item.studentId,
+            classId: targetClassId,
+            academicYearId: targetAcademicYearId,
+            isPromoted: null,
+          },
+        });
+        promotedCount++;
+      } else {
+        repeatingCount++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Passage de classe effectué : ${promotedCount} admis vers ${targetClass.name}, ${repeatingCount} redoublants`,
+      promotedCount,
+      repeatingCount,
+      targetClass: targetClass.name,
+    };
   }
 }

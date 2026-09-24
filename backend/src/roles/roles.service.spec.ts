@@ -17,6 +17,13 @@ describe('RolesService', () => {
         delete: vi.fn(),
         count: vi.fn(),
       },
+      rolePermission: {
+        deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+        createMany: vi.fn().mockResolvedValue({ count: 0 }),
+      },
+      saaSPermission: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
     };
     service = new RolesService(prisma);
   });
@@ -60,6 +67,7 @@ describe('RolesService', () => {
       const role = { id: '1', name: 'ADMIN', code: 'ADMIN', description: 'Administrator' };
       prisma.role.findFirst.mockResolvedValue(null);
       prisma.role.create.mockResolvedValue(role);
+      prisma.role.findUnique.mockResolvedValue(role);
 
       const result = await service.create({
         name: 'ADMIN',
@@ -81,13 +89,16 @@ describe('RolesService', () => {
 
   describe('update', () => {
     it('should update role', async () => {
-      const role = { id: '1', name: 'ADMIN', description: 'Updated' };
-      prisma.role.findUnique.mockResolvedValue({ id: '1' });
-      prisma.role.update.mockResolvedValue(role);
+      const existingRole = { id: '1', name: 'ADMIN', description: 'Old', isSystem: false };
+      const updatedRole = { id: '1', name: 'ADMIN', description: 'Updated', isSystem: false };
+      prisma.role.findUnique
+        .mockResolvedValueOnce(existingRole) // for initial check
+        .mockResolvedValueOnce(updatedRole); // for findOne(id) at return
+      prisma.role.update.mockResolvedValue(updatedRole);
 
       const result = await service.update('1', { description: 'Updated' });
 
-      expect(result).toEqual(role);
+      expect(result).toEqual(updatedRole);
     });
 
     it('should throw NotFoundException for non-existent role', async () => {
@@ -101,7 +112,11 @@ describe('RolesService', () => {
 
   describe('remove', () => {
     it('should remove role', async () => {
-      prisma.role.findUnique.mockResolvedValue({ id: '1', _count: { userRoles: 0 } });
+      prisma.role.findUnique.mockResolvedValue({
+        id: '1',
+        isSystem: false,
+        _count: { userRoles: 0 },
+      });
       prisma.role.delete.mockResolvedValue({});
 
       const result = await service.remove('1');

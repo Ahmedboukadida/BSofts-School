@@ -1,9 +1,26 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger, Optional } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  Logger,
+  Optional,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, RegisterDto, AuthResponseDto } from './auth.dto';
+import * as crypto from 'node:crypto';
+import {
+  LoginDto,
+  RegisterDto,
+  AuthResponseDto,
+  ChangePasswordDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyEmailDto,
+  VerifyTotpDto,
+} from './auth.dto';
 
 @Injectable()
 export class AuthService {
@@ -85,6 +102,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         isRoot: user.isRoot,
+        mustChangePassword: Boolean(user.mustChangePassword),
         userRoles: user.userRoles,
         student: user.student,
         parent: user.parent,
@@ -401,5 +419,226 @@ export class AuthService {
         },
       });
     }
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur introuvable');
+    }
+
+    const isValid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!isValid) {
+      throw new UnauthorizedException('Mot de passe actuel incorrect');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+        mustChangePassword: false,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Mot de passe mis à jour avec succès',
+    };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: { equals: dto.email.trim(), mode: 'insensitive' },
+        isDeleted: false,
+      },
+    });
+
+    if (!user) {
+      return {
+        success: true,
+        message: 'Si cette adresse email existe, un lien de réinitialisation vous a été envoyé.',
+      };
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 3600 * 1000); // 1 hour
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: rawToken,
+        resetPasswordExpires: expires,
+      },
+    });
+
+    if (this.mailService && user.email) {
+      const appUrl = process.env.APP_URL || 'https://bsofts-school.onrender.com';
+      const resetUrl = `${appUrl}/auth/reset-password?token=${rawToken}`;
+      await this.mailService
+        .sendMail({
+          to: user.email,
+          subject: 'Réinitialisation de votre mot de passe - BSofts School',
+          text: `Bonjour ${user.firstName},\n\nVous avez demandé la réinitialisation de votre mot de passe.\nCliquez sur ce lien (valable 1h) :\n${resetUrl}\n\nSi vous n'êtes pas à l'origine de cette demande, veuillez l'ignorer.`,
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e5e5e5; border-radius: 8px;">
+              <h2 style="color: #242F40;">Réinitialisation de votre mot de passe</h2>
+              <p>Bonjour <strong>${user.firstName} ${user.lastName}</strong>,</p>
+              <p>Une demande de réinitialisation de mot de passe a été effectuée pour votre compte BSofts School.</p>
+              <p style="text-align: center; margin: 30px 0;">
+                <a href="${resetUrl}" style="background-color: #CCA43B; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                  Réinitialiser mon mot de passe
+                </a>
+              </p>
+              <p style="color: #666; font-size: 13px;">Ce lien expire dans 1 heure. Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet email.</p>
+            </div>
+          `,
+        })
+        .catch((err: any) => this.logger.warn(`Failed to dispatch reset email: ${err.message}`));
+    }
+
+    return {
+      success: true,
+      message: 'Si cette adresse email existe, un lien de réinitialisation vous a été envoyé.',
+    };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        resetPasswordToken: dto.token,
+        resetPasswordExpires: { gt: new Date() },
+        isDeleted: false,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Le jeton de réinitialisation est invalide ou a expiré.');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 12);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null,
+        mustChangePassword: false,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.',
+    };
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        emailVerificationToken: dto.token,
+        isDeleted: false,
+      },
+    });
+
+    if (!user) {
+      throw new BadRequestException('Jeton de validation d\'email invalide ou introuvable.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        emailVerified: true,
+        emailVerificationToken: null,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Adresse email vérifiée avec succès.',
+    };
+  }
+
+  async enableTotp(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      throw new UnauthorizedException('Utilisateur introuvable');
+    }
+
+    const secretHex = crypto.randomBytes(20).toString('hex');
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorSecret: secretHex,
+      },
+    });
+
+    const issuer = 'BSoftsSchool';
+    const account = encodeURIComponent(user.email || user.username || 'user');
+    const otpauthUri = `otpauth://totp/${issuer}:${account}?secret=${secretHex}&issuer=${issuer}`;
+
+    return {
+      success: true,
+      secret: secretHex,
+      otpauthUri,
+      message: 'Scannez cet URI ou renseignez le secret dans votre application Authenticator, puis confirmez avec un code à 6 chiffres.',
+    };
+  }
+
+  async verifyTotp(userId: string, dto: VerifyTotpDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user || !user.twoFactorSecret) {
+      throw new BadRequestException('Configuration 2FA non initialisée. Veuillez appeler totp/enable.');
+    }
+
+    const isValid = this.checkTotp(dto.code, user.twoFactorSecret);
+    if (!isValid) {
+      throw new BadRequestException('Code 2FA invalide ou expiré.');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        twoFactorEnabled: true,
+      },
+    });
+
+    return {
+      success: true,
+      message: 'Authentification à deux facteurs (2FA) activée avec succès.',
+    };
+  }
+
+  private checkTotp(code: string, secretHex: string): boolean {
+    const epoch = Math.floor(Date.now() / 1000);
+    for (const drift of [-30, 0, 30]) {
+      const time = Math.floor((epoch + drift) / 30);
+      const buf = Buffer.alloc(8);
+      buf.writeBigInt64BE(BigInt(time));
+      const hmac = crypto.createHmac('sha1', Buffer.from(secretHex, 'hex'));
+      hmac.update(buf);
+      const digest = hmac.digest();
+      const offset = digest[digest.length - 1] & 0x0f;
+      const binary =
+        ((digest[offset] & 0x7f) << 24) |
+        ((digest[offset + 1] & 0xff) << 16) |
+        ((digest[offset + 2] & 0xff) << 8) |
+        (digest[offset + 3] & 0xff);
+      const otp = (binary % 1000000).toString().padStart(6, '0');
+      if (otp === code.trim()) {
+        return true;
+      }
+    }
+    return false;
   }
 }

@@ -308,6 +308,13 @@ export class MailService {
         });
 
         if (est) {
+          if (dto.isDefault !== false) {
+            await this.prisma.smtpConfig.updateMany({
+              where: { establishmentId },
+              data: { isDefault: false },
+            });
+          }
+
           const existing = await this.prisma.smtpConfig.findFirst({
             where: { establishmentId },
           });

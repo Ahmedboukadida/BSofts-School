@@ -43,6 +43,17 @@ export class NotesController {
     return this.service.bulkSave(dto, user);
   }
 
+  @Get('gradebook')
+  @Permissions('grades:read')
+  @ApiOperation({ summary: 'Get full gradebook with averages and ranks for a class and period' })
+  @ApiResponse({ status: 200, description: 'Gradebook retrieved successfully' })
+  getGradebook(
+    @Query('classId', ParseUUIDPipe) classId: string,
+    @Query('periodId', ParseUUIDPipe) periodId: string,
+  ) {
+    return this.service.getGradebook(classId, periodId);
+  }
+
   @Get(':id')
   @Permissions('grades:read')
   @ApiOperation({ summary: 'Get a note by ID' })

@@ -195,10 +195,21 @@ export class StudentAttendanceService {
           where: { id: dto.classId },
           select: { academicYearId: true, establishmentId: true },
         });
-        const currentYear = cls?.academicYearId
-          ? { id: cls.academicYearId }
-          : (await this.prisma.academicYear.findFirst({ where: { establishmentId: cls?.establishmentId, isCurrent: true } })) ||
-            (await this.prisma.academicYear.findFirst({ where: { establishmentId: cls?.establishmentId } }));
+
+        if (!cls) {
+          throw new NotFoundException(`Classe avec l'ID ${dto.classId} introuvable`);
+        }
+
+        const currentYear = cls.academicYearId
+          ? await this.prisma.academicYear.findFirst({
+              where: { id: cls.academicYearId, establishmentId: cls.establishmentId },
+            })
+          : (await this.prisma.academicYear.findFirst({
+              where: { establishmentId: cls.establishmentId, isCurrent: true },
+            })) ||
+            (await this.prisma.academicYear.findFirst({
+              where: { establishmentId: cls.establishmentId },
+            }));
 
         if (!currentYear?.id) {
           throw new BadRequestException('Année scolaire requise pour créer une session');
@@ -207,7 +218,7 @@ export class StudentAttendanceService {
         const currentPeriod = await this.prisma.academicPeriod.findFirst({
           where: {
             academicYearId: currentYear.id,
-            ...(cls?.establishmentId ? { academicYear: { establishmentId: cls.establishmentId } } : {}),
+            academicYear: { establishmentId: cls.establishmentId },
           },
           orderBy: { createdAt: 'asc' },
         });
