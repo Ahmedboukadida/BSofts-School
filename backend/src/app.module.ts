@@ -57,6 +57,7 @@ import { DynamicEnumsModule } from './dynamic-enums/dynamic-enums.module';
 import { LivekitModule } from './livekit/livekit.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { BillingModule } from './billing/billing.module';
+import { CacheModule } from './common/cache/cache.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import {
@@ -77,6 +78,7 @@ import {
         '.env',
       ],
     }),
+    CacheModule,
     PrismaModule,
     AuthModule,
     UsersModule,

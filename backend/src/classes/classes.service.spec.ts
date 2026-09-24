@@ -5,8 +5,18 @@ import { NotFoundException } from '@nestjs/common';
 describe('ClassesService', () => {
   let service: ClassesService;
   let prisma: any;
+  let cacheService: any;
 
   beforeEach(() => {
+    cacheService = {
+      buildKey: vi.fn().mockReturnValue('test-cache-key'),
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn().mockResolvedValue(undefined),
+      del: vi.fn().mockResolvedValue(undefined),
+      invalidatePattern: vi.fn().mockResolvedValue(undefined),
+      invalidateResource: vi.fn().mockResolvedValue(undefined),
+    };
+
     prisma = {
       class: {
         findUnique: vi.fn(),
@@ -24,7 +34,7 @@ describe('ClassesService', () => {
         create: vi.fn().mockResolvedValue({ id: 'sys-1' }),
       },
     };
-    service = new ClassesService(prisma);
+    service = new ClassesService(prisma, cacheService);
   });
 
   describe('findAll', () => {

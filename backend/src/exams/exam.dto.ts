@@ -125,3 +125,75 @@ export class QueryExamDto extends PaginationQueryDto {
   @IsEnum(['DRAFT', 'SCHEDULED', 'IN_PROGRESS', 'COMPLETED', 'GRADED'])
   status?: string;
 }
+
+export class AddQuestionDto {
+  @ApiProperty({ enum: ['QCM', 'TRUE_FALSE', 'SHORT_ANSWER', 'FREE_TEXT', 'FILE_UPLOAD'] })
+  @IsEnum(['QCM', 'TRUE_FALSE', 'SHORT_ANSWER', 'FREE_TEXT', 'FILE_UPLOAD'])
+  type: string;
+
+  @ApiProperty({ description: 'Question text / prompt' })
+  @IsString()
+  @MinLength(3)
+  content: string;
+
+  @ApiProperty({ required: false, description: 'Options for QCM / True-False with id, text, and isCorrect' })
+  @IsOptional()
+  options?: any;
+
+  @ApiProperty({ default: 1 })
+  @IsNumber()
+  maxScore: number;
+
+  @ApiProperty({ required: false, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
+export class UpdateQuestionDto {
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  content?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  options?: any;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  maxScore?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
+}
+
+export class ExamAnswerItemDto {
+  @ApiProperty()
+  @IsString()
+  questionId: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  answer?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  fileUrl?: string;
+}
+
+export class SubmitExamDto {
+  @ApiProperty({ type: [ExamAnswerItemDto] })
+  answers: ExamAnswerItemDto[];
+
+  @ApiProperty({ required: false, default: 0 })
+  @IsOptional()
+  @IsNumber()
+  tabSwitches?: number;
+}
+

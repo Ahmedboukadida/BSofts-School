@@ -24,6 +24,14 @@ import { Public } from '../common/decorators/public.decorator';
 export class BillingController {
   constructor(private readonly billingService: BillingService) {}
 
+  @Get('gateways')
+  @Public()
+  @ApiOperation({ summary: 'Get active public payment gateways for SaaS subscriptions' })
+  @ApiResponse({ status: 200, description: 'Active gateways list' })
+  getActiveGateways() {
+    return this.billingService.getActiveGateways();
+  }
+
   @Get('config')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

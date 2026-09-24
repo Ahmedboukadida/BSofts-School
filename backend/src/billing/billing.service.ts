@@ -44,6 +44,10 @@ export class BillingService {
       });
     }
 
+    const availableGateways: PaymentGatewayType[] = [];
+    if (config.clicToPayEnabled) availableGateways.push(PaymentGatewayType.CLIC_TO_PAY);
+    if (config.stripeEnabled) availableGateways.push(PaymentGatewayType.STRIPE);
+
     // Mask secrets for non-root users
     if (!user?.isRoot) {
       return {
@@ -54,10 +58,31 @@ export class BillingService {
         clicToPayEnabled: config.clicToPayEnabled,
         clicToPayTestMode: config.clicToPayTestMode,
         clicToPayMerchantId: config.clicToPayMerchantId ? 'configured' : null,
+        availableGateways,
       };
     }
 
-    return config;
+    return {
+      ...config,
+      availableGateways,
+    };
+  }
+
+  async getActiveGateways() {
+    const config = await this.prisma.platformPaymentConfig.findFirst({
+      where: { isDefault: true },
+    });
+
+    const availableGateways: PaymentGatewayType[] = [];
+    if (config?.clicToPayEnabled) availableGateways.push(PaymentGatewayType.CLIC_TO_PAY);
+    if (config?.stripeEnabled) availableGateways.push(PaymentGatewayType.STRIPE);
+
+    return {
+      currency: config?.currency || 'TND',
+      clicToPayEnabled: Boolean(config?.clicToPayEnabled),
+      stripeEnabled: Boolean(config?.stripeEnabled),
+      availableGateways,
+    };
   }
 
   async updatePlatformConfig(dto: UpdatePlatformPaymentConfigDto, user?: any) {
@@ -128,6 +153,14 @@ export class BillingService {
     const config = (await this.prisma.platformPaymentConfig.findFirst({
       where: { isDefault: true },
     })) || ((await this.getPlatformConfig({ isRoot: true })) as any);
+
+    // Verify that the requested gateway is currently enabled by the Platform Root
+    if (dto.gateway === PaymentGatewayType.STRIPE && !config.stripeEnabled) {
+      throw new BadRequestException('Le mode de paiement par carte internationale (Stripe) n\'est pas activé sur la plateforme.');
+    }
+    if (dto.gateway === PaymentGatewayType.CLIC_TO_PAY && !config.clicToPayEnabled) {
+      throw new BadRequestException('Le mode de paiement ClicToPay n\'est pas activé sur la plateforme.');
+    }
 
     // 3. Create Pending Invoice
     const invoice = await this.prisma.saaSInvoice.create({

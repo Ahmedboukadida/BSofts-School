@@ -85,6 +85,14 @@ export class StudentPaymentsController {
     return this.service.remove(id, isPermanent, user);
   }
 
+  @Get(':id/gateways')
+  @Permissions('payments:read')
+  @ApiOperation({ summary: 'Get active payment gateways configured by the establishment for this fee' })
+  @ApiResponse({ status: 200, description: 'Available payment gateways' })
+  getGateways(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getAvailableGatewaysForPayment(id);
+  }
+
   @Post(':id/checkout')
   @Permissions('payments:read')
   @ApiOperation({ summary: 'Initiate online payment for tuition fee via School ClicToPay or Stripe' })

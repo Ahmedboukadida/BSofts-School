@@ -32,7 +32,7 @@ export class SubscriptionMiddleware implements NestMiddleware {
       });
 
       if (user?.isRoot) {
-        (req as any).isRoot = true;
+        req.isRoot = true;
         return next();
       }
 
@@ -88,7 +88,7 @@ export class SubscriptionMiddleware implements NestMiddleware {
         });
       }
 
-      (req as any).tenantId = tenant.id;
+      req.tenantId = tenant.id;
       next();
     } catch (error) {
       // Token verification failed or other unexpected errors - let JwtAuthGuard handle it downstream

@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../common/cache/cache.service';
 import { GenerateReportDto } from './report.dto';
 
 @Injectable()
 export class ReportsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async generate(dto: GenerateReportDto) {
     switch (dto.reportType) {
@@ -256,6 +260,10 @@ export class ReportsService {
   }
 
   async getDashboardStats(establishmentId?: string) {
+    const cacheKey = this.cacheService.buildKey(null, establishmentId, 'reports:stats', { establishmentId });
+    const cached = await this.cacheService.get<any>(cacheKey);
+    if (cached) return cached;
+
     const estFilter: any = establishmentId ? { establishmentId } : {};
     const studentEstFilter: any = establishmentId ? { student: { establishmentId } } : {};
 
@@ -309,7 +317,7 @@ export class ReportsService {
       ? Math.round((presentAttendance / totalAttendance) * 1000) / 10
       : 100.0;
 
-    return {
+    const statsResult = {
       students: studentCount,
       teachers: teacherCount,
       classes: classCount,
@@ -325,5 +333,8 @@ export class ReportsService {
         createdAt: s.createdAt,
       })),
     };
+
+    await this.cacheService.set(cacheKey, statsResult, 60);
+    return statsResult;
   }
 }

@@ -17,26 +17,28 @@ export class EstablishmentContextMiddleware implements NestMiddleware {
       ? null
       : (req.headers['x-tenant-id'] as string);
 
-    if (req.query) {
-      if (isAll((req.query as any).establishmentId)) {
-        delete (req.query as any).establishmentId;
+    const query = req.query as Record<string, unknown>;
+
+    if (query) {
+      if (isAll(query.establishmentId as string | undefined)) {
+        delete query.establishmentId;
       }
-      if (isAll((req.query as any).tenantId)) {
-        delete (req.query as any).tenantId;
+      if (isAll(query.tenantId as string | undefined)) {
+        delete query.tenantId;
       }
     }
 
     if (establishmentId) {
-      (req as any).establishmentId = establishmentId;
-      if (req.query && !(req.query as any).establishmentId) {
-        (req.query as any).establishmentId = establishmentId;
+      req.establishmentId = establishmentId;
+      if (query && !query.establishmentId) {
+        query.establishmentId = establishmentId;
       }
     }
 
     if (tenantId) {
-      (req as any).tenantId = tenantId;
-      if (req.query && !(req.query as any).tenantId) {
-        (req.query as any).tenantId = tenantId;
+      req.tenantId = tenantId;
+      if (query && !query.tenantId) {
+        query.tenantId = tenantId;
       }
     }
 

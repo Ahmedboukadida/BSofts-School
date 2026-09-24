@@ -1,16 +1,24 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../common/cache/cache.service';
 import { CreateClassDto, UpdateClassDto, QueryClassDto } from './class.dto';
 import { PaginatedDto } from '../common/pagination.dto';
 import { ClassEntity } from './class.entity';
 
 @Injectable()
 export class ClassesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async findAll(query: QueryClassDto) {
     const { page = 1, limit = 50, search, establishmentId, academicYearId, classLevelId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
+
+    const cacheKey = this.cacheService.buildKey(null, establishmentId, 'classes', query);
+    const cached = await this.cacheService.get<PaginatedDto<ClassEntity>>(cacheKey);
+    if (cached) return cached;
 
     const where: any = {};
     if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
@@ -44,7 +52,9 @@ export class ClassesService {
     ]);
 
     const entities = data.map((item) => new ClassEntity(item as any));
-    return new PaginatedDto(entities, total, page, limit);
+    const result = new PaginatedDto(entities, total, page, limit);
+    await this.cacheService.set(cacheKey, result, 60);
+    return result;
   }
 
   async findOne(id: string) {
@@ -78,7 +88,7 @@ export class ClassesService {
     });
     if (existing) throw new ConflictException('Class name already exists for this establishment and year');
 
-    return this.prisma.class.create({
+    const created = await this.prisma.class.create({
       data: {
         establishmentId,
         classLevelId: dto.classLevelId,
@@ -94,13 +104,16 @@ export class ClassesService {
         academicYear: { select: { id: true, name: true } },
       },
     });
+
+    await this.cacheService.invalidateResource(null, establishmentId, 'classes');
+    return created;
   }
 
   async update(id: string, dto: UpdateClassDto) {
     const cls = await this.prisma.class.findUnique({ where: { id } });
     if (!cls) throw new NotFoundException(`Class with ID ${id} not found`);
 
-    return this.prisma.class.update({
+    const updated = await this.prisma.class.update({
       where: { id },
       data: {
         name: dto.name,
@@ -113,6 +126,9 @@ export class ClassesService {
         classLevel: { select: { id: true, name: true } },
       },
     });
+
+    await this.cacheService.invalidateResource(null, cls.establishmentId, 'classes');
+    return updated;
   }
 
   async remove(id: string, isPermanent = false, user?: any) {
@@ -140,6 +156,7 @@ export class ClassesService {
             oldValues: cls as any,
           },
         });
+        await this.cacheService.invalidateResource(null, cls.establishmentId, 'classes');
         return { message: 'Class permanently deleted from database' };
       } catch (err: any) {
         await this.prisma.systemLog.create({
@@ -173,6 +190,7 @@ export class ClassesService {
           newValues: { isActive: false },
         },
       });
+      await this.cacheService.invalidateResource(null, cls.establishmentId, 'classes');
       return { message: 'Class deactivated successfully' };
     } catch (err: any) {
       await this.prisma.systemLog.create({

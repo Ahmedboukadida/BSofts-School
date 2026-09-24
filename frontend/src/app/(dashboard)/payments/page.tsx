@@ -47,6 +47,23 @@ export default function PaymentsPage() {
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string | null }>({ show: false, id: null });
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  // Online Payment Checkout Modal State
+  const [onlinePayModal, setOnlinePayModal] = useState<{
+    show: boolean;
+    payment: StudentPaymentItem | null;
+    availableGateways: ('CLIC_TO_PAY' | 'STRIPE')[];
+    selectedGateway: 'CLIC_TO_PAY' | 'STRIPE';
+    isLoading: boolean;
+    isInitiating: boolean;
+  }>({
+    show: false,
+    payment: null,
+    availableGateways: [],
+    selectedGateway: 'CLIC_TO_PAY',
+    isLoading: false,
+    isInitiating: false,
+  });
+
   // Tab 2: Caisses & Transactions State
   const [caisses, setCaisses] = useState<CaisseItem[]>([]);
   const [transactions, setTransactions] = useState<TransactionItem[]>([]);
@@ -121,6 +138,18 @@ export default function PaymentsPage() {
     fetchStudentPayments();
     fetchCaisseData();
     fetchTeacherPayments();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const mockOnline = params.get('mockOnline');
+      if (mockOnline) {
+        toast.showToast(
+          `Paiement sécurisé par ${mockOnline === 'clictopay' ? 'ClicToPay (Monétique Tunisie)' : 'Stripe'} simulé avec succès en environnement bac à sable.`,
+          'success'
+        );
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, [fetchStudentPayments, fetchCaisseData, fetchTeacherPayments]);
 
   // Handle Student Payment Form Submit
@@ -255,6 +284,73 @@ export default function PaymentsPage() {
     } catch (err) {
       console.error('Failed to update status:', err);
       toast.showToast(t('common.error') || 'Erreur de mise à jour', 'error');
+    }
+  };
+
+  // Online Payment Handlers (ClicToPay Tunisie / Stripe International)
+  const handleInitiateOnlinePay = async (p: StudentPaymentItem) => {
+    try {
+      setOnlinePayModal({
+        show: true,
+        payment: p,
+        availableGateways: [],
+        selectedGateway: 'CLIC_TO_PAY',
+        isLoading: true,
+        isInitiating: false,
+      });
+
+      const res = await api.get(`/student-payments/${p.id}/gateways`);
+      const gateways: ('CLIC_TO_PAY' | 'STRIPE')[] = res.data?.availableGateways || [];
+
+      if (gateways.length === 0) {
+        toast.showToast("Le paiement en ligne n'est pas encore configuré ou activé pour cet établissement.", 'warning');
+        setOnlinePayModal({ show: false, payment: null, availableGateways: [], selectedGateway: 'CLIC_TO_PAY', isLoading: false, isInitiating: false });
+        return;
+      }
+
+      if (gateways.length === 1) {
+        // Direct checkout if only one gateway is configured
+        await executeOnlineCheckout(p.id, gateways[0]);
+        return;
+      }
+
+      // Both gateways enabled: prompt the user to choose
+      setOnlinePayModal({
+        show: true,
+        payment: p,
+        availableGateways: gateways,
+        selectedGateway: gateways.includes('CLIC_TO_PAY') ? 'CLIC_TO_PAY' : gateways[0],
+        isLoading: false,
+        isInitiating: false,
+      });
+    } catch (err: any) {
+      console.error('Failed to fetch payment gateways:', err);
+      const msg = err?.response?.data?.message || 'Erreur lors de la récupération des options de paiement en ligne';
+      toast.showToast(msg, 'error');
+      setOnlinePayModal({ show: false, payment: null, availableGateways: [], selectedGateway: 'CLIC_TO_PAY', isLoading: false, isInitiating: false });
+    }
+  };
+
+  const executeOnlineCheckout = async (paymentId: string, gateway: 'CLIC_TO_PAY' | 'STRIPE') => {
+    try {
+      setOnlinePayModal((prev) => ({ ...prev, isInitiating: true }));
+      const res = await api.post(`/student-payments/${paymentId}/online-checkout`, { gateway });
+      const { checkoutUrl, message } = res.data || {};
+
+      if (checkoutUrl) {
+        toast.showToast(message || 'Redirection vers la passerelle sécurisée...', 'success');
+        setOnlinePayModal({ show: false, payment: null, availableGateways: [], selectedGateway: 'CLIC_TO_PAY', isLoading: false, isInitiating: false });
+        window.location.href = checkoutUrl;
+      } else {
+        toast.showToast('Lien de paiement initialisé', 'success');
+        setOnlinePayModal({ show: false, payment: null, availableGateways: [], selectedGateway: 'CLIC_TO_PAY', isLoading: false, isInitiating: false });
+        fetchStudentPayments();
+      }
+    } catch (err: any) {
+      console.error('Online checkout failed:', err);
+      const msg = err?.response?.data?.message || 'Échec de l’initialisation de la transaction en ligne';
+      toast.showToast(msg, 'error');
+      setOnlinePayModal((prev) => ({ ...prev, isInitiating: false }));
     }
   };
 
@@ -536,6 +632,16 @@ export default function PaymentsPage() {
                         </td>
                         <td className="py-3 px-4 text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {p.status === 'PENDING' && (
+                              <button
+                                onClick={() => handleInitiateOnlinePay(p)}
+                                className="px-2.5 py-1 bg-[#242F40] hover:bg-[#363636] text-[#CCA43B] text-xs font-semibold rounded-lg border border-[#CCA43B]/40 flex items-center gap-1.5 transition-all shadow-xs"
+                                title="Régler en ligne via ClicToPay ou Stripe"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                <span>Payer en ligne</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setEditingPaymentId(p.id);
@@ -951,6 +1057,187 @@ export default function PaymentsPage() {
         message={t('finance.deletePaymentMsg')}
         isLoading={deleteLoading}
       />
+
+      {/* Online Payment Gateway Selection Modal (ClicToPay Tunisie vs Stripe International) */}
+      <Modal
+        isOpen={onlinePayModal.show}
+        onClose={() =>
+          !onlinePayModal.isInitiating &&
+          setOnlinePayModal({
+            show: false,
+            payment: null,
+            availableGateways: [],
+            selectedGateway: 'CLIC_TO_PAY',
+            isLoading: false,
+            isInitiating: false,
+          })
+        }
+        title="Règlement Sécurisé en Ligne"
+        size="lg"
+      >
+        <div className="space-y-5">
+          {onlinePayModal.isLoading ? (
+            <div className="py-8 text-center text-text-secondary flex flex-col items-center gap-3">
+              <RefreshCw className="w-8 h-8 animate-spin text-[#CCA43B]" />
+              <p className="text-sm font-medium">Vérification des passerelles de paiement bancaire...</p>
+            </div>
+          ) : (
+            <>
+              {onlinePayModal.payment && (
+                <div className="p-4 rounded-xl bg-[#242F40] text-white border border-[#363636] flex justify-between items-center">
+                  <div>
+                    <span className="text-xs text-[#E5E5E5]/70 block">Bénéficiaire & Scolarité</span>
+                    <p className="font-bold text-base text-white">
+                      {onlinePayModal.payment.student
+                        ? `${onlinePayModal.payment.student.firstName} ${onlinePayModal.payment.student.lastName}`
+                        : 'Élève'}
+                    </p>
+                    <p className="text-xs text-[#CCA43B] font-mono">
+                      Matricule: {onlinePayModal.payment.student?.registrationNumber || 'N/A'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs text-[#E5E5E5]/70 block">Montant à régler</span>
+                    <p className="text-xl font-black text-[#CCA43B]">
+                      {Number(onlinePayModal.payment.amount).toLocaleString()} {CURRENCY}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-3">
+                  Sélectionnez votre moyen de paiement sécurisé :
+                </label>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {/* ClicToPay Option */}
+                  {onlinePayModal.availableGateways.includes('CLIC_TO_PAY') && (
+                    <button
+                      type="button"
+                      onClick={() => setOnlinePayModal((prev) => ({ ...prev, selectedGateway: 'CLIC_TO_PAY' }))}
+                      className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                        onlinePayModal.selectedGateway === 'CLIC_TO_PAY'
+                          ? 'border-[#CCA43B] bg-[#CCA43B]/10 shadow-sm ring-1 ring-[#CCA43B]'
+                          : 'border-border bg-surface hover:border-[#CCA43B]/40'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-sm text-text-primary flex items-center gap-1.5">
+                            <CreditCard className="w-4 h-4 text-[#CCA43B]" />
+                            ClicToPay
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                            Tunisie (SMT)
+                          </span>
+                        </div>
+                        <p className="text-xs text-text-secondary leading-relaxed">
+                          Cartes bancaires tunisiennes (CIB, Visa/Mastercard nationales) et e-Dinar de la Poste tunisienne.
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-[#CCA43B]">Monétique SMT</span>
+                        <div
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            onlinePayModal.selectedGateway === 'CLIC_TO_PAY'
+                              ? 'border-[#CCA43B] bg-[#CCA43B]'
+                              : 'border-border'
+                          }`}
+                        >
+                          {onlinePayModal.selectedGateway === 'CLIC_TO_PAY' && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#242F40]" />
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  )}
+
+                  {/* Stripe Option */}
+                  {onlinePayModal.availableGateways.includes('STRIPE') && (
+                    <button
+                      type="button"
+                      onClick={() => setOnlinePayModal((prev) => ({ ...prev, selectedGateway: 'STRIPE' }))}
+                      className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between ${
+                        onlinePayModal.selectedGateway === 'STRIPE'
+                          ? 'border-[#CCA43B] bg-[#CCA43B]/10 shadow-sm ring-1 ring-[#CCA43B]'
+                          : 'border-border bg-surface hover:border-[#CCA43B]/40'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-sm text-text-primary flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-[#CCA43B]" />
+                            Stripe
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                            International
+                          </span>
+                        </div>
+                        <p className="text-xs text-text-secondary leading-relaxed">
+                          Cartes de crédit et de débit internationales (Visa, Mastercard, American Express).
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-text-tertiary">Checkout Sécurisé</span>
+                        <div
+                          className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                            onlinePayModal.selectedGateway === 'STRIPE'
+                              ? 'border-[#CCA43B] bg-[#CCA43B]'
+                              : 'border-border'
+                          }`}
+                        >
+                          {onlinePayModal.selectedGateway === 'STRIPE' && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#242F40]" />
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-3 rounded-lg bg-surface border border-border text-xs text-text-secondary flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <p>
+                  Les transactions sont chiffrées selon les standards de sécurité bancaire PCI-DSS. Aucun identifiant bancaire n&apos;est enregistré sur les serveurs de l&apos;école.
+                </p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-border">
+                <Button
+                  variant="secondary"
+                  disabled={onlinePayModal.isInitiating}
+                  onClick={() =>
+                    setOnlinePayModal({
+                      show: false,
+                      payment: null,
+                      availableGateways: [],
+                      selectedGateway: 'CLIC_TO_PAY',
+                      isLoading: false,
+                      isInitiating: false,
+                    })
+                  }
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (onlinePayModal.payment) {
+                      executeOnlineCheckout(onlinePayModal.payment.id, onlinePayModal.selectedGateway);
+                    }
+                  }}
+                  isLoading={onlinePayModal.isInitiating}
+                  className="bg-[#242F40] hover:bg-[#363636] text-[#CCA43B] border border-[#CCA43B]"
+                >
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Payer avec {onlinePayModal.selectedGateway === 'CLIC_TO_PAY' ? 'ClicToPay (Tunisie)' : 'Stripe (International)'}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

@@ -1,16 +1,24 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../common/cache/cache.service';
 import { CreateAcademicModuleDto, UpdateAcademicModuleDto, QueryAcademicModuleDto } from './academic-module.dto';
 import { PaginatedDto } from '../common/pagination.dto';
 import { AcademicModuleEntity } from './academic-module.entity';
 
 @Injectable()
 export class AcademicModulesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async findAll(query: QueryAcademicModuleDto) {
     const { page = 1, limit = 10, search, establishmentId, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
+
+    const cacheKey = this.cacheService.buildKey(null, establishmentId, 'academic-modules', query);
+    const cached = await this.cacheService.get<PaginatedDto<AcademicModuleEntity>>(cacheKey);
+    if (cached) return cached;
 
     const where: any = {};
     if (establishmentId) where.establishmentId = establishmentId;
@@ -42,7 +50,9 @@ export class AcademicModulesService {
     ]);
 
     const entities = data.map((item) => new AcademicModuleEntity(item as any));
-    return new PaginatedDto(entities, total, page, limit);
+    const result = new PaginatedDto(entities, total, page, limit);
+    await this.cacheService.set(cacheKey, result, 60);
+    return result;
   }
 
   async findOne(id: string) {
@@ -90,6 +100,7 @@ export class AcademicModulesService {
       );
     }
 
+    await this.cacheService.invalidateResource(null, establishmentId, 'academic-modules');
     return this.findOne(module.id);
   }
 
@@ -97,7 +108,7 @@ export class AcademicModulesService {
     const module = await this.prisma.academicModule.findUnique({ where: { id } });
     if (!module) throw new NotFoundException(`Academic Module with ID ${id} not found`);
 
-    return this.prisma.academicModule.update({
+    const updated = await this.prisma.academicModule.update({
       where: { id },
       data: {
         name: dto.name,
@@ -106,6 +117,8 @@ export class AcademicModulesService {
         isActive: dto.isActive,
       },
     });
+    await this.cacheService.invalidateResource(null, module.establishmentId, 'academic-modules');
+    return updated;
   }
 
   async remove(id: string, isPermanent = false, user?: any) {
@@ -133,6 +146,7 @@ export class AcademicModulesService {
             oldValues: module as any,
           },
         });
+        await this.cacheService.invalidateResource(null, module.establishmentId, 'academic-modules');
         return { message: 'Academic Module permanently deleted from database' };
       } catch (err: any) {
         await this.prisma.systemLog.create({
@@ -166,6 +180,7 @@ export class AcademicModulesService {
           newValues: { isActive: false },
         },
       });
+      await this.cacheService.invalidateResource(null, module.establishmentId, 'academic-modules');
       return { message: 'Academic Module deactivated successfully' };
     } catch (err: any) {
       await this.prisma.systemLog.create({

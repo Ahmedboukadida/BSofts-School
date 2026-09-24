@@ -276,6 +276,44 @@ export class StudentPaymentsService {
     }
   }
 
+  async getAvailableGatewaysForPayment(paymentId: string) {
+    const payment = await this.prisma.studentPayment.findUnique({
+      where: { id: paymentId },
+      include: {
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            establishmentId: true,
+          },
+        },
+      },
+    });
+
+    if (!payment) {
+      throw new NotFoundException(`Paiement avec l'ID ${paymentId} introuvable`);
+    }
+
+    const config = await this.prisma.paymentConfig.findFirst({
+      where: { establishmentId: payment.student.establishmentId },
+    });
+
+    const availableGateways: ('CLIC_TO_PAY' | 'STRIPE')[] = [];
+    if (config?.clicToPayEnabled) availableGateways.push('CLIC_TO_PAY');
+    if (config?.stripeEnabled) availableGateways.push('STRIPE');
+
+    return {
+      paymentId: payment.id,
+      amount: Number(payment.amount),
+      currency: config ? 'TND' : 'DZD',
+      clicToPayEnabled: Boolean(config?.clicToPayEnabled),
+      stripeEnabled: Boolean(config?.stripeEnabled),
+      availableGateways,
+      studentName: `${payment.student.firstName} ${payment.student.lastName}`,
+    };
+  }
+
   async createOnlineCheckout(paymentId: string, gateway: 'STRIPE' | 'CLIC_TO_PAY', user?: any) {
     const payment = await this.prisma.studentPayment.findUnique({
       where: { id: paymentId },
@@ -302,6 +340,14 @@ export class StudentPaymentsService {
     const config = await this.prisma.paymentConfig.findFirst({
       where: { establishmentId: payment.student.establishmentId },
     });
+
+    // Enforce that the school has enabled the requested gateway
+    if (gateway === 'STRIPE' && !config?.stripeEnabled) {
+      throw new BadRequestException('Le mode de paiement par carte internationale (Stripe) n\'est pas activé par cet établissement.');
+    }
+    if (gateway === 'CLIC_TO_PAY' && !config?.clicToPayEnabled) {
+      throw new BadRequestException('Le mode de paiement ClicToPay n\'est pas activé par cet établissement.');
+    }
 
     const frontendUrl = process.env.FRONTEND_URL || 'https://bsofts-school.vercel.app';
     const amountNum = Number(payment.amount);

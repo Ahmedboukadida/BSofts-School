@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Plus, Search, FileText, Edit, Trash2, Award, Printer,
   Calculator, CheckCircle, AlertTriangle, XCircle, GraduationCap,
-  BookOpen, Calendar
+  BookOpen, Calendar, ListChecks, Globe, CheckCircle2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -55,6 +55,79 @@ export default function ExamsAndBulletinsPage() {
   const [examFormLoading, setExamFormLoading] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<{ show: boolean; id: string | null }>({ show: false, id: null });
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Question Banco State
+  const [selectedExamForQuestions, setSelectedExamForQuestions] = useState<Exam | null>(null);
+  const [questions, setQuestions] = useState<any[]>([]);
+  const [questionsLoading, setQuestionsLoading] = useState(false);
+  const [newQuestionText, setNewQuestionText] = useState('');
+  const [newQuestionType, setNewQuestionType] = useState('QCM');
+  const [newQuestionPoints, setNewQuestionPoints] = useState('5');
+  const [choiceA, setChoiceA] = useState('');
+  const [choiceB, setChoiceB] = useState('');
+  const [choiceC, setChoiceC] = useState('');
+  const [choiceD, setChoiceD] = useState('');
+  const [correctChoice, setCorrectChoice] = useState<'A' | 'B' | 'C' | 'D'>('A');
+  const [isAddingQuestion, setIsAddingQuestion] = useState(false);
+
+  const openQuestionsModal = async (exam: Exam) => {
+    setSelectedExamForQuestions(exam);
+    setQuestionsLoading(true);
+    try {
+      const res = await api.get(`/exams/${exam.id}`);
+      setQuestions(res.data?.questions || []);
+    } catch {
+      setQuestions([]);
+    } finally {
+      setQuestionsLoading(false);
+    }
+  };
+
+  const handleAddQuestion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedExamForQuestions || !newQuestionText.trim()) return;
+    setIsAddingQuestion(true);
+    try {
+      const options = [
+        { id: 'A', text: choiceA, isCorrect: correctChoice === 'A' },
+        { id: 'B', text: choiceB, isCorrect: correctChoice === 'B' },
+        choiceC.trim() ? { id: 'C', text: choiceC, isCorrect: correctChoice === 'C' } : null,
+        choiceD.trim() ? { id: 'D', text: choiceD, isCorrect: correctChoice === 'D' } : null,
+      ].filter(Boolean);
+
+      await api.post(`/exams/${selectedExamForQuestions.id}/questions`, {
+        type: newQuestionType,
+        content: newQuestionText,
+        options,
+        maxScore: Number(newQuestionPoints) || 5,
+        sortOrder: questions.length + 1,
+      });
+
+      showToast('Question ajoutée avec succès au banco !', 'success');
+      setNewQuestionText('');
+      setChoiceA('');
+      setChoiceB('');
+      setChoiceC('');
+      setChoiceD('');
+      const res = await api.get(`/exams/${selectedExamForQuestions.id}`);
+      setQuestions(res.data?.questions || []);
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de l'ajout de la question");
+    } finally {
+      setIsAddingQuestion(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (questionId: string) => {
+    if (!selectedExamForQuestions) return;
+    try {
+      await api.delete(`/exams/${selectedExamForQuestions.id}/questions/${questionId}`);
+      showToast('Question supprimée avec succès', 'success');
+      setQuestions((prev) => prev.filter((q) => q.id !== questionId));
+    } catch (err: any) {
+      showApiErrorToast(err, "Erreur lors de la suppression de la question");
+    }
+  };
 
   // Load initial dropdowns
   const fetchDropdowns = useCallback(async () => {
@@ -350,6 +423,13 @@ export default function ExamsAndBulletinsPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <button
+                              onClick={() => openQuestionsModal(exam)}
+                              className="p-1 hover:bg-[#CCA43B]/10 rounded text-gray-400 hover:text-[#CCA43B] transition-colors"
+                              title="Banque de questions (QCM)"
+                            >
+                              <ListChecks className="w-3.5 h-3.5" />
+                            </button>
+                            <button
                               onClick={() => openEditExamForm(exam)}
                               className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-[#CCA43B] transition-colors"
                               title={t('common.edit')}
@@ -382,9 +462,18 @@ export default function ExamsAndBulletinsPage() {
                         <span className="font-semibold text-gray-900 bg-gray-50 px-2 py-0.5 rounded border border-gray-200">
                           / {exam.maxScore} pts
                         </span>
-                        <span className="text-gray-400">
-                          {exam.duration ? `${exam.duration} min` : t('exams.standardDuration')}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openQuestionsModal(exam)}
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-[#242F40] hover:text-[#CCA43B] bg-gray-100 hover:bg-[#CCA43B]/10 px-2 py-1 rounded transition-colors"
+                          >
+                            <ListChecks className="w-3 h-3 text-[#CCA43B]" />
+                            <span>Questions</span>
+                          </button>
+                          <span className="text-gray-400">
+                            {exam.duration ? `${exam.duration} min` : t('exams.standardDuration')}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -818,6 +907,239 @@ export default function ExamsAndBulletinsPage() {
             <Button onClick={handleExamSubmit} isLoading={examFormLoading} className="bg-[#242F40] hover:bg-[#363636] text-white">
               {t('common.save')}
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal: Questions Banco (QCM Engine) */}
+      <Modal
+        isOpen={Boolean(selectedExamForQuestions)}
+        onClose={() => setSelectedExamForQuestions(null)}
+        title={`Banque de Questions: ${selectedExamForQuestions?.title || ''}`}
+        size="4xl"
+      >
+        <div className="space-y-6 text-xs max-h-[75vh] overflow-y-auto pr-1">
+          {/* Header Summary */}
+          <div className="bg-[#242F40]/5 p-3.5 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-bold text-[#242F40] text-sm">
+                Configuration des Questions (Examen en Ligne)
+              </p>
+              <p className="text-gray-500 text-[11px]">
+                Créez des questions à choix multiples (QCM) ou Vrai/Faux. Les réponses correctes sont masquées côté élève.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="bg-[#242F40] text-white px-2.5 py-1 rounded-lg text-xs font-semibold">
+                {questions.length} Question{questions.length > 1 ? 's' : ''}
+              </span>
+              <span className="bg-[#CCA43B]/20 text-[#242F40] border border-[#CCA43B]/40 px-2.5 py-1 rounded-lg text-xs font-bold">
+                Total: {questions.reduce((sum, q) => sum + (Number(q.maxScore) || 0), 0)} / {selectedExamForQuestions?.maxScore || 20} pts
+              </span>
+            </div>
+          </div>
+
+          {/* Form: Add Question */}
+          <form onSubmit={handleAddQuestion} className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
+            <h4 className="font-bold text-gray-800 text-xs flex items-center gap-1.5 uppercase tracking-wider">
+              <Plus className="w-3.5 h-3.5 text-[#CCA43B]" />
+              Nouvelle Question
+            </h4>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2">
+                <label className="block text-gray-700 font-medium mb-1">Énoncé de la question *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Quelle est la formule de calcul de l'aire d'un cercle ?"
+                  value={newQuestionText}
+                  onChange={(e) => setNewQuestionText(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800"
+                />
+              </div>
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">Points attribués</label>
+                <input
+                  type="number"
+                  min="0.5"
+                  step="0.5"
+                  required
+                  value={newQuestionPoints}
+                  onChange={(e) => setNewQuestionPoints(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">Option A *</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="correctOption"
+                    checked={correctChoice === 'A'}
+                    onChange={() => setCorrectChoice('A')}
+                    className="accent-[#CCA43B] cursor-pointer"
+                    title="Définir comme bonne réponse"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Réponse A"
+                    value={choiceA}
+                    onChange={(e) => setChoiceA(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#CCA43B]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">Option B *</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="correctOption"
+                    checked={correctChoice === 'B'}
+                    onChange={() => setCorrectChoice('B')}
+                    className="accent-[#CCA43B] cursor-pointer"
+                    title="Définir comme bonne réponse"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Réponse B"
+                    value={choiceB}
+                    onChange={(e) => setChoiceB(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#CCA43B]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">Option C (Optionnel)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="correctOption"
+                    checked={correctChoice === 'C'}
+                    onChange={() => setCorrectChoice('C')}
+                    className="accent-[#CCA43B] cursor-pointer"
+                    title="Définir comme bonne réponse"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Réponse C"
+                    value={choiceC}
+                    onChange={(e) => setChoiceC(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#CCA43B]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-gray-700 font-medium mb-1">Option D (Optionnel)</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="correctOption"
+                    checked={correctChoice === 'D'}
+                    onChange={() => setCorrectChoice('D')}
+                    className="accent-[#CCA43B] cursor-pointer"
+                    title="Définir comme bonne réponse"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Réponse D"
+                    value={choiceD}
+                    onChange={(e) => setChoiceD(e.target.value)}
+                    className="flex-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#CCA43B]"
+                  />
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-gray-400 italic">
+              * Cochez le bouton radio correspondant à la réponse exacte pour l&apos;auto-correction.
+            </p>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                type="submit"
+                isLoading={isAddingQuestion}
+                className="bg-[#242F40] hover:bg-[#363636] text-white text-xs"
+              >
+                <Plus className="w-3.5 h-3.5 mr-1.5" />
+                Enregistrer dans la banque
+              </Button>
+            </div>
+          </form>
+
+          {/* List of existing questions */}
+          <div className="space-y-3">
+            <h4 className="font-bold text-gray-800 text-xs uppercase tracking-wider">
+              Questions existantes ({questions.length})
+            </h4>
+
+            {questionsLoading ? (
+              <div className="p-8 text-center text-gray-400">Chargement des questions...</div>
+            ) : questions.length === 0 ? (
+              <div className="p-8 text-center border border-dashed border-gray-200 rounded-xl text-gray-400">
+                Aucune question enregistrée pour cet examen.
+              </div>
+            ) : (
+              questions.map((q, idx) => {
+                const opts: Array<{ id: string; text: string; isCorrect?: boolean }> = Array.isArray(q.options)
+                  ? q.options
+                  : [];
+                return (
+                  <div
+                    key={q.id || idx}
+                    className="p-3.5 border border-gray-200 rounded-xl bg-white hover:border-[#CCA43B]/40 transition-colors flex items-start justify-between gap-4"
+                  >
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs bg-[#242F40] text-white px-2 py-0.5 rounded">
+                          Q{idx + 1}
+                        </span>
+                        <span className="font-semibold text-gray-900 text-xs">{q.content}</span>
+                        <span className="ml-auto font-medium text-[#CCA43B] bg-[#CCA43B]/10 px-2 py-0.5 rounded text-[11px]">
+                          {q.maxScore} pts
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                        {opts.map((opt) => (
+                          <div
+                            key={opt.id}
+                            className={`p-2 rounded-lg border text-[11px] flex items-center justify-between ${
+                              opt.isCorrect
+                                ? 'bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold'
+                                : 'bg-gray-50 border-gray-200 text-gray-600'
+                            }`}
+                          >
+                            <span>
+                              <strong>{opt.id}.</strong> {opt.text}
+                            </span>
+                            {opt.isCorrect && (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={() => handleDeleteQuestion(q.id)}
+                      className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                      title="Supprimer la question"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </Modal>

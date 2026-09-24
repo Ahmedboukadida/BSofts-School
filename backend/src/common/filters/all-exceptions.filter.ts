@@ -30,9 +30,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const exceptionResponse = exception.getResponse();
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
-      } else if (typeof exceptionResponse === 'object') {
-        message = (exceptionResponse as any).message || message;
-        error = (exceptionResponse as any).error || error;
+      } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
+        const resp = exceptionResponse as Record<string, unknown>;
+        message = (resp.message as string | string[]) || message;
+        error = (resp.error as string) || error;
       }
       stack = exception.stack;
     } else if (exception instanceof Error) {
@@ -57,7 +58,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             path: request.url,
             method: request.method,
             statusCode: status,
-            userId: (request as any).user?.id || null,
+            userId: request.user?.id || null,
             ipAddress: request.ip || null,
           },
         });

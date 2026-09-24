@@ -1,16 +1,24 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CacheService } from '../common/cache/cache.service';
 import { CreateRoomDto, UpdateRoomDto, QueryRoomDto } from './room.dto';
 import { PaginatedDto } from '../common/pagination.dto';
 import { RoomEntity } from './room.entity';
 
 @Injectable()
 export class RoomsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cacheService: CacheService,
+  ) {}
 
   async findAll(query: QueryRoomDto) {
     const { page = 1, limit = 50, search, establishmentId, type, sortBy, sortOrder } = query;
     const skip = (page - 1) * limit;
+
+    const cacheKey = this.cacheService.buildKey(null, establishmentId, 'rooms', query);
+    const cached = await this.cacheService.get<PaginatedDto<RoomEntity>>(cacheKey);
+    if (cached) return cached;
 
     const where: any = {};
     if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
@@ -44,7 +52,9 @@ export class RoomsService {
     ]);
 
     const entities = data.map((item) => new RoomEntity(item as any));
-    return new PaginatedDto(entities, total, page, limit);
+    const result = new PaginatedDto(entities, total, page, limit);
+    await this.cacheService.set(cacheKey, result, 60);
+    return result;
   }
 
   async findOne(id: string) {
@@ -65,7 +75,7 @@ export class RoomsService {
       throw new Error('establishmentId is required (provide in body or ensure user has an establishment)');
     }
 
-    return this.prisma.room.create({
+    const created = await this.prisma.room.create({
       data: {
         establishmentId,
         name: dto.name,
@@ -77,13 +87,15 @@ export class RoomsService {
         description: dto.description,
       },
     });
+    await this.cacheService.invalidateResource(null, establishmentId, 'rooms');
+    return created;
   }
 
   async update(id: string, dto: UpdateRoomDto) {
     const room = await this.prisma.room.findUnique({ where: { id } });
     if (!room) throw new NotFoundException(`Room with ID ${id} not found`);
 
-    return this.prisma.room.update({
+    const updated = await this.prisma.room.update({
       where: { id },
       data: {
         name: dto.name,
@@ -95,6 +107,8 @@ export class RoomsService {
         isActive: dto.isActive,
       },
     });
+    await this.cacheService.invalidateResource(null, room.establishmentId, 'rooms');
+    return updated;
   }
 
   async remove(id: string, isPermanent = false, user?: any) {
@@ -122,6 +136,7 @@ export class RoomsService {
             oldValues: room as any,
           },
         });
+        await this.cacheService.invalidateResource(null, room.establishmentId, 'rooms');
         return { message: 'Room permanently deleted from database' };
       } catch (err: any) {
         await this.prisma.systemLog.create({
@@ -155,6 +170,7 @@ export class RoomsService {
           newValues: { isActive: false },
         },
       });
+      await this.cacheService.invalidateResource(null, room.establishmentId, 'rooms');
       return { message: 'Room deactivated successfully' };
     } catch (err: any) {
       await this.prisma.systemLog.create({

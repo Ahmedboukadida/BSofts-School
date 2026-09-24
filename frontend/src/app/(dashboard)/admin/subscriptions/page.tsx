@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   XCircle,
   TrendingUp,
+  CreditCard,
+  ShieldCheck,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,6 +53,10 @@ export default function SaaSAdminSubscriptionsPage() {
   const [renewMonths, setRenewMonths] = useState(12);
   const [renewPrice, setRenewPrice] = useState(650);
   const [isRenewing, setIsRenewing] = useState(false);
+  const [renewalMode, setRenewalMode] = useState<'ONLINE' | 'MANUAL'>('ONLINE');
+  const [platformGateways, setPlatformGateways] = useState<('CLIC_TO_PAY' | 'STRIPE')[]>([]);
+  const [selectedPlatformGateway, setSelectedPlatformGateway] = useState<'CLIC_TO_PAY' | 'STRIPE'>('CLIC_TO_PAY');
+  const [loadingGateways, setLoadingGateways] = useState(false);
 
   const fetchSubscriptions = useCallback(async () => {
     setIsLoading(true);
@@ -105,6 +111,18 @@ export default function SaaSAdminSubscriptionsPage() {
 
   useEffect(() => {
     fetchSubscriptions();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const paymentStatus = params.get('payment');
+      if (paymentStatus === 'success') {
+        showToast.success('Paiement de la souscription SaaS validé avec succès !');
+        window.history.replaceState({}, '', window.location.pathname);
+      } else if (paymentStatus === 'cancelled') {
+        showToast.error('Transaction en ligne annulée.');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
   }, [fetchSubscriptions]);
 
   // Handle Approve Request
@@ -124,13 +142,60 @@ export default function SaaSAdminSubscriptionsPage() {
   };
 
   // Open Renewal Modal
-  const handleOpenRenew = (item: SubscriptionItem) => {
+  const handleOpenRenew = async (item: SubscriptionItem) => {
     setRenewItem(item);
     setRenewMonths(12);
     setRenewPrice(item.price);
+    setRenewalMode('ONLINE');
+    setLoadingGateways(true);
+
+    try {
+      const res = await api.get('/billing/gateways');
+      const gateways: ('CLIC_TO_PAY' | 'STRIPE')[] = res.data?.availableGateways || [];
+      setPlatformGateways(gateways);
+      if (gateways.length > 0) {
+        setSelectedPlatformGateway(gateways[0]);
+        setRenewalMode('ONLINE');
+      } else {
+        setRenewalMode('MANUAL');
+      }
+    } catch {
+      setPlatformGateways([]);
+      setRenewalMode('MANUAL');
+    } finally {
+      setLoadingGateways(false);
+    }
   };
 
-  // Submit Renewal
+  // Submit Online Renewal Checkout
+  const handleOnlineCheckout = async () => {
+    if (!renewItem) return;
+    setIsRenewing(true);
+    try {
+      const res = await api.post('/billing/checkout', {
+        planId: renewItem.planId || 'pro',
+        billingCycle: renewMonths >= 12 ? 'ANNUAL' : 'MONTHLY',
+        gateway: selectedPlatformGateway,
+        successUrl: `${window.location.origin}/admin/subscriptions?payment=success`,
+        cancelUrl: `${window.location.origin}/admin/subscriptions?payment=cancelled`,
+      });
+      const { checkoutUrl, message } = res.data || {};
+      if (checkoutUrl) {
+        showToast.success(message || 'Redirection vers la passerelle sécurisée...');
+        window.location.href = checkoutUrl;
+      } else {
+        showToast.success('Session de paiement générée avec succès');
+        setRenewItem(null);
+        fetchSubscriptions();
+      }
+    } catch (err: any) {
+      showApiErrorToast(err, 'Échec de l’initialisation du paiement en ligne');
+    } finally {
+      setIsRenewing(false);
+    }
+  };
+
+  // Submit Manual Administrative Renewal
   const handleConfirmRenew = async () => {
     if (!renewItem) return;
     setIsRenewing(true);
@@ -776,14 +841,159 @@ export default function SaaSAdminSubscriptionsPage() {
               </div>
             </div>
 
+            {/* Mode Selection: Online Checkout vs Manual Renewal */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary">
+                Mode de règlement du renouvellement :
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setRenewalMode('ONLINE')}
+                  className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between ${
+                    renewalMode === 'ONLINE'
+                      ? 'border-[#CCA43B] bg-[#CCA43B]/10 ring-1 ring-[#CCA43B]'
+                      : 'border-border bg-surface hover:border-[#CCA43B]/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-[#242F40] text-[#CCA43B]">
+                      <CreditCard className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-text-primary">Paiement en Ligne Sécurisé</p>
+                      <p className="text-xs text-text-secondary">ClicToPay Tunisie (SMT) ou Stripe International</p>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      renewalMode === 'ONLINE' ? 'border-[#CCA43B] bg-[#CCA43B]' : 'border-border'
+                    }`}
+                  >
+                    {renewalMode === 'ONLINE' && <div className="w-1.5 h-1.5 rounded-full bg-[#242F40]" />}
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRenewalMode('MANUAL')}
+                  className={`p-3.5 rounded-xl border text-left transition-all flex items-center justify-between ${
+                    renewalMode === 'MANUAL'
+                      ? 'border-[#CCA43B] bg-[#CCA43B]/10 ring-1 ring-[#CCA43B]'
+                      : 'border-border bg-surface hover:border-[#CCA43B]/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-[#242F40] text-emerald-400">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-text-primary">Validation Manuelle Directe</p>
+                      <p className="text-xs text-text-secondary">Chèque, virement bancaire ou accord commercial</p>
+                    </div>
+                  </div>
+                  <div
+                    className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                      renewalMode === 'MANUAL' ? 'border-[#CCA43B] bg-[#CCA43B]' : 'border-border'
+                    }`}
+                  >
+                    {renewalMode === 'MANUAL' && <div className="w-1.5 h-1.5 rounded-full bg-[#242F40]" />}
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            {/* Gateway Choice if Online Mode is selected */}
+            {renewalMode === 'ONLINE' && (
+              <div className="space-y-3 pt-2">
+                {loadingGateways ? (
+                  <div className="py-4 text-center text-xs text-text-secondary flex items-center justify-center gap-2">
+                    <RefreshCw className="w-4 h-4 animate-spin text-[#CCA43B]" />
+                    <span>Chargement des passerelles SaaS configurées...</span>
+                  </div>
+                ) : platformGateways.length === 0 ? (
+                  <div className="p-3.5 rounded-xl bg-surface border border-border text-xs text-text-secondary">
+                    Aucune passerelle en ligne n&apos;est active sur la plateforme. Veuillez utiliser la validation manuelle ou configurer ClicToPay/Stripe dans les paramètres SaaS.
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-semibold text-text-secondary mb-2">
+                      Passerelle de paiement en ligne disponible :
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {platformGateways.includes('CLIC_TO_PAY') && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPlatformGateway('CLIC_TO_PAY')}
+                          className={`p-3.5 rounded-xl border text-left transition-all ${
+                            selectedPlatformGateway === 'CLIC_TO_PAY'
+                              ? 'border-[#CCA43B] bg-[#CCA43B]/10 shadow-sm ring-1 ring-[#CCA43B]'
+                              : 'border-border bg-surface hover:border-[#CCA43B]/40'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-bold text-sm text-text-primary flex items-center gap-1.5">
+                              <CreditCard className="w-4 h-4 text-[#CCA43B]" /> ClicToPay
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                              Tunisie (SMT)
+                            </span>
+                          </div>
+                          <p className="text-xs text-text-secondary leading-relaxed">
+                            Cartes tunisiennes (CIB, Visa/Mastercard nationales) et e-Dinar.
+                          </p>
+                        </button>
+                      )}
+
+                      {platformGateways.includes('STRIPE') && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPlatformGateway('STRIPE')}
+                          className={`p-3.5 rounded-xl border text-left transition-all ${
+                            selectedPlatformGateway === 'STRIPE'
+                              ? 'border-[#CCA43B] bg-[#CCA43B]/10 shadow-sm ring-1 ring-[#CCA43B]'
+                              : 'border-border bg-surface hover:border-[#CCA43B]/40'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="font-bold text-sm text-text-primary flex items-center gap-1.5">
+                              <ShieldCheck className="w-4 h-4 text-[#CCA43B]" /> Stripe
+                            </span>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
+                              International
+                            </span>
+                          </div>
+                          <p className="text-xs text-text-secondary leading-relaxed">
+                            Cartes de crédit et de débit internationales sécurisées.
+                          </p>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
               <Button variant="secondary" onClick={() => setRenewItem(null)}>
                 Annuler
               </Button>
-              <Button onClick={handleConfirmRenew} isLoading={isRenewing}>
-                <RefreshCw className="w-4 h-4 mr-1.5" />
-                Valider le Renouvellement
-              </Button>
+              {renewalMode === 'ONLINE' && platformGateways.length > 0 ? (
+                <Button
+                  onClick={handleOnlineCheckout}
+                  isLoading={isRenewing}
+                  className="bg-[#242F40] hover:bg-[#363636] text-[#CCA43B] border border-[#CCA43B] font-semibold"
+                >
+                  <CreditCard className="w-4 h-4 mr-1.5" />
+                  Payer en Ligne via {selectedPlatformGateway === 'CLIC_TO_PAY' ? 'ClicToPay (Tunisie)' : 'Stripe'}
+                </Button>
+              ) : (
+                <Button onClick={handleConfirmRenew} isLoading={isRenewing}>
+                  <RefreshCw className="w-4 h-4 mr-1.5" />
+                  Valider le Renouvellement Manuel
+                </Button>
+              )}
             </div>
           </div>
         )}
