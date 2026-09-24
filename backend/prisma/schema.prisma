@@ -285,6 +285,7 @@ model Establishment {
   meetings            Meeting[]
 
   @@index([tenantId])
+  @@index([tenantId, isDeleted])
 }
 
 // ============================================================
@@ -710,6 +711,7 @@ model Class {
 
   @@unique([establishmentId, academicYearId, name])
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
   @@index([academicYearId])
   @@index([classLevelId])
   @@index([code])
@@ -748,6 +750,7 @@ model AcademicModule {
   classAssignments ClassModuleAssignment[]
 
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
 }
 
 model Matiere {
@@ -820,6 +823,7 @@ model Student {
   graduationRecords GraduationRecord[]
 
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
   @@index([registrationNumber])
 }
 
@@ -850,6 +854,7 @@ model Parent {
   payments StudentPayment[]
 
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
 }
 
 model StudentParent {
@@ -916,6 +921,7 @@ model Teacher {
   payments    TeacherPayment[]
 
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
 }
 
 model TeacherMatiere {
@@ -986,6 +992,7 @@ model Employee {
   contracts EmployeeContract[]
 
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
 }
 
 model EmployeeContract {
@@ -1055,6 +1062,7 @@ model Room {
   schedules ClassSchedule[]
 
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
 }
 
 model RoomEquipment {
@@ -1344,7 +1352,9 @@ model Exam {
   notes       Note[]
 
   @@index([establishmentId])
+  @@index([establishmentId, isDeleted])
   @@index([classId])
+  @@index([classId, isDeleted])
   @@index([periodId])
   @@index([matiereId])
   @@index([academicYearId])
@@ -1611,9 +1621,11 @@ model StudentPayment {
   deletedBy String?
 
   @@index([studentId])
+  @@index([studentId, isDeleted])
   @@index([parentId])
   @@index([planId])
   @@index([status])
+  @@index([status, isDeleted])
   @@index([createdAt])
 }
 

@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import { clearApiCache } from '@/lib/api';
+import { useAuthStore } from '@/store/auth-store';
 
 export interface EstablishmentOption {
   id: string;
@@ -61,7 +63,10 @@ export const useEstablishmentStore = create<EstablishmentState>((set) => ({
       } else {
         localStorage.removeItem('x-establishment-id');
       }
+      clearApiCache();
+      window.dispatchEvent(new CustomEvent('bsofts:establishment-changed', { detail: { establishmentId: id } }));
     }
+    useAuthStore.getState().setEstablishment(id);
     set({ currentEstablishmentId: id });
   },
 
@@ -72,6 +77,8 @@ export const useEstablishmentStore = create<EstablishmentState>((set) => ({
       } else {
         localStorage.removeItem('x-tenant-id');
       }
+      clearApiCache();
+      window.dispatchEvent(new CustomEvent('bsofts:tenant-changed', { detail: { tenantId: id } }));
     }
     set({ currentTenantId: id });
   },
@@ -83,6 +90,8 @@ export const useEstablishmentStore = create<EstablishmentState>((set) => ({
       } else {
         localStorage.removeItem('x-academic-year-id');
       }
+      clearApiCache();
+      window.dispatchEvent(new CustomEvent('bsofts:academic-year-changed', { detail: { academicYearId: id } }));
     }
     set({ currentAcademicYearId: id });
   },

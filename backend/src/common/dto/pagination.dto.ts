@@ -1,5 +1,5 @@
 import { Type, Transform } from 'class-transformer';
-import { IsOptional, IsString, IsInt, IsIn, IsBoolean, Min } from 'class-validator';
+import { IsOptional, IsString, IsInt, IsIn, IsBoolean, Min, Max } from 'class-validator';
 
 export class PaginatedDto<T> {
   data: T[];
@@ -16,7 +16,7 @@ export class PaginatedDto<T> {
       page,
       limit,
       total,
-      totalPages: Math.ceil(total / limit),
+      totalPages: Math.ceil(total / Math.max(limit, 1)),
     };
   }
 }
@@ -32,6 +32,12 @@ export class PaginationQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
+  @Transform(({ value }) => {
+    const parsed = Number(value);
+    if (isNaN(parsed) || parsed < 1) return 10;
+    return Math.min(parsed, 100);
+  })
   limit?: number = 10;
 
   @IsOptional()

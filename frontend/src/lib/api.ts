@@ -56,6 +56,12 @@ api.interceptors.request.use((config) => {
 const inFlightGetRequests = new Map<string, Promise<any>>();
 const originalGet = api.get.bind(api);
 
+export function clearApiCache(): void {
+  inFlightGetRequests.clear();
+}
+
+(api as any).clearCache = clearApiCache;
+
 (api as any).get = function <T = any, R = any, D = any>(
   url: string,
   config?: any

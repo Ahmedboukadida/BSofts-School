@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import api from '@/lib/api';
+import api, { clearApiCache } from '@/lib/api';
 import { usePermissionsStore } from '@/store/permissions-store';
 
 interface User {
@@ -28,6 +28,7 @@ interface AuthState {
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   loadUser: () => Promise<void>;
+  setEstablishment: (establishmentId: string | null) => void;
 }
 
 interface RegisterData {
@@ -40,10 +41,26 @@ interface RegisterData {
 
 let inFlightLoadUser: Promise<void> | null = null;
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   isAuthenticated: false,
+
+  setEstablishment: (establishmentId: string | null) => {
+    if (typeof window !== 'undefined') {
+      if (establishmentId) {
+        localStorage.setItem('x-establishment-id', establishmentId);
+      } else {
+        localStorage.removeItem('x-establishment-id');
+      }
+      clearApiCache();
+      window.dispatchEvent(new CustomEvent('bsofts:establishment-changed', { detail: { establishmentId } }));
+    }
+    const currentUser = get().user;
+    if (currentUser) {
+      set({ user: { ...currentUser, establishmentId: establishmentId || undefined } });
+    }
+  },
 
   login: async (email: string, password: string) => {
     const response = await api.post('/auth/login', { identifier: email, password });
@@ -64,8 +81,14 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('x-establishment-id');
+      localStorage.removeItem('x-tenant-id');
+      localStorage.removeItem('x-academic-year-id');
+      clearApiCache();
+    }
     set({ user: null, isAuthenticated: false });
   },
 
