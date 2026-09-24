@@ -129,6 +129,7 @@ export class AuthService {
 
     // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 12);
+    const verificationToken = crypto.randomBytes(32).toString('hex');
 
     // Create user
     const user = await this.prisma.user.create({
@@ -139,6 +140,9 @@ export class AuthService {
         username: dto.username,
         password: hashedPassword,
         phone: dto.phone,
+        isRoot: false,
+        emailVerificationToken: verificationToken,
+        emailVerified: false,
       },
     });
 
