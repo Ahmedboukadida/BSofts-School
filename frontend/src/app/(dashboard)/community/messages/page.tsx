@@ -46,7 +46,7 @@ export default function CommunityMessagesPage() {
   const fetchThreads = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/community/messages').catch(() => ({ data: { data: [] } }));
+      const res = await api.get('/messages').catch(() => ({ data: { data: [] } }));
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: MessageThread[] = list.map((m: any) => ({
@@ -92,7 +92,7 @@ export default function CommunityMessagesPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/community/messages', formData).catch(() => {});
+      await api.post('/messages', formData).catch(() => {});
       const newThread: MessageThread = {
         id: `msg-${Date.now()}`,
         subject: formData.subject,
@@ -127,7 +127,7 @@ export default function CommunityMessagesPage() {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      await api.delete(`/community/messages/${row.id}`, {
+      await api.delete(`/messages/${row.id}`, {
         params: { permanent: permanent && isRoot },
       }).catch(() => {});
 
@@ -155,7 +155,7 @@ export default function CommunityMessagesPage() {
   const handleRestore = async (row: MessageThread) => {
     if (!window.confirm(`Restaurer la conversation "${row.subject}" ?`)) return;
     try {
-      await api.post(`/community/messages/${row.id}/restore`).catch(() => {});
+      await api.post(`/messages/${row.id}/restore`).catch(() => {});
       setThreads((prev) =>
         prev.map((t) =>
           t.id === row.id

@@ -45,7 +45,7 @@ export default function CommunityNotificationsPage() {
   const fetchNotifications = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/community/notifications').catch(() => ({ data: { data: [] } }));
+      const res = await api.get('/notifications').catch(() => ({ data: { data: [] } }));
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: NotificationItem[] = list.map((n: any) => ({
@@ -90,7 +90,7 @@ export default function CommunityNotificationsPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/community/notifications', formData).catch(() => {});
+      await api.post('/notifications', formData).catch(() => {});
       const newNotif: NotificationItem = {
         id: `notif-${Date.now()}`,
         title: formData.title,
@@ -124,7 +124,7 @@ export default function CommunityNotificationsPage() {
     if (!window.confirm(confirmMsg)) return;
 
     try {
-      await api.delete(`/community/notifications/${row.id}`, {
+      await api.delete(`/notifications/${row.id}`, {
         params: { permanent: permanent && isRoot },
       }).catch(() => {});
 
@@ -152,7 +152,7 @@ export default function CommunityNotificationsPage() {
   const handleRestore = async (row: NotificationItem) => {
     if (!window.confirm(`Restaurer la notification "${row.title}" ?`)) return;
     try {
-      await api.post(`/community/notifications/${row.id}/restore`).catch(() => {});
+      await api.post(`/notifications/${row.id}/restore`).catch(() => {});
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === row.id

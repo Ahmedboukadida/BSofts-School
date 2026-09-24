@@ -51,7 +51,7 @@ export class StudentsService {
             take: 1,
           },
           payments: {
-            select: { id: true, amount: true, status: true, type: true, createdAt: true },
+            select: { id: true, amount: true, status: true, method: true, createdAt: true },
             take: 10,
           },
           establishment: { select: { id: true, name: true, slug: true } },
