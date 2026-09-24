@@ -66,6 +66,129 @@ export class UploadService {
     return cleaned;
   }
 
+  private validateMagicBytes(buffer: Buffer, mimetype: string): void {
+    if (!buffer || buffer.length < 4) {
+      throw new BadRequestException('Empty or corrupt file payload');
+    }
+
+    // 1. Strict executable blacklisting
+    // Windows PE (.exe, .dll, .sys)
+    if (buffer[0] === 0x4d && buffer[1] === 0x5a) {
+      throw new BadRequestException('Executable files (Windows PE) are strictly forbidden');
+    }
+    // Linux ELF (.so, binaries)
+    if (buffer[0] === 0x7f && buffer[1] === 0x45 && buffer[2] === 0x4c && buffer[3] === 0x46) {
+      throw new BadRequestException('Executable files (ELF binaries) are strictly forbidden');
+    }
+    // Unix Script / Shebang (#! /bin/sh, etc.)
+    if (buffer[0] === 0x23 && buffer[1] === 0x21) {
+      throw new BadRequestException('Executable script files are strictly forbidden');
+    }
+
+    // 2. MIME signature verification
+    switch (mimetype) {
+      case 'image/jpeg':
+        if (!(buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff)) {
+          throw new BadRequestException('Invalid JPEG format signature');
+        }
+        break;
+      case 'image/png':
+        if (
+          !(
+            buffer[0] === 0x89 &&
+            buffer[1] === 0x50 &&
+            buffer[2] === 0x4e &&
+            buffer[3] === 0x47
+          )
+        ) {
+          throw new BadRequestException('Invalid PNG format signature');
+        }
+        break;
+      case 'image/gif':
+        if (
+          !(
+            buffer[0] === 0x47 &&
+            buffer[1] === 0x49 &&
+            buffer[2] === 0x46 &&
+            buffer[3] === 0x38
+          )
+        ) {
+          throw new BadRequestException('Invalid GIF format signature');
+        }
+        break;
+      case 'image/webp':
+        if (
+          !(
+            buffer[0] === 0x52 &&
+            buffer[1] === 0x49 &&
+            buffer[2] === 0x46 &&
+            buffer[3] === 0x46 &&
+            buffer.length >= 12 &&
+            buffer[8] === 0x57 &&
+            buffer[9] === 0x45 &&
+            buffer[10] === 0x42 &&
+            buffer[11] === 0x50
+          )
+        ) {
+          throw new BadRequestException('Invalid WebP format signature');
+        }
+        break;
+      case 'application/pdf':
+        if (
+          !(
+            buffer[0] === 0x25 &&
+            buffer[1] === 0x50 &&
+            buffer[2] === 0x44 &&
+            buffer[3] === 0x46
+          )
+        ) {
+          throw new BadRequestException('Invalid PDF format signature (%PDF)');
+        }
+        break;
+      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+      case 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        // Modern OpenXML documents are ZIP archives starting with PK (0x50, 0x4B, 0x03, 0x04)
+        if (
+          !(
+            buffer[0] === 0x50 &&
+            buffer[1] === 0x4b &&
+            buffer[2] === 0x03 &&
+            buffer[3] === 0x04
+          )
+        ) {
+          throw new BadRequestException('Invalid Office OpenXML format signature');
+        }
+        break;
+      case 'application/msword':
+      case 'application/vnd.ms-excel':
+        // Legacy OLE2 Compound Document format (D0 CF 11 E0) or ZIP
+        const isOLE =
+          buffer[0] === 0xd0 &&
+          buffer[1] === 0xcf &&
+          buffer[2] === 0x11 &&
+          buffer[3] === 0xe0;
+        const isZIP =
+          buffer[0] === 0x50 &&
+          buffer[1] === 0x4b &&
+          buffer[2] === 0x03 &&
+          buffer[3] === 0x04;
+        if (!isOLE && !isZIP) {
+          throw new BadRequestException('Invalid Microsoft Office binary signature');
+        }
+        break;
+      case 'text/csv':
+      case 'text/plain':
+        // Text files should not contain null bytes in their leading bytes
+        const inspectLen = Math.min(buffer.length, 512);
+        for (let i = 0; i < inspectLen; i++) {
+          if (buffer[i] === 0x00) {
+            throw new BadRequestException('Binary data detected in text file payload');
+          }
+        }
+        break;
+    }
+  }
+
   async saveFile(file: UploadFileInput, folder = 'general', user?: any): Promise<UploadEntity> {
     try {
       if (!file) {
@@ -81,6 +204,9 @@ export class UploadService {
           `Unsupported file type '${file.mimetype}'. Allowed: images, PDFs, Office docs, CSV, text.`,
         );
       }
+
+      // Sniff magic bytes to prevent masqueraded files (.exe renamed to .pdf)
+      this.validateMagicBytes(file.buffer, file.mimetype);
 
       const safeFolder = this.sanitizeFolder(folder);
       const targetDir = path.resolve(this.baseUploadDir, safeFolder);

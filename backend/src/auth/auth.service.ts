@@ -239,7 +239,13 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.username);
+    const tokens = await this.generateTokens(
+      user.id,
+      user.email,
+      user.username,
+      establishment?.id,
+      tenant?.id,
+    );
 
     return {
       accessToken: tokens.accessToken,

@@ -61,6 +61,8 @@ import { AppService } from './app.service';
 import {
   SubscriptionMiddleware,
   EstablishmentContextMiddleware,
+  SecurityHeadersMiddleware,
+  AuthRateLimitMiddleware,
 } from './common/middleware';
 
 @Module({
@@ -152,6 +154,12 @@ import {
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(SecurityHeadersMiddleware)
+      .forRoutes('*');
+    consumer
+      .apply(AuthRateLimitMiddleware)
+      .forRoutes('auth/*', 'mail/test');
     consumer
       .apply(SubscriptionMiddleware)
       .forRoutes('*');
