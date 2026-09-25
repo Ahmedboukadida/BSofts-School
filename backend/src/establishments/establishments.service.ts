@@ -208,7 +208,11 @@ export class EstablishmentsService {
       });
     }
 
-    return config;
+    return {
+      ...config,
+      stripePublishableKey: config.stripeKey || '',
+      stripeSecretKey: config.stripeSecret || '',
+    };
   }
 
   async updatePaymentConfig(establishmentId: string, dto: any) {
@@ -216,19 +220,27 @@ export class EstablishmentsService {
       where: { establishmentId },
     });
 
+    const resolvedStripeKey = dto.stripeKey !== undefined ? dto.stripeKey : (dto.stripePublishableKey !== undefined ? dto.stripePublishableKey : existing?.stripeKey);
+    const resolvedStripeSecret = dto.stripeSecret !== undefined ? dto.stripeSecret : (dto.stripeSecretKey !== undefined ? dto.stripeSecretKey : existing?.stripeSecret);
+
     if (existing) {
       return this.prisma.paymentConfig.update({
         where: { id: existing.id },
         data: {
           allowedMethods: dto.allowedMethods ?? existing.allowedMethods,
           stripeEnabled: dto.stripeEnabled ?? existing.stripeEnabled,
-          stripeKey: dto.stripeKey !== undefined ? dto.stripeKey : existing.stripeKey,
-          stripeSecret: dto.stripeSecret !== undefined ? dto.stripeSecret : existing.stripeSecret,
+          stripeKey: resolvedStripeKey,
+          stripeSecret: resolvedStripeSecret,
+          stripeWebhookSecret: dto.stripeWebhookSecret !== undefined ? dto.stripeWebhookSecret : existing.stripeWebhookSecret,
+          stripeTestMode: dto.stripeTestMode !== undefined ? dto.stripeTestMode : existing.stripeTestMode,
+          stripeCurrency: dto.stripeCurrency !== undefined ? dto.stripeCurrency : existing.stripeCurrency,
           clicToPayEnabled: dto.clicToPayEnabled ?? existing.clicToPayEnabled,
           clicToPayMerchantId: dto.clicToPayMerchantId !== undefined ? dto.clicToPayMerchantId : existing.clicToPayMerchantId,
           clicToPayApiKey: dto.clicToPayApiKey !== undefined ? dto.clicToPayApiKey : existing.clicToPayApiKey,
           clicToPaySecretKey: dto.clicToPaySecretKey !== undefined ? dto.clicToPaySecretKey : existing.clicToPaySecretKey,
-          clicToPayTestMode: dto.clicToPayTestMode ?? existing.clicToPayTestMode,
+          clicToPayTerminalId: dto.clicToPayTerminalId !== undefined ? dto.clicToPayTerminalId : existing.clicToPayTerminalId,
+          clicToPayTestMode: dto.clicToPayTestMode !== undefined ? dto.clicToPayTestMode : existing.clicToPayTestMode,
+          clicToPayCurrency: dto.clicToPayCurrency !== undefined ? dto.clicToPayCurrency : existing.clicToPayCurrency,
           latePenaltyPercent: dto.latePenaltyPercent ?? existing.latePenaltyPercent,
           latePenaltyEnabled: dto.latePenaltyEnabled ?? existing.latePenaltyEnabled,
           blockAccessOnLate: dto.blockAccessOnLate ?? existing.blockAccessOnLate,
@@ -241,13 +253,18 @@ export class EstablishmentsService {
         establishmentId,
         allowedMethods: dto.allowedMethods || ['CASH', 'CHECK', 'BANK_TRANSFER'],
         stripeEnabled: dto.stripeEnabled ?? false,
-        stripeKey: dto.stripeKey || null,
-        stripeSecret: dto.stripeSecret || null,
+        stripeKey: resolvedStripeKey || null,
+        stripeSecret: resolvedStripeSecret || null,
+        stripeWebhookSecret: dto.stripeWebhookSecret || null,
+        stripeTestMode: dto.stripeTestMode ?? true,
+        stripeCurrency: dto.stripeCurrency || 'TND',
         clicToPayEnabled: dto.clicToPayEnabled ?? false,
         clicToPayMerchantId: dto.clicToPayMerchantId || null,
         clicToPayApiKey: dto.clicToPayApiKey || null,
         clicToPaySecretKey: dto.clicToPaySecretKey || null,
+        clicToPayTerminalId: dto.clicToPayTerminalId || null,
         clicToPayTestMode: dto.clicToPayTestMode ?? true,
+        clicToPayCurrency: dto.clicToPayCurrency || 'TND',
       },
     });
   }

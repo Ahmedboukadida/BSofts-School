@@ -12,7 +12,7 @@ export class UpdatePlatformPaymentConfigDto {
   @IsString()
   currency?: string;
 
-  // Stripe
+  // Stripe SaaS Gateway
   @ApiProperty({ required: false })
   @IsOptional()
   @IsBoolean()
@@ -33,7 +33,17 @@ export class UpdatePlatformPaymentConfigDto {
   @IsString()
   stripeWebhookSecret?: string;
 
-  // ClicToPay
+  @ApiProperty({ required: false, default: true })
+  @IsOptional()
+  @IsBoolean()
+  stripeTestMode?: boolean;
+
+  @ApiProperty({ required: false, default: 'TND' })
+  @IsOptional()
+  @IsString()
+  stripeCurrency?: string;
+
+  // ClicToPay SaaS Gateway (Monétique Tunisie / SMT)
   @ApiProperty({ required: false })
   @IsOptional()
   @IsBoolean()
@@ -54,10 +64,20 @@ export class UpdatePlatformPaymentConfigDto {
   @IsString()
   clicToPaySecretKey?: string;
 
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  clicToPayTerminalId?: string;
+
   @ApiProperty({ required: false, default: true })
   @IsOptional()
   @IsBoolean()
   clicToPayTestMode?: boolean;
+
+  @ApiProperty({ required: false, default: 'TND' })
+  @IsOptional()
+  @IsString()
+  clicToPayCurrency?: string;
 }
 
 export class CreateSubscriptionCheckoutDto {

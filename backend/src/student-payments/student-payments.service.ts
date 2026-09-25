@@ -306,7 +306,11 @@ export class StudentPaymentsService {
     return {
       paymentId: payment.id,
       amount: Number(payment.amount),
-      currency: config ? 'TND' : 'DZD',
+      currency: config?.clicToPayCurrency || config?.stripeCurrency || 'TND',
+      clicToPayCurrency: config?.clicToPayCurrency || 'TND',
+      stripeCurrency: config?.stripeCurrency || 'TND',
+      clicToPayTestMode: config?.clicToPayTestMode ?? true,
+      stripeTestMode: config?.stripeTestMode ?? true,
       clicToPayEnabled: Boolean(config?.clicToPayEnabled),
       stripeEnabled: Boolean(config?.stripeEnabled),
       availableGateways,

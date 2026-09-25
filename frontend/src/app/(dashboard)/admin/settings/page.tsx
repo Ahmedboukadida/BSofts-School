@@ -88,11 +88,15 @@ export default function SaaSPlatformSettingsPage() {
     stripePublicKey: '',
     stripeSecretKey: '',
     stripeWebhookSecret: '',
+    stripeTestMode: false,
+    stripeCurrency: 'EUR',
     clicToPayEnabled: true,
     clicToPayMerchantId: '',
     clicToPayApiKey: '',
     clicToPaySecretKey: '',
+    clicToPayTerminalId: '',
     clicToPayTestMode: true,
+    clicToPayCurrency: 'TND',
     currency: 'TND',
   });
   const [paymentStatus, setPaymentStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -145,11 +149,15 @@ export default function SaaSPlatformSettingsPage() {
             stripePublicKey: res.data.stripePublicKey || '',
             stripeSecretKey: res.data.stripeSecretKey || '',
             stripeWebhookSecret: res.data.stripeWebhookSecret || '',
+            stripeTestMode: res.data.stripeTestMode !== undefined ? Boolean(res.data.stripeTestMode) : false,
+            stripeCurrency: res.data.stripeCurrency || 'EUR',
             clicToPayEnabled: res.data.clicToPayEnabled !== undefined ? Boolean(res.data.clicToPayEnabled) : true,
             clicToPayMerchantId: res.data.clicToPayMerchantId || '',
             clicToPayApiKey: res.data.clicToPayApiKey || '',
             clicToPaySecretKey: res.data.clicToPaySecretKey || '',
+            clicToPayTerminalId: res.data.clicToPayTerminalId || '',
             clicToPayTestMode: res.data.clicToPayTestMode !== undefined ? Boolean(res.data.clicToPayTestMode) : true,
+            clicToPayCurrency: res.data.clicToPayCurrency || 'TND',
             currency: res.data.currency || 'TND',
           });
         }
@@ -896,21 +904,27 @@ export default function SaaSPlatformSettingsPage() {
               </label>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
               <Input
-                label="ID Marchand ClicToPay (Merchant ID)"
+                label="ID Marchand ClicToPay"
                 placeholder="Ex: 1000000000"
                 value={paymentConfig.clicToPayMerchantId}
                 onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayMerchantId: e.target.value })}
               />
               <Input
-                label="Nom d’Utilisateur API (Username / Key)"
+                label="ID Terminal ClicToPay"
+                placeholder="Ex: 001"
+                value={paymentConfig.clicToPayTerminalId}
+                onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayTerminalId: e.target.value })}
+              />
+              <Input
+                label="Nom d’Utilisateur API"
                 placeholder="Ex: merchant_api"
                 value={paymentConfig.clicToPayApiKey}
                 onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayApiKey: e.target.value })}
               />
               <Input
-                label="Mot de Passe API (Password / Secret)"
+                label="Mot de Passe API"
                 type="password"
                 placeholder="••••••••••••••••"
                 value={paymentConfig.clicToPaySecretKey}
@@ -918,17 +932,30 @@ export default function SaaSPlatformSettingsPage() {
               />
             </div>
 
-            <div className="flex items-center gap-2 pt-2 border-t border-amber-500/10">
-              <input
-                id="clictopay-test-mode"
-                type="checkbox"
-                className="w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-400"
-                checked={paymentConfig.clicToPayTestMode}
-                onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayTestMode: e.target.checked })}
-              />
-              <label htmlFor="clictopay-test-mode" className="text-xs text-text-secondary cursor-pointer">
-                Activer le mode Bac à Sable / Test ClicToPay (SMT Sandbox)
-              </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-amber-500/10 items-center">
+              <div>
+                <label className="text-xs font-semibold text-text-primary block mb-1">Devise ClicToPay</label>
+                <select
+                  className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  value={paymentConfig.clicToPayCurrency}
+                  onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayCurrency: e.target.value })}
+                >
+                  <option value="TND">TND — Dinar Tunisien (Millimes)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-4 sm:pt-0">
+                <input
+                  id="clictopay-test-mode"
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-400"
+                  checked={paymentConfig.clicToPayTestMode}
+                  onChange={(e) => setPaymentConfig({ ...paymentConfig, clicToPayTestMode: e.target.checked })}
+                />
+                <label htmlFor="clictopay-test-mode" className="text-xs text-text-secondary cursor-pointer">
+                  Activer le mode Test ClicToPay (SMT Sandbox)
+                </label>
+              </div>
             </div>
           </div>
 
@@ -955,7 +982,7 @@ export default function SaaSPlatformSettingsPage() {
               </label>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <Input
                 label="Clé Publique Stripe (Publishable Key)"
                 placeholder="pk_test_..."
@@ -976,6 +1003,34 @@ export default function SaaSPlatformSettingsPage() {
                 value={paymentConfig.stripeWebhookSecret}
                 onChange={(e) => setPaymentConfig({ ...paymentConfig, stripeWebhookSecret: e.target.value })}
               />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-blue-500/10 items-center">
+              <div>
+                <label className="text-xs font-semibold text-text-primary block mb-1">Devise Stripe</label>
+                <select
+                  className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={paymentConfig.stripeCurrency}
+                  onChange={(e) => setPaymentConfig({ ...paymentConfig, stripeCurrency: e.target.value })}
+                >
+                  <option value="EUR">EUR — Euro (€)</option>
+                  <option value="USD">USD — Dollar US ($)</option>
+                  <option value="TND">TND — Dinar Tunisien (Millimes)</option>
+                </select>
+              </div>
+
+              <div className="flex items-center gap-2 pt-4 sm:pt-0">
+                <input
+                  id="stripe-test-mode"
+                  type="checkbox"
+                  className="w-4 h-4 rounded border-border text-blue-500 focus:ring-blue-400"
+                  checked={paymentConfig.stripeTestMode}
+                  onChange={(e) => setPaymentConfig({ ...paymentConfig, stripeTestMode: e.target.checked })}
+                />
+                <label htmlFor="stripe-test-mode" className="text-xs text-text-secondary cursor-pointer">
+                  Mode Test Stripe (utiliser les clés de test `pk_test_...`)
+                </label>
+              </div>
             </div>
           </div>
         </Card>

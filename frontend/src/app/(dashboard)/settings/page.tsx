@@ -51,10 +51,15 @@ export default function SettingsPage() {
     clicToPayMerchantId: '',
     clicToPayApiKey: '',
     clicToPaySecretKey: '',
+    clicToPayTerminalId: '',
     clicToPayTestMode: true,
+    clicToPayCurrency: 'TND',
     stripeEnabled: false,
     stripePublishableKey: '',
     stripeSecretKey: '',
+    stripeWebhookSecret: '',
+    stripeTestMode: false,
+    stripeCurrency: 'EUR',
   });
   const [payLoading, setPayLoading] = useState(false);
   const [payMessage, setPayMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -100,10 +105,15 @@ export default function SettingsPage() {
           clicToPayMerchantId: res.data.clicToPayMerchantId || '',
           clicToPayApiKey: res.data.clicToPayApiKey || '',
           clicToPaySecretKey: res.data.clicToPaySecretKey || '',
+          clicToPayTerminalId: res.data.clicToPayTerminalId || '',
           clicToPayTestMode: res.data.clicToPayTestMode !== undefined ? Boolean(res.data.clicToPayTestMode) : true,
+          clicToPayCurrency: res.data.clicToPayCurrency || 'TND',
           stripeEnabled: Boolean(res.data.stripeEnabled),
-          stripePublishableKey: res.data.stripePublishableKey || '',
-          stripeSecretKey: res.data.stripeSecretKey || '',
+          stripePublishableKey: res.data.stripePublishableKey || res.data.stripeKey || '',
+          stripeSecretKey: res.data.stripeSecretKey || res.data.stripeSecret || '',
+          stripeWebhookSecret: res.data.stripeWebhookSecret || '',
+          stripeTestMode: res.data.stripeTestMode !== undefined ? Boolean(res.data.stripeTestMode) : false,
+          stripeCurrency: res.data.stripeCurrency || 'EUR',
         });
       }
     } catch {
@@ -393,12 +403,18 @@ export default function SettingsPage() {
                       </label>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                       <Input
                         label="Merchant ID ClicToPay"
                         placeholder="Ex: 1000000000"
                         value={payConfig.clicToPayMerchantId}
                         onChange={(e) => setPayConfig({ ...payConfig, clicToPayMerchantId: e.target.value })}
+                      />
+                      <Input
+                        label="ID Terminal ClicToPay"
+                        placeholder="Ex: 001"
+                        value={payConfig.clicToPayTerminalId}
+                        onChange={(e) => setPayConfig({ ...payConfig, clicToPayTerminalId: e.target.value })}
                       />
                       <Input
                         label="Nom d'Utilisateur API"
@@ -415,17 +431,30 @@ export default function SettingsPage() {
                       />
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2 border-t border-amber-500/10">
-                      <input
-                        id="school-clictopay-test"
-                        type="checkbox"
-                        className="w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-400"
-                        checked={payConfig.clicToPayTestMode}
-                        onChange={(e) => setPayConfig({ ...payConfig, clicToPayTestMode: e.target.checked })}
-                      />
-                      <label htmlFor="school-clictopay-test" className="text-xs text-text-secondary cursor-pointer">
-                        Mode Test / Sandbox ClicToPay (simulation de paiement sans débit réel)
-                      </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-500/10 items-center">
+                      <div>
+                        <label className="text-xs font-semibold text-text-primary block mb-1">Devise ClicToPay</label>
+                        <select
+                          className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-amber-500"
+                          value={payConfig.clicToPayCurrency}
+                          onChange={(e) => setPayConfig({ ...payConfig, clicToPayCurrency: e.target.value })}
+                        >
+                          <option value="TND">TND — Dinar Tunisien (Millimes)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2 sm:pt-4">
+                        <input
+                          id="school-clictopay-test"
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-border text-amber-500 focus:ring-amber-400"
+                          checked={payConfig.clicToPayTestMode}
+                          onChange={(e) => setPayConfig({ ...payConfig, clicToPayTestMode: e.target.checked })}
+                        />
+                        <label htmlFor="school-clictopay-test" className="text-xs text-text-secondary cursor-pointer">
+                          Mode Test ClicToPay (SMT Sandbox sans débit réel)
+                        </label>
+                      </div>
                     </div>
                   </div>
 
@@ -452,7 +481,7 @@ export default function SettingsPage() {
                       </label>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                       <Input
                         label="Clé Publique Stripe (Publishable Key)"
                         placeholder="pk_test_..."
@@ -466,6 +495,41 @@ export default function SettingsPage() {
                         value={payConfig.stripeSecretKey}
                         onChange={(e) => setPayConfig({ ...payConfig, stripeSecretKey: e.target.value })}
                       />
+                      <Input
+                        label="Secret Webhook Stripe"
+                        type="password"
+                        placeholder="whsec_..."
+                        value={payConfig.stripeWebhookSecret}
+                        onChange={(e) => setPayConfig({ ...payConfig, stripeWebhookSecret: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-blue-500/10 items-center">
+                      <div>
+                        <label className="text-xs font-semibold text-text-primary block mb-1">Devise Stripe</label>
+                        <select
+                          className="w-full h-9 px-3 rounded-lg border border-border bg-background text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          value={payConfig.stripeCurrency}
+                          onChange={(e) => setPayConfig({ ...payConfig, stripeCurrency: e.target.value })}
+                        >
+                          <option value="EUR">EUR — Euro (€)</option>
+                          <option value="USD">USD — Dollar US ($)</option>
+                          <option value="TND">TND — Dinar Tunisien (Millimes)</option>
+                        </select>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2 sm:pt-4">
+                        <input
+                          id="school-stripe-test"
+                          type="checkbox"
+                          className="w-4 h-4 rounded border-border text-blue-500 focus:ring-blue-400"
+                          checked={payConfig.stripeTestMode}
+                          onChange={(e) => setPayConfig({ ...payConfig, stripeTestMode: e.target.checked })}
+                        />
+                        <label htmlFor="school-stripe-test" className="text-xs text-text-secondary cursor-pointer">
+                          Mode Test Stripe (clés sandbox `pk_test_...`)
+                        </label>
+                      </div>
                     </div>
                   </div>
 

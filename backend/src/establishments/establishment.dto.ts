@@ -176,3 +176,101 @@ export class QueryEstablishmentDto extends PaginationQueryDto {
   @IsBoolean()
   isActive?: boolean;
 }
+
+export class UpdateSchoolPaymentConfigDto {
+  @ApiProperty({ required: false, isArray: true })
+  @IsOptional()
+  allowedMethods?: any[];
+
+  // Stripe School Gateway (Completely Separated)
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  stripeEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  stripeKey?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  stripePublishableKey?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  stripeSecret?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  stripeSecretKey?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  stripeWebhookSecret?: string;
+
+  @ApiProperty({ required: false, default: true })
+  @IsOptional()
+  @IsBoolean()
+  stripeTestMode?: boolean;
+
+  @ApiProperty({ required: false, default: 'TND' })
+  @IsOptional()
+  @IsString()
+  stripeCurrency?: string;
+
+  // ClicToPay School Gateway (Monétique Tunisie / SMT - Completely Separated)
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  clicToPayEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  clicToPayMerchantId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  clicToPayApiKey?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  clicToPaySecretKey?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  clicToPayTerminalId?: string;
+
+  @ApiProperty({ required: false, default: true })
+  @IsOptional()
+  @IsBoolean()
+  clicToPayTestMode?: boolean;
+
+  @ApiProperty({ required: false, default: 'TND' })
+  @IsOptional()
+  @IsString()
+  clicToPayCurrency?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsNumber()
+  latePenaltyPercent?: number;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  latePenaltyEnabled?: boolean;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsBoolean()
+  blockAccessOnLate?: boolean;
+}

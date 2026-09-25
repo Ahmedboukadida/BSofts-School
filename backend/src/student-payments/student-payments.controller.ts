@@ -105,6 +105,18 @@ export class StudentPaymentsController {
     return this.service.createOnlineCheckout(id, body.gateway, user);
   }
 
+  @Post(':id/online-checkout')
+  @Permissions('payments:read')
+  @ApiOperation({ summary: 'Initiate online payment for tuition fee (alias route)' })
+  @ApiResponse({ status: 201, description: 'Online checkout session generated' })
+  createOnlineCheckout(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { gateway: 'CLIC_TO_PAY' | 'STRIPE' },
+    @CurrentUser() user: any,
+  ) {
+    return this.service.createOnlineCheckout(id, body.gateway, user);
+  }
+
   @Post('confirm-online')
   @Permissions('payments:read')
   @ApiOperation({ summary: 'Confirm online student payment' })

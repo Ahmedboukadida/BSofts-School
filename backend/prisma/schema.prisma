@@ -551,16 +551,26 @@ model PaymentConfig {
   establishmentId     String
   establishment       Establishment   @relation(fields: [establishmentId], references: [id])
   allowedMethods      PaymentMethod[]
+
+  // Stripe School Gateway (Completely Separated)
   stripeEnabled       Boolean         @default(false)
   stripeKey           String?
   stripeSecret        String?
-  paypalClientId      String?
-  paypalSecret        String?
+  stripeWebhookSecret String?
+  stripeTestMode      Boolean         @default(true)
+  stripeCurrency      String?         @default("TND")
+
+  // ClicToPay School Gateway (Completely Separated)
   clicToPayEnabled    Boolean         @default(false)
   clicToPayMerchantId String?
   clicToPayApiKey     String?
   clicToPaySecretKey  String?
+  clicToPayTerminalId String?
   clicToPayTestMode   Boolean         @default(true)
+  clicToPayCurrency   String?         @default("TND")
+
+  paypalClientId      String?
+  paypalSecret        String?
   latePenaltyPercent  Decimal?        @db.Decimal(5, 2)
   latePenaltyEnabled  Boolean         @default(false)
   blockAccessOnLate   Boolean         @default(false)
@@ -582,18 +592,22 @@ model PlatformPaymentConfig {
   isDefault           Boolean  @default(true)
   currency            String   @default("TND")
 
-  // Stripe platform config
+  // Stripe SaaS Platform Gateway (Completely Separated)
   stripeEnabled       Boolean  @default(false)
   stripePublicKey     String?
   stripeSecretKey     String?
   stripeWebhookSecret String?
+  stripeTestMode      Boolean  @default(true)
+  stripeCurrency      String?  @default("TND")
 
-  // ClicToPay platform config
+  // ClicToPay SaaS Platform Gateway (Completely Separated)
   clicToPayEnabled    Boolean  @default(false)
   clicToPayMerchantId String?
   clicToPayApiKey     String?
   clicToPaySecretKey  String?
+  clicToPayTerminalId String?
   clicToPayTestMode   Boolean  @default(true)
+  clicToPayCurrency   String?  @default("TND")
 
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
