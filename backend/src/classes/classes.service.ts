@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { PeriodType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../common/cache/cache.service';
 import { CreateClassDto, UpdateClassDto, QueryClassDto } from './class.dto';
@@ -51,7 +52,7 @@ export class ClassesService {
       this.prisma.class.count({ where }),
     ]);
 
-    const entities = data.map((item) => new ClassEntity(item as any));
+    const entities = data.map((item) => new ClassEntity(item as unknown as Partial<ClassEntity>));
     const result = new PaginatedDto(entities, total, page, limit);
     await this.cacheService.set(cacheKey, result, 60);
     return result;
@@ -95,7 +96,7 @@ export class ClassesService {
         academicYearId: dto.academicYearId,
         name: dto.name,
         code: dto.code,
-        periodType: ((dto.periodType || 'TRIMESTER').toUpperCase()) as any,
+        periodType: ((dto.periodType || 'TRIMESTER').toUpperCase()) as PeriodType,
         maxStudents: dto.maxStudents ?? 30,
         gradingConfigId: dto.gradingConfigId,
       },
@@ -153,7 +154,7 @@ export class ClassesService {
             entity: 'Class',
             entityId: id,
             status: 'SUCCESS',
-            oldValues: cls as any,
+            oldValues: cls as unknown as Prisma.InputJsonValue,
           },
         });
         await this.cacheService.invalidateResource(null, cls.establishmentId, 'classes');

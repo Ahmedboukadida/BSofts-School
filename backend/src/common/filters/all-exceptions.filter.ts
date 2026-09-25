@@ -21,7 +21,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
-    let message = 'Internal server error';
+    let message: string | string[] = 'Internal server error';
     let error = 'Internal Server Error';
     let stack: string | undefined;
 
@@ -32,8 +32,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const resp = exceptionResponse as Record<string, unknown>;
-        message = (resp.message as string | string[]) || message;
-        error = (resp.error as string) || error;
+        if (resp.message !== undefined && resp.message !== null) {
+          message = resp.message as string | string[];
+        }
+        if (resp.error) {
+          error = String(resp.error);
+        }
       }
       stack = exception.stack;
     } else if (exception instanceof Error) {
@@ -58,7 +62,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
             path: request.url,
             method: request.method,
             statusCode: status,
-            userId: request.user?.id || null,
+            userId: (request.user as { id?: string } | undefined)?.id || null,
             ipAddress: request.ip || null,
           },
         });

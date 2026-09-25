@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateHolidayDto, UpdateHolidayDto, QueryHolidayDto } from './holiday.dto';
 import { PaginatedDto } from '../common/pagination.dto';
@@ -63,7 +64,7 @@ export class HolidaysService {
           entity: 'Holiday',
           entityId: created.id,
           status: 'SUCCESS',
-          newValues: created as any,
+          newValues: created as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -110,8 +111,8 @@ export class HolidaysService {
           entity: 'Holiday',
           entityId: id,
           status: 'SUCCESS',
-          oldValues: holiday as any,
-          newValues: updated as any,
+          oldValues: holiday as unknown as Prisma.InputJsonValue,
+          newValues: updated as unknown as Prisma.InputJsonValue,
         },
       });
 
@@ -153,7 +154,7 @@ export class HolidaysService {
             entity: 'Holiday',
             entityId: id,
             status: 'SUCCESS',
-            oldValues: holiday as any,
+            oldValues: holiday as unknown as Prisma.InputJsonValue,
           },
         });
         return { message: 'Holiday permanently deleted from database' };
@@ -181,7 +182,7 @@ export class HolidaysService {
           entity: 'Holiday',
           entityId: id,
           status: 'SUCCESS',
-          oldValues: holiday as any,
+          oldValues: holiday as unknown as Prisma.InputJsonValue,
         },
       });
       return { message: 'Holiday deleted successfully' };

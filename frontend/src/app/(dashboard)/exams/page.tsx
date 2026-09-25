@@ -425,7 +425,7 @@ export default function ExamsAndBulletinsPage() {
                             <button
                               onClick={() => openQuestionsModal(exam)}
                               className="p-1 hover:bg-[#CCA43B]/10 rounded text-gray-400 hover:text-[#CCA43B] transition-colors"
-                              title="Banque de questions (QCM)"
+                              title={t('exams.qcmAction')}
                             >
                               <ListChecks className="w-3.5 h-3.5" />
                             </button>
@@ -915,7 +915,7 @@ export default function ExamsAndBulletinsPage() {
       <Modal
         isOpen={Boolean(selectedExamForQuestions)}
         onClose={() => setSelectedExamForQuestions(null)}
-        title={`Banque de Questions: ${selectedExamForQuestions?.title || ''}`}
+        title={t('exams.questionBankTitle', { title: selectedExamForQuestions?.title || '' })}
         size="4xl"
       >
         <div className="space-y-6 text-xs max-h-[75vh] overflow-y-auto pr-1">
@@ -923,10 +923,10 @@ export default function ExamsAndBulletinsPage() {
           <div className="bg-[#242F40]/5 p-3.5 rounded-xl border border-gray-200 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="font-bold text-[#242F40] text-sm">
-                Configuration des Questions (Examen en Ligne)
+                {t('exams.questionConfigHeader')}
               </p>
               <p className="text-gray-500 text-[11px]">
-                Créez des questions à choix multiples (QCM) ou Vrai/Faux. Les réponses correctes sont masquées côté élève.
+                {t('exams.questionConfigDesc')}
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -943,23 +943,23 @@ export default function ExamsAndBulletinsPage() {
           <form onSubmit={handleAddQuestion} className="bg-white p-4 rounded-xl border border-gray-200 space-y-4">
             <h4 className="font-bold text-gray-800 text-xs flex items-center gap-1.5 uppercase tracking-wider">
               <Plus className="w-3.5 h-3.5 text-[#CCA43B]" />
-              Nouvelle Question
+              {t('exams.newQuestion')}
             </h4>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2">
-                <label className="block text-gray-700 font-medium mb-1">Énoncé de la question *</label>
+                <label className="block text-gray-700 font-medium mb-1">{t('exams.questionPrompt')}</label>
                 <input
                   type="text"
                   required
-                  placeholder="Ex: Quelle est la formule de calcul de l'aire d'un cercle ?"
+                  placeholder={t('exams.questionPromptPlaceholder')}
                   value={newQuestionText}
                   onChange={(e) => setNewQuestionText(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-[#CCA43B] text-gray-800"
                 />
               </div>
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Points attribués</label>
+                <label className="block text-gray-700 font-medium mb-1">{t('exams.pointsAssigned')}</label>
                 <input
                   type="number"
                   min="0.5"
@@ -974,7 +974,7 @@ export default function ExamsAndBulletinsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Option A *</label>
+                <label className="block text-gray-700 font-medium mb-1">{t('exams.optionA')}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -982,7 +982,7 @@ export default function ExamsAndBulletinsPage() {
                     checked={correctChoice === 'A'}
                     onChange={() => setCorrectChoice('A')}
                     className="accent-[#CCA43B] cursor-pointer"
-                    title="Définir comme bonne réponse"
+                    title={t('exams.setAsCorrect')}
                   />
                   <input
                     type="text"
@@ -996,7 +996,7 @@ export default function ExamsAndBulletinsPage() {
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Option B *</label>
+                <label className="block text-gray-700 font-medium mb-1">{t('exams.optionB')}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -1004,7 +1004,7 @@ export default function ExamsAndBulletinsPage() {
                     checked={correctChoice === 'B'}
                     onChange={() => setCorrectChoice('B')}
                     className="accent-[#CCA43B] cursor-pointer"
-                    title="Définir comme bonne réponse"
+                    title={t('exams.setAsCorrect')}
                   />
                   <input
                     type="text"
@@ -1018,7 +1018,7 @@ export default function ExamsAndBulletinsPage() {
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Option C (Optionnel)</label>
+                <label className="block text-gray-700 font-medium mb-1">{t('exams.optionC')}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -1026,7 +1026,7 @@ export default function ExamsAndBulletinsPage() {
                     checked={correctChoice === 'C'}
                     onChange={() => setCorrectChoice('C')}
                     className="accent-[#CCA43B] cursor-pointer"
-                    title="Définir comme bonne réponse"
+                    title={t('exams.setAsCorrect')}
                   />
                   <input
                     type="text"
@@ -1039,7 +1039,7 @@ export default function ExamsAndBulletinsPage() {
               </div>
 
               <div>
-                <label className="block text-gray-700 font-medium mb-1">Option D (Optionnel)</label>
+                <label className="block text-gray-700 font-medium mb-1">{t('exams.optionD')}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="radio"
@@ -1047,7 +1047,7 @@ export default function ExamsAndBulletinsPage() {
                     checked={correctChoice === 'D'}
                     onChange={() => setCorrectChoice('D')}
                     className="accent-[#CCA43B] cursor-pointer"
-                    title="Définir comme bonne réponse"
+                    title={t('exams.setAsCorrect')}
                   />
                   <input
                     type="text"
@@ -1060,7 +1060,7 @@ export default function ExamsAndBulletinsPage() {
               </div>
             </div>
             <p className="text-[11px] text-gray-400 italic">
-              * Cochez le bouton radio correspondant à la réponse exacte pour l&apos;auto-correction.
+              {t('exams.radioHelp')}
             </p>
 
             <div className="flex justify-end pt-2">
@@ -1070,7 +1070,7 @@ export default function ExamsAndBulletinsPage() {
                 className="bg-[#242F40] hover:bg-[#363636] text-white text-xs"
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
-                Enregistrer dans la banque
+                {t('exams.saveToBank')}
               </Button>
             </div>
           </form>
@@ -1078,14 +1078,14 @@ export default function ExamsAndBulletinsPage() {
           {/* List of existing questions */}
           <div className="space-y-3">
             <h4 className="font-bold text-gray-800 text-xs uppercase tracking-wider">
-              Questions existantes ({questions.length})
+              {t('exams.existingQuestions')} ({questions.length})
             </h4>
 
             {questionsLoading ? (
-              <div className="p-8 text-center text-gray-400">Chargement des questions...</div>
+              <div className="p-8 text-center text-gray-400">{t('exams.loadingQuestions')}</div>
             ) : questions.length === 0 ? (
               <div className="p-8 text-center border border-dashed border-gray-200 rounded-xl text-gray-400">
-                Aucune question enregistrée pour cet examen.
+                {t('exams.noQuestions')}
               </div>
             ) : (
               questions.map((q, idx) => {
@@ -1132,7 +1132,7 @@ export default function ExamsAndBulletinsPage() {
                     <button
                       onClick={() => handleDeleteQuestion(q.id)}
                       className="p-1 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                      title="Supprimer la question"
+                      title={t('exams.deleteQuestion')}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

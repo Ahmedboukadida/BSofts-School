@@ -1097,7 +1097,7 @@ export default function PaymentsPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-xs text-[#E5E5E5]/70 block">Montant à régler</span>
+                    <span className="text-xs text-[#E5E5E5]/70 block">{t('finance.amountDue')}</span>
                     <p className="text-xl font-black text-[#CCA43B]">
                       {Number(onlinePayModal.payment.amount).toLocaleString()} {CURRENCY}
                     </p>
@@ -1107,7 +1107,7 @@ export default function PaymentsPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-text-secondary mb-3">
-                  Sélectionnez votre moyen de paiement sécurisé :
+                  {t('finance.selectGateway')}
                 </label>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1126,18 +1126,18 @@ export default function PaymentsPage() {
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold text-sm text-text-primary flex items-center gap-1.5">
                             <CreditCard className="w-4 h-4 text-[#CCA43B]" />
-                            ClicToPay
+                            {t('finance.clictopayTitle')}
                           </span>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
-                            Tunisie (SMT)
+                            {t('finance.clictopayBadge')}
                           </span>
                         </div>
                         <p className="text-xs text-text-secondary leading-relaxed">
-                          Cartes bancaires tunisiennes (CIB, Visa/Mastercard nationales) et e-Dinar de la Poste tunisienne.
+                          {t('finance.clictopayDesc')}
                         </p>
                       </div>
                       <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-[#CCA43B]">Monétique SMT</span>
+                        <span className="text-[11px] font-semibold text-[#CCA43B]">{t('finance.clictopaySub')}</span>
                         <div
                           className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                             onlinePayModal.selectedGateway === 'CLIC_TO_PAY'
@@ -1168,18 +1168,18 @@ export default function PaymentsPage() {
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold text-sm text-text-primary flex items-center gap-1.5">
                             <ShieldCheck className="w-4 h-4 text-[#CCA43B]" />
-                            Stripe
+                            {t('finance.stripeTitle')}
                           </span>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 border border-blue-500/20">
-                            International
+                            {t('finance.stripeBadge')}
                           </span>
                         </div>
                         <p className="text-xs text-text-secondary leading-relaxed">
-                          Cartes de crédit et de débit internationales (Visa, Mastercard, American Express).
+                          {t('finance.stripeDesc')}
                         </p>
                       </div>
                       <div className="mt-3 pt-2 border-t border-border-subtle flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-text-tertiary">Checkout Sécurisé</span>
+                        <span className="text-[11px] font-semibold text-text-tertiary">{t('finance.stripeSub')}</span>
                         <div
                           className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                             onlinePayModal.selectedGateway === 'STRIPE'
@@ -1200,7 +1200,7 @@ export default function PaymentsPage() {
               <div className="p-3 rounded-lg bg-surface border border-border text-xs text-text-secondary flex items-start gap-2.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                 <p>
-                  Les transactions sont chiffrées selon les standards de sécurité bancaire PCI-DSS. Aucun identifiant bancaire n&apos;est enregistré sur les serveurs de l&apos;école.
+                  {t('finance.pciDssNotice')}
                 </p>
               </div>
 
@@ -1219,7 +1219,7 @@ export default function PaymentsPage() {
                     })
                   }
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   onClick={() => {
@@ -1231,7 +1231,11 @@ export default function PaymentsPage() {
                   className="bg-[#242F40] hover:bg-[#363636] text-[#CCA43B] border border-[#CCA43B]"
                 >
                   <CreditCard className="w-4 h-4 mr-2" />
-                  Payer avec {onlinePayModal.selectedGateway === 'CLIC_TO_PAY' ? 'ClicToPay (Tunisie)' : 'Stripe (International)'}
+                  {t('finance.payWith', {
+                    gateway: onlinePayModal.selectedGateway === 'CLIC_TO_PAY'
+                      ? t('finance.clictopayGatewayLabel')
+                      : t('finance.stripeGatewayLabel'),
+                  })}
                 </Button>
               </div>
             </>

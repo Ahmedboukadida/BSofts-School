@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PeriodType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAcademicPeriodDto, UpdateAcademicPeriodDto, QueryAcademicPeriodDto } from './academic-period.dto';
 import { PaginatedDto } from '../common/pagination.dto';
@@ -49,7 +50,7 @@ export class AcademicPeriodsService {
       data: {
         academicYearId: dto.academicYearId,
         name: dto.name,
-        type: dto.type as any,
+        type: dto.type as PeriodType,
         startDate: new Date(dto.startDate),
         endDate: new Date(dto.endDate),
         isCurrent: dto.isCurrent ?? false,

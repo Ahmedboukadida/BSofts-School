@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { TransactionType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto, QueryTransactionDto } from './financial-transaction.dto';
 import { PaginatedDto } from '../common/pagination.dto';
@@ -27,7 +28,7 @@ export class FinancialTransactionsService {
       this.prisma.financialTransaction.count({ where }),
     ]);
 
-    const entities = data.map((item) => new FinancialTransactionEntity(item as any));
+    const entities = data.map((item) => new FinancialTransactionEntity({ ...item, amount: Number(item.amount), balance: Number(item.balance) }));
     return new PaginatedDto(entities, total, page, limit);
   }
 
@@ -37,7 +38,7 @@ export class FinancialTransactionsService {
       include: { caisse: true },
     });
     if (!transaction) throw new NotFoundException(`Transaction with ID ${id} not found`);
-    return new FinancialTransactionEntity(transaction as any);
+    return new FinancialTransactionEntity({ ...transaction, amount: Number(transaction.amount), balance: Number(transaction.balance) });
   }
 
   async create(dto: CreateTransactionDto, user?: any) {
@@ -59,7 +60,7 @@ export class FinancialTransactionsService {
         this.prisma.financialTransaction.create({
           data: {
             caisseId: dto.caisseId,
-            type: dto.type as any,
+            type: dto.type as TransactionType,
             amount: dto.amount,
             balance: newBalance,
             category: dto.category,
@@ -87,11 +88,11 @@ export class FinancialTransactionsService {
           entity: 'FinancialTransaction',
           entityId: transaction.id,
           status: 'SUCCESS',
-          newValues: transaction as any,
+          newValues: transaction as unknown as Prisma.InputJsonValue,
         },
       });
 
-      return new FinancialTransactionEntity(transaction as any);
+      return new FinancialTransactionEntity({ ...transaction, amount: Number(transaction.amount), balance: Number(transaction.balance) });
     } catch (err: any) {
       await this.prisma.systemLog.create({
         data: {
@@ -177,7 +178,10 @@ export class FinancialTransactionsService {
           message: `Transfert de ${dto.amount} TND effectué avec succès de "${fromCaisse.name}" vers "${toCaisse.name}"`,
           from: { id: fromCaisse.id, name: fromCaisse.name, newBalance: newFromBalance },
           to: { id: toCaisse.id, name: toCaisse.name, newBalance: newToBalance },
-          transactions: [new FinancialTransactionEntity(txFrom as any), new FinancialTransactionEntity(txTo as any)],
+          transactions: [
+            new FinancialTransactionEntity({ ...txFrom, amount: Number(txFrom.amount), balance: Number(txFrom.balance) }),
+            new FinancialTransactionEntity({ ...txTo, amount: Number(txTo.amount), balance: Number(txTo.balance) }),
+          ],
         };
       });
 

@@ -1,12 +1,18 @@
 'use client';
 
 import { ThemeProvider } from './theme-provider';
-import { I18nProvider } from './i18n-provider';
+import { I18nProvider, Locale } from './i18n-provider';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({
+  children,
+  initialLocale,
+}: {
+  children: React.ReactNode;
+  initialLocale?: Locale;
+}) {
   return (
     <ThemeProvider>
-      <I18nProvider>
+      <I18nProvider initialLocale={initialLocale}>
         {children}
       </I18nProvider>
     </ThemeProvider>

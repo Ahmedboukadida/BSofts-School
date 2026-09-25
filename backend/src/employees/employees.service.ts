@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto, UpdateEmployeeDto, QueryEmployeeDto } from './employee.dto';
 import { PaginatedDto } from '../common/pagination.dto';
@@ -94,7 +95,7 @@ export class EmployeesService {
           uniqueUsername = `${baseUsername}_${Date.now()}`;
         }
 
-        const tempPassword = (dto as any).password || `Emp_${Math.random().toString(36).slice(-8)}!${Math.floor(10 + Math.random() * 90)}`;
+        const tempPassword = (dto as { password?: string }).password || `Emp_${Math.random().toString(36).slice(-8)}!${Math.floor(10 + Math.random() * 90)}`;
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
 
         const newUser = await this.prisma.user.create({
@@ -249,7 +250,7 @@ export class EmployeesService {
             entity: 'Employee',
             entityId: id,
             status: 'SUCCESS',
-            oldValues: employee as any,
+            oldValues: employee as unknown as Prisma.InputJsonValue,
           },
         });
         return { message: 'Employee permanently deleted from database' };

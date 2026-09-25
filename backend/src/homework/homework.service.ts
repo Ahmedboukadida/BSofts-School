@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateHomeworkDto, UpdateHomeworkDto, QueryHomeworkDto } from './homework.dto';
 import { PaginatedDto } from '../common/dto/pagination.dto';
@@ -164,7 +165,7 @@ export class HomeworkService {
           entity: 'Homework',
           entityId: newItem.id,
           status: 'SUCCESS',
-          newValues: newItem as any,
+          newValues: newItem as unknown as Prisma.InputJsonValue,
         },
       });
     } catch {
@@ -202,7 +203,7 @@ export class HomeworkService {
           entity: 'Homework',
           entityId: item.id,
           status: 'SUCCESS',
-          newValues: item as any,
+          newValues: item as unknown as Prisma.InputJsonValue,
         },
       });
     } catch {
@@ -237,7 +238,7 @@ export class HomeworkService {
             entity: 'Homework',
             entityId: id,
             status: 'SUCCESS',
-            oldValues: item as any,
+            oldValues: item as unknown as Prisma.InputJsonValue,
           },
         });
       } catch {
@@ -264,7 +265,7 @@ export class HomeworkService {
           entity: 'Homework',
           entityId: id,
           status: 'SUCCESS',
-          oldValues: item as any,
+          oldValues: item as unknown as Prisma.InputJsonValue,
         },
       });
     } catch {
@@ -296,7 +297,7 @@ export class HomeworkService {
           entity: 'Homework',
           entityId: id,
           status: 'SUCCESS',
-          newValues: item as any,
+          newValues: item as unknown as Prisma.InputJsonValue,
         },
       });
     } catch {

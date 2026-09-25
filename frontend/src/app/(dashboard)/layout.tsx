@@ -104,12 +104,14 @@ export default function DashboardLayout({
           </div>
 
           <div
-            className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+            className={`dashboard-main-content flex-1 flex flex-col min-w-0 transition-all duration-300 ${
+              isHorizontal ? 'horizontal' : sidebarCollapsed ? 'collapsed' : ''
+            } ${
               isHorizontal
-                ? 'lg:ml-0'
+                ? 'lg:ms-0 lg:ml-0'
                 : sidebarCollapsed
-                ? 'lg:ml-[80px]'
-                : 'lg:ml-[270px]'
+                ? 'lg:ms-[80px] lg:ml-[80px]'
+                : 'lg:ms-[270px] lg:ml-[270px]'
             }`}
           >
             <Header onMenuClick={() => setSidebarOpen(true)} />

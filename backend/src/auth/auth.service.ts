@@ -396,11 +396,11 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        expiresIn: (process.env.JWT_EXPIRATION as any) || '15m',
+        expiresIn: (process.env.JWT_EXPIRATION || '15m') as `${number}${'m' | 'h' | 'd' | 's'}`,
       }),
       this.jwtService.signAsync(payload, {
         secret: refreshSecret,
-        expiresIn: (process.env.JWT_REFRESH_EXPIRATION as any) || '7d',
+        expiresIn: (process.env.JWT_REFRESH_EXPIRATION || '7d') as `${number}${'m' | 'h' | 'd' | 's'}`,
       }),
     ]);
 

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDynamicEnumDto, UpdateDynamicEnumDto, QueryDynamicEnumDto } from './dynamic-enum.dto';
 
@@ -85,7 +86,7 @@ export class DynamicEnumsService {
           entity: 'DynamicEnum',
           entityId: created.id,
           status: 'SUCCESS',
-          newValues: created as any,
+          newValues: created as unknown as Prisma.InputJsonValue,
         },
       }).catch(() => {});
     }
@@ -118,8 +119,8 @@ export class DynamicEnumsService {
           entity: 'DynamicEnum',
           entityId: id,
           status: 'SUCCESS',
-          oldValues: existing as any,
-          newValues: updated as any,
+          oldValues: existing as unknown as Prisma.InputJsonValue,
+          newValues: updated as unknown as Prisma.InputJsonValue,
         },
       }).catch(() => {});
     }

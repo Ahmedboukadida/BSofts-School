@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CacheService } from '../common/cache/cache.service';
 import { CreateAcademicModuleDto, UpdateAcademicModuleDto, QueryAcademicModuleDto } from './academic-module.dto';
@@ -49,7 +50,7 @@ export class AcademicModulesService {
       this.prisma.academicModule.count({ where }),
     ]);
 
-    const entities = data.map((item) => new AcademicModuleEntity(item as any));
+    const entities = data.map((item) => new AcademicModuleEntity(item as unknown as Partial<AcademicModuleEntity>));
     const result = new PaginatedDto(entities, total, page, limit);
     await this.cacheService.set(cacheKey, result, 60);
     return result;
@@ -143,7 +144,7 @@ export class AcademicModulesService {
             entity: 'AcademicModule',
             entityId: id,
             status: 'SUCCESS',
-            oldValues: module as any,
+            oldValues: module as unknown as Prisma.InputJsonValue,
           },
         });
         await this.cacheService.invalidateResource(null, module.establishmentId, 'academic-modules');

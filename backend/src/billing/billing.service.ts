@@ -150,9 +150,19 @@ export class BillingService {
 
     const periodMonths = dto.periodMonths || 1;
     const totalAmount = Number(plan.price) * periodMonths;
-    const config = (await this.prisma.platformPaymentConfig.findFirst({
+    let config = await this.prisma.platformPaymentConfig.findFirst({
       where: { isDefault: true },
-    })) || ((await this.getPlatformConfig({ isRoot: true })) as any);
+    });
+    if (!config) {
+      config = await this.prisma.platformPaymentConfig.create({
+        data: {
+          isDefault: true,
+          currency: 'TND',
+          stripeEnabled: true,
+          clicToPayEnabled: true,
+        },
+      });
+    }
 
     // Verify that the requested gateway is currently enabled by the Platform Root
     if (dto.gateway === PaymentGatewayType.STRIPE && !config.stripeEnabled) {
@@ -191,9 +201,7 @@ export class BillingService {
         };
       }
 
-      const stripe = new Stripe(config.stripeSecretKey || process.env.STRIPE_SECRET_KEY!, {
-        apiVersion: '2025-02-24.acacia' as any,
-      });
+      const stripe = new Stripe(config.stripeSecretKey || process.env.STRIPE_SECRET_KEY!);
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],

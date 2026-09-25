@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { CaisseType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCaisseDto, UpdateCaisseDto, QueryCaisseDto } from './caisse.dto';
 import { PaginatedDto } from '../common/pagination.dto';
@@ -30,7 +31,7 @@ export class CaissesService {
       this.prisma.caisse.count({ where }),
     ]);
 
-    const entities = data.map((item) => new CaisseEntity(item as any));
+    const entities = data.map((item) => new CaisseEntity({ ...item, balance: Number(item.balance) }));
     return new PaginatedDto(entities, total, page, limit);
   }
 
@@ -42,7 +43,7 @@ export class CaissesService {
       },
     });
     if (!caisse) throw new NotFoundException(`Caisse with ID ${id} not found`);
-    return new CaisseEntity(caisse as any);
+    return new CaisseEntity({ ...caisse, balance: Number(caisse.balance) });
   }
 
   async create(dto: CreateCaisseDto) {
@@ -50,13 +51,13 @@ export class CaissesService {
       data: {
         establishmentId: dto.establishmentId,
         name: dto.name,
-        type: dto.type as any,
+        type: (dto.type || 'PHYSICAL') as CaisseType,
         balance: dto.balance ?? 0,
         currency: dto.currency,
         description: dto.description,
       },
     });
-    return new CaisseEntity(created as any);
+    return new CaisseEntity({ ...created, balance: Number(created.balance) });
   }
 
   async update(id: string, dto: UpdateCaisseDto) {
@@ -67,7 +68,7 @@ export class CaissesService {
       where: { id },
       data: { name: dto.name, description: dto.description, isActive: dto.isActive },
     });
-    return new CaisseEntity(updated as any);
+    return new CaisseEntity({ ...updated, balance: Number(updated.balance) });
   }
 
   async remove(id: string, isPermanent = false, user?: any) {
@@ -92,7 +93,7 @@ export class CaissesService {
             entity: 'Caisse',
             entityId: id,
             status: 'SUCCESS',
-            oldValues: caisse as any,
+            oldValues: caisse as unknown as Prisma.InputJsonValue,
           },
         });
         return { message: 'Caisse permanently deleted from database' };

@@ -355,3 +355,56 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─── ARABIC RTL LAYOUT POLISH (B21) ─── */
+[dir="rtl"] {
+  font-family: 'Cairo', 'Tajawal', system-ui, -apple-system, sans-serif;
+  letter-spacing: normal;
+}
+
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: right;
+}
+
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+[dir="rtl"] input:not([type="checkbox"]):not([type="radio"]),
+[dir="rtl"] select,
+[dir="rtl"] textarea {
+  text-align: right;
+}
+
+/* Mirror directional chevron / forward-back icons in RTL */
+[dir="rtl"] .rtl-mirror {
+  transform: scaleX(-1);
+}
+
+/* Sidebar and Main Layout RTL pinning */
+[dir="rtl"] aside {
+  left: auto !important;
+  right: 0 !important;
+  border-right-width: 0 !important;
+  border-left-width: 1px !important;
+}
+
+@media (min-width: 1024px) {
+  [dir="rtl"] .dashboard-main-content {
+    margin-left: 0 !important;
+    margin-right: 270px !important;
+  }
+  [dir="rtl"] .dashboard-main-content.collapsed {
+    margin-left: 0 !important;
+    margin-right: 80px !important;
+  }
+  [dir="rtl"] .dashboard-main-content.horizontal {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+}

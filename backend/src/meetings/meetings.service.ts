@@ -5,6 +5,13 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import {
+  MeetingType,
+  MeetingMode,
+  MeetingStatus,
+  MeetingParticipantRole,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LivekitService } from '../livekit/livekit.service';
 import {
@@ -126,12 +133,12 @@ export class MeetingsService {
     const meeting = await this.prisma.meeting.create({
       data: {
         subject: dto.subject,
-        type: (dto.type || 'GENERAL') as any,
+        type: (dto.type || 'GENERAL') as MeetingType,
         date: meetingDate,
         startTime: dto.startTime,
         endTime: dto.endTime,
         duration: dto.duration || 60,
-        mode: (dto.mode || 'ONLINE') as any,
+        mode: (dto.mode || 'ONLINE') as MeetingMode,
         location: dto.location || (dto.mode === 'IN_PERSON' ? 'Salle de réunion' : 'Visioconférence LiveKit'),
         description: dto.description,
         establishmentId,
@@ -143,7 +150,7 @@ export class MeetingsService {
               create: dto.participants.map((p) => ({
                 name: p.name,
                 email: p.email,
-                role: (p.role || 'ATTENDEE') as any,
+                role: (p.role || 'ATTENDEE') as MeetingParticipantRole,
                 userId: p.userId,
                 token: randomUUID(),
               })),
@@ -198,20 +205,20 @@ export class MeetingsService {
     const existing = await this.prisma.meeting.findUnique({ where: { id } });
     if (!existing || existing.isDeleted) throw new NotFoundException(`Meeting with ID ${id} not found`);
 
-    const data: any = {};
+    const data: Prisma.MeetingUpdateInput = {};
     if (dto.subject !== undefined) data.subject = dto.subject;
-    if (dto.type !== undefined) data.type = dto.type as any;
+    if (dto.type !== undefined) data.type = dto.type as MeetingType;
     if (dto.date !== undefined) data.date = new Date(dto.date);
     if (dto.startTime !== undefined) data.startTime = dto.startTime;
     if (dto.endTime !== undefined) data.endTime = dto.endTime;
     if (dto.duration !== undefined) data.duration = dto.duration;
     if (dto.mode !== undefined) {
-      data.mode = dto.mode as any;
+      data.mode = dto.mode as MeetingMode;
       data.isOnline = dto.mode !== 'IN_PERSON';
     }
     if (dto.location !== undefined) data.location = dto.location;
     if (dto.description !== undefined) data.description = dto.description;
-    if (dto.status !== undefined) data.status = dto.status as any;
+    if (dto.status !== undefined) data.status = dto.status as MeetingStatus;
     if (dto.summary !== undefined) data.summary = dto.summary;
 
     const updated = await this.prisma.meeting.update({

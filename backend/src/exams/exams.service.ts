@@ -35,7 +35,7 @@ export class ExamsService {
       this.prisma.exam.count({ where }),
     ]);
 
-    const entities = data.map((item) => new ExamEntity(item as any));
+    const entities = data.map((item) => new ExamEntity(item as unknown as Partial<ExamEntity>));
     return new PaginatedDto(entities, total, page, limit);
   }
 
@@ -53,7 +53,7 @@ export class ExamsService {
       },
     });
     if (!exam) throw new NotFoundException(`Exam with ID ${id} not found`);
-    return new ExamEntity(exam as any);
+    return new ExamEntity(exam as unknown as Partial<ExamEntity>);
   }
 
   async create(dto: CreateExamDto, user?: any) {

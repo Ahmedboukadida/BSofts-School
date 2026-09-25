@@ -147,7 +147,7 @@ import {
         return {
           secret: secret || 'bsofts-school-jwt-secret-2026-development-only-key',
           signOptions: {
-            expiresIn: (configService.get<string>('JWT_EXPIRATION') as any) || '15m',
+            expiresIn: configService.get('JWT_EXPIRATION') || '15m',
           },
         };
       },
