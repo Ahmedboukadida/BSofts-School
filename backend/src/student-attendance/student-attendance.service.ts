@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MarkStudentAttendanceDto, BulkMarkAttendanceDto, QueryStudentAttendanceDto } from './student-attendance.dto';
 import { PaginatedDto } from '../common/pagination.dto';
@@ -6,6 +6,8 @@ import { StudentAttendanceEntity } from './student-attendance.entity';
 
 @Injectable()
 export class StudentAttendanceService {
+  private readonly logger = new Logger(StudentAttendanceService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryStudentAttendanceDto) {
@@ -81,7 +83,7 @@ export class StudentAttendanceService {
 
       if (dto.status === 'ABSENT') {
         this.notifyParentsOfAbsence(dto.studentId, dto.sessionId).catch((err) =>
-          console.warn('Failed to dispatch parent absence alert:', err?.message),
+          this.logger.warn(`Failed to dispatch parent absence alert: ${err?.message || err}`),
         );
       }
 
@@ -161,8 +163,8 @@ export class StudentAttendanceService {
           });
         }
       }
-    } catch (error) {
-      console.warn('Error sending absence notification:', error);
+    } catch (error: any) {
+      this.logger.warn(`Error sending absence notification: ${error?.message || error}`);
     }
   }
 

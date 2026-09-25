@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { TransactionType, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTransactionDto, QueryTransactionDto } from './financial-transaction.dto';
@@ -7,6 +7,8 @@ import { FinancialTransactionEntity } from './financial-transaction.entity';
 
 @Injectable()
 export class FinancialTransactionsService {
+  private readonly logger = new Logger(FinancialTransactionsService.name);
+
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QueryTransactionDto) {
@@ -52,7 +54,7 @@ export class FinancialTransactionsService {
       newBalance -= dto.amount;
       if (newBalance < 0) throw new BadRequestException('Insufficient balance');
     } else if (dto.type === 'TRANSFER') {
-      console.warn('TRANSFER type does not update caisse balance automatically');
+      this.logger.warn('TRANSFER type does not update caisse balance automatically');
     }
 
     try {

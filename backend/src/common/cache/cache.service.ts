@@ -174,6 +174,37 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     await this.invalidatePattern(pattern);
   }
 
+  /**
+   * Health status check for cache layer
+   */
+  async checkHealth(): Promise<{ status: 'UP' | 'DOWN'; driver: 'redis' | 'memory'; latencyMs?: number; memoryEntries: number }> {
+    const memoryEntries = this.memoryCache.size;
+    if (this.isRedisConnected && this.redisClient) {
+      const start = Date.now();
+      try {
+        await this.redisClient.ping();
+        return {
+          status: 'UP',
+          driver: 'redis',
+          latencyMs: Date.now() - start,
+          memoryEntries,
+        };
+      } catch {
+        return {
+          status: 'DOWN',
+          driver: 'redis',
+          latencyMs: Date.now() - start,
+          memoryEntries,
+        };
+      }
+    }
+    return {
+      status: 'UP',
+      driver: 'memory',
+      memoryEntries,
+    };
+  }
+
   private pruneExpiredMemoryEntries() {
     const now = Date.now();
     for (const [key, entry] of this.memoryCache.entries()) {
