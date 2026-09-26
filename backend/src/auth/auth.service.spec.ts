@@ -153,4 +153,26 @@ describe('AuthService', () => {
       expect(result).toEqual(user);
     });
   });
+
+  describe('updateProfile', () => {
+    it('should update and return user profile', async () => {
+      const updatedUser = {
+        id: '1',
+        email: 'test@test.com',
+        firstName: 'Updated',
+        lastName: 'Name',
+      };
+      prisma.user.update.mockResolvedValue(updatedUser);
+
+      const result = await service.updateProfile('1', { firstName: 'Updated', lastName: 'Name' });
+
+      expect(result).toEqual(updatedUser);
+      expect(prisma.user.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: '1' },
+          data: expect.objectContaining({ firstName: 'Updated', lastName: 'Name' }),
+        }),
+      );
+    });
+  });
 });

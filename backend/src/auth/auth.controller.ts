@@ -10,6 +10,7 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
   VerifyTotpDto,
+  UpdateProfileDto,
 } from './auth.dto';
 import { Public, CurrentUser } from '../common/decorators';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -77,6 +78,18 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   async getProfile(@CurrentUser() user: any) {
     return this.authService.getProfile(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Put('profile')
+  @ApiOperation({ summary: 'Update current user profile' })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
+  async updateProfile(
+    @CurrentUser() user: any,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(user.id, dto);
   }
 
   @UseGuards(JwtAuthGuard)

@@ -11,12 +11,13 @@ export class SystemLogsService {
   constructor(private prisma: PrismaService) {}
 
   async findAll(query: QuerySystemLogDto): Promise<PaginatedDto<SystemLogEntity>> {
-    const { page = 1, limit = 20, level, context, search } = query;
+    const { page = 1, limit = 20, level, context, search, resolved } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
     if (level) where.level = level;
     if (context) where.context = context;
+    if (resolved !== undefined) where.resolved = resolved;
     if (search) {
       where.OR = [
         { message: { contains: search, mode: 'insensitive' } },
@@ -91,5 +92,17 @@ export class SystemLogsService {
   async remove(id: string): Promise<{ message: string }> {
     await this.prisma.systemLog.delete({ where: { id } });
     return { message: 'Journal système supprimé avec succès' };
+  }
+
+  async markResolved(id: string, resolvedBy: string): Promise<SystemLogEntity> {
+    const updated = await this.prisma.systemLog.update({
+      where: { id },
+      data: {
+        resolved: true,
+        resolvedAt: new Date(),
+        resolvedBy,
+      },
+    });
+    return new SystemLogEntity(updated);
   }
 }

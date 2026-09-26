@@ -131,3 +131,25 @@ export class VerifyTotpDto {
   code: string;
 }
 
+export class UpdateProfileDto {
+  @ApiProperty({ required: false, description: 'User first name' })
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @ApiProperty({ required: false, description: 'User last name' })
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @ApiProperty({ required: false, description: 'User phone number' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ required: false, description: 'User avatar URL' })
+  @IsOptional()
+  @IsString()
+  avatar?: string;
+}
+

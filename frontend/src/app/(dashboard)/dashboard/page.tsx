@@ -89,7 +89,9 @@ export default function DashboardPage() {
           params.establishmentId = currentEstablishmentId;
         }
 
-        const statsRes = await api.get('/reports/stats', { params }).catch(async () => {
+        const statsRes = await api.get('/dashboard/stats', { params })
+          .catch(() => api.get('/reports/stats', { params }))
+          .catch(async () => {
           // Fallback to individual endpoints if /reports/stats endpoint is unavailable
           const [sRes, tRes, cRes, pRes] = await Promise.all([
             api.get('/students?limit=1', { params }).catch(() => ({ data: { meta: { total: 0 } } })),

@@ -31,6 +31,15 @@ export class SystemLogEntity {
   @ApiProperty({ required: false, nullable: true })
   ipAddress: string | null;
 
+  @ApiProperty({ default: false })
+  resolved: boolean;
+
+  @ApiProperty({ required: false, nullable: true })
+  resolvedAt: Date | null;
+
+  @ApiProperty({ required: false, nullable: true })
+  resolvedBy: string | null;
+
   @ApiProperty()
   createdAt: Date;
 

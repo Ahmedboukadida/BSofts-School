@@ -62,19 +62,24 @@ export default function SaaSSystemLogsPage() {
 
   // Mark resolved
   const handleMarkResolved = async (item: SystemLogItem) => {
-    setLogs((prev) =>
-      prev.map((l) =>
-        l.id === item.id
-          ? {
-              ...l,
-              resolved: true,
-              resolvedBy: 'Superviseur Système [ROOT]',
-              resolvedAt: new Date().toISOString(),
-            }
-          : l
-      )
-    );
-    showToast.success('Incident marqué comme pris en charge');
+    try {
+      const res = await api.patch(`/system-logs/${item.id}/resolve`);
+      setLogs((prev) =>
+        prev.map((l) =>
+          l.id === item.id
+            ? {
+                ...l,
+                resolved: true,
+                resolvedBy: res.data?.resolvedBy || 'Superviseur Système [ROOT]',
+                resolvedAt: res.data?.resolvedAt || new Date().toISOString(),
+              }
+            : l
+        )
+      );
+      showToast.success('Incident marqué comme pris en charge et résolu');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la résolution de l’incident');
+    }
   };
 
   const handleDelete = async (item: SystemLogItem) => {

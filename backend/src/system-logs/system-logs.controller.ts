@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Delete, Query, UseGuards, Param, ParseIntPipe,
+  Controller, Get, Delete, Patch, Query, UseGuards, Param, ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { SystemLogsService } from './system-logs.service';
@@ -7,6 +7,7 @@ import { QuerySystemLogDto } from './system-log.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -21,6 +22,15 @@ export class SystemLogsController {
   @ApiResponse({ status: 200, description: 'System logs retrieved successfully' })
   findAll(@Query() query: QuerySystemLogDto) {
     return this.service.findAll(query);
+  }
+
+  @Patch(':id/resolve')
+  @Roles('ROOT', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Mark a system log as resolved' })
+  @ApiResponse({ status: 200, description: 'System log marked as resolved' })
+  markResolved(@Param('id') id: string, @CurrentUser() user: any) {
+    const resolvedBy = user?.email || user?.username || 'ROOT';
+    return this.service.markResolved(id, resolvedBy);
   }
 
   @Delete('purge/:days')

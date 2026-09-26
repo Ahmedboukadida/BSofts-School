@@ -20,6 +20,7 @@ import {
   ResetPasswordDto,
   VerifyEmailDto,
   VerifyTotpDto,
+  UpdateProfileDto,
 } from './auth.dto';
 
 @Injectable()
@@ -372,6 +373,31 @@ export class AuthService {
       },
     });
 
+    return user;
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(dto.firstName !== undefined && { firstName: dto.firstName }),
+        ...(dto.lastName !== undefined && { lastName: dto.lastName }),
+        ...(dto.phone !== undefined && { phone: dto.phone }),
+        ...(dto.avatar !== undefined && { avatar: dto.avatar }),
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        firstName: true,
+        lastName: true,
+        phone: true,
+        avatar: true,
+        isRoot: true,
+        isActive: true,
+        createdAt: true,
+      },
+    });
     return user;
   }
 

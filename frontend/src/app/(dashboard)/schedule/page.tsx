@@ -107,7 +107,11 @@ export default function SchedulePage() {
   const fetchSessions = useCallback(async () => {
     try {
       setIsLoading(true);
+      const startDate = weekDates[0]?.isoDate;
+      const endDate = weekDates[weekDates.length - 1]?.isoDate;
       const params: Record<string, string> = { limit: '200' };
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
       if (selectedClassId) params.classId = selectedClassId;
       if (selectedTeacherId) params.teacherId = selectedTeacherId;
 
@@ -119,7 +123,7 @@ export default function SchedulePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedClassId, selectedTeacherId, t, toast]);
+  }, [weekDates, selectedClassId, selectedTeacherId, t, toast]);
 
   const fetchDropdowns = useCallback(async () => {
     try {

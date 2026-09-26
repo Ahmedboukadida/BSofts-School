@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { PaginationQueryDto } from '../common/dto/pagination.dto';
 
 export class CreateSystemLogDto {
@@ -57,4 +58,10 @@ export class QuerySystemLogDto extends PaginationQueryDto {
   @IsOptional()
   @IsString()
   context?: string;
+
+  @ApiProperty({ required: false, description: 'Filter by resolved status' })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => value === 'true' || value === true)
+  resolved?: boolean;
 }

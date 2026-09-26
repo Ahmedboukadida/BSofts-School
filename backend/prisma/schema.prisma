@@ -1887,11 +1887,15 @@ model SystemLog {
   statusCode Int?
   userId     String?
   ipAddress  String?
-  createdAt  DateTime @default(now())
+  resolved   Boolean   @default(false)
+  resolvedAt DateTime?
+  resolvedBy String?
+  createdAt  DateTime  @default(now())
 
   @@index([level])
   @@index([createdAt])
   @@index([statusCode])
+  @@index([resolved])
 }
 
 model PlatformSetting {

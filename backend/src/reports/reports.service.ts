@@ -273,6 +273,7 @@ export class ReportsService {
       classCount,
       paidPayments,
       pendingPayments,
+      overduePayments,
       attendances,
       recentStudents,
     ] = await Promise.all([
@@ -288,10 +289,17 @@ export class ReportsService {
       this.prisma.studentPayment.aggregate({
         where: { ...studentEstFilter, status: 'PAID' },
         _sum: { amount: true },
+        _count: true,
       }),
       this.prisma.studentPayment.aggregate({
         where: { ...studentEstFilter, status: 'PENDING' },
         _sum: { amount: true },
+        _count: true,
+      }),
+      this.prisma.studentPayment.aggregate({
+        where: { ...studentEstFilter, status: 'OVERDUE' },
+        _sum: { amount: true },
+        _count: true,
       }),
       this.prisma.studentAttendance.groupBy({
         by: ['status'],
@@ -317,12 +325,18 @@ export class ReportsService {
       ? Math.round((presentAttendance / totalAttendance) * 1000) / 10
       : 100.0;
 
+    const paidSum = Number(paidPayments._sum.amount || 0);
+    const pendingSum = Number(pendingPayments._sum.amount || 0);
+    const overdueSum = Number(overduePayments._sum.amount || 0);
+
     const statsResult = {
+      // Dashboard keys
       students: studentCount,
       teachers: teacherCount,
       classes: classCount,
-      revenueTND: Number(paidPayments._sum.amount || 0),
-      pendingTND: Number(pendingPayments._sum.amount || 0),
+      revenueTND: paidSum,
+      pendingTND: pendingSum,
+      overdueTND: overdueSum,
       attendanceRate,
       recentStudents: recentStudents.map(s => ({
         id: s.id,
@@ -332,6 +346,27 @@ export class ReportsService {
         className: s.classAssignments?.[0]?.class?.name || 'Non assigné',
         createdAt: s.createdAt,
       })),
+
+      // Reports summary compatibility keys
+      totalStudents: studentCount,
+      totalTeachers: teacherCount,
+      totalClasses: classCount,
+      totalPaid: paidSum,
+      totalPending: pendingSum,
+      totalOverdue: overdueSum,
+
+      // Breakdown for reports charts
+      paymentSummary: [
+        { name: 'Payé', value: paidPayments._count },
+        { name: 'En attente', value: pendingPayments._count },
+        { name: 'En retard', value: overduePayments._count },
+      ],
+      attendanceSummary: [
+        { name: 'Présent', value: presentAttendance },
+        { name: 'Absent', value: attendances.find(a => a.status === 'ABSENT')?._count.status || 0 },
+        { name: 'En retard', value: attendances.find(a => a.status === 'LATE')?._count.status || 0 },
+        { name: 'Excusé', value: attendances.find(a => a.status === 'EXCUSED')?._count.status || 0 },
+      ],
     };
 
     await this.cacheService.set(cacheKey, statsResult, 60);

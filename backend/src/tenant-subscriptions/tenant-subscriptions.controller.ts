@@ -23,6 +23,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators';
 
 @ApiTags('Tenants')
 @ApiBearerAuth()
@@ -90,8 +91,10 @@ export class TenantSubscriptionsController {
   approve(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: ApproveTenantSubscriptionDto,
+    @CurrentUser() user: any,
   ) {
-    return this.tenantSubscriptionsService.approve(id, dto?.approvedBy);
+    const approver = user?.email || user?.username || user?.id || dto?.approvedBy || 'Admin';
+    return this.tenantSubscriptionsService.approve(id, approver);
   }
 
   @Post(':id/renew')
