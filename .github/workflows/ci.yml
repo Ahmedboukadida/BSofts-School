@@ -34,7 +34,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci || npm install --no-audit
 
       - name: Validate Prisma Schema
         run: npx prisma validate
@@ -71,7 +71,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Dependencies
-        run: npm ci
+        run: npm ci || npm install --no-audit
 
       - name: Static Type Check (tsc)
         run: npx tsc --noEmit

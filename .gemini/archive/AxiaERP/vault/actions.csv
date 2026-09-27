@@ -1,0 +1,1322 @@
+﻿Solution,Controller,Route,Http,Action title,Methode C#,Protection
+Abonnement,AbonnementEtes,/api/Abonnement/v1/AbonnementEtes,GET,Lister,GetAll,authentifie
+Abonnement,AbonnementEtes,/api/Abonnement/v1/AbonnementEtes,POST,Créer,Create,authentifie
+Abonnement,AbonnementEtes,/api/Abonnement/v1/AbonnementEtes/{id},DELETE,Supprimer,Delete,authentifie
+Abonnement,AbonnementEtes,/api/Abonnement/v1/AbonnementEtes/{id},GET,Consulter,GetById,authentifie
+Abonnement,AbonnementEtes,/api/Abonnement/v1/AbonnementEtes/{id},PUT,Modifier,Update,authentifie
+Abonnement,AbonnementLignes,/api/Abonnement/v1/AbonnementLignes,GET,Lister,GetAll,authentifie
+Abonnement,AbonnementLignes,/api/Abonnement/v1/AbonnementLignes,POST,Créer,Create,authentifie
+Abonnement,AbonnementLignes,/api/Abonnement/v1/AbonnementLignes/by-abonnement/{abonnementEteId},GET,Consulter par abonnement ete id,GetByAbonnementEteId,authentifie
+Abonnement,AbonnementLignes,/api/Abonnement/v1/AbonnementLignes/{id},DELETE,Supprimer,Delete,authentifie
+Abonnement,AbonnementLignes,/api/Abonnement/v1/AbonnementLignes/{id},GET,Consulter,GetById,authentifie
+Abonnement,AbonnementLignes,/api/Abonnement/v1/AbonnementLignes/{id},PUT,Modifier,Update,authentifie
+Abonnement,ArtConventions,/api/Abonnement/v1/ArtConventions,GET,Lister,GetAll,authentifie
+Abonnement,ArtConventions,/api/Abonnement/v1/ArtConventions,POST,Créer,Create,authentifie
+Abonnement,ArtConventions,/api/Abonnement/v1/ArtConventions/by-convention/{conventionId},GET,Consulter par convention id,GetByConventionId,authentifie
+Abonnement,ArtConventions,/api/Abonnement/v1/ArtConventions/{id},DELETE,Supprimer,Delete,authentifie
+Abonnement,ArtConventions,/api/Abonnement/v1/ArtConventions/{id},GET,Consulter,GetById,authentifie
+Abonnement,ArtConventions,/api/Abonnement/v1/ArtConventions/{id},PUT,Modifier,Update,authentifie
+Abonnement,ClientConvention,/api/Abonnement/v1/ClientConvention,GET,Lister,GetAll,authentifie
+Abonnement,ClientConvention,/api/Abonnement/v1/ClientConvention,POST,Créer,Create,authentifie
+Abonnement,ClientConvention,/api/Abonnement/v1/ClientConvention/{id:int},DELETE,Supprimer,Delete,authentifie
+Abonnement,ClientConvention,/api/Abonnement/v1/ClientConvention/{id:int},GET,Consulter,GetById,authentifie
+Abonnement,ClientConvention,/api/Abonnement/v1/ClientConvention/{id:int},PUT,Modifier,Update,authentifie
+Abonnement,Conventions,/api/Abonnement/v1/Conventions,GET,Lister,GetAll,authentifie
+Abonnement,Conventions,/api/Abonnement/v1/Conventions,POST,Créer,Create,authentifie
+Abonnement,Conventions,/api/Abonnement/v1/Conventions/{id},DELETE,Supprimer,Delete,authentifie
+Abonnement,Conventions,/api/Abonnement/v1/Conventions/{id},GET,Consulter,GetById,authentifie
+Abonnement,Conventions,/api/Abonnement/v1/Conventions/{id},PUT,Modifier,Update,authentifie
+Abonnement,Demande,/api/Abonnement/v1/Demande,GET,Lister,GetAll,authentifie
+Abonnement,Demande,/api/Abonnement/v1/Demande,POST,Créer,Create,authentifie
+Abonnement,Demande,/api/Abonnement/v1/Demande/by-client/{clientCode},GET,Consulter par client code,GetByClientCode,authentifie
+Abonnement,Demande,/api/Abonnement/v1/Demande/{id:int},DELETE,Supprimer,Delete,authentifie
+Abonnement,Demande,/api/Abonnement/v1/Demande/{id:int},GET,Consulter,GetById,authentifie
+Abonnement,Demande,/api/Abonnement/v1/Demande/{id:int},PUT,Modifier,Update,authentifie
+Abonnement,DemandeInternHeader,/api/Abonnement/v1/DemandeInternHeader,GET,Lister,GetAll,authentifie
+Abonnement,DemandeInternHeader,/api/Abonnement/v1/DemandeInternHeader,POST,Créer,Create,authentifie
+Abonnement,DemandeInternHeader,/api/Abonnement/v1/DemandeInternHeader/{id:int},DELETE,Supprimer,Delete,authentifie
+Abonnement,DemandeInternHeader,/api/Abonnement/v1/DemandeInternHeader/{id:int},GET,Consulter,GetById,authentifie
+Abonnement,DemandeInternHeader,/api/Abonnement/v1/DemandeInternHeader/{id:int},PUT,Modifier,Update,authentifie
+Abonnement,DemandeInternLigne,/api/Abonnement/v1/DemandeInternLigne,GET,Lister,GetAll,authentifie
+Abonnement,DemandeInternLigne,/api/Abonnement/v1/DemandeInternLigne,POST,Créer,Create,authentifie
+Abonnement,DemandeInternLigne,/api/Abonnement/v1/DemandeInternLigne/by-header/{headerId:int},GET,Consulter par header id,GetByHeaderId,authentifie
+Abonnement,DemandeInternLigne,/api/Abonnement/v1/DemandeInternLigne/{id:int},DELETE,Supprimer,Delete,authentifie
+Abonnement,DemandeInternLigne,/api/Abonnement/v1/DemandeInternLigne/{id:int},GET,Consulter,GetById,authentifie
+Abonnement,DemandeInternLigne,/api/Abonnement/v1/DemandeInternLigne/{id:int},PUT,Modifier,Update,authentifie
+Abonnement,FcAbonnements,/api/Abonnement/v1/FcAbonnements,GET,Lister,GetAll,authentifie
+Abonnement,FcAbonnements,/api/Abonnement/v1/FcAbonnements,POST,Créer,Create,authentifie
+Abonnement,FcAbonnements,/api/Abonnement/v1/FcAbonnements/by-abonnement/{abonnementEteId},GET,Consulter par abonnement ete id,GetByAbonnementEteId,authentifie
+Abonnement,FcAbonnements,/api/Abonnement/v1/FcAbonnements/{id},DELETE,Supprimer,Delete,authentifie
+Abonnement,FcAbonnements,/api/Abonnement/v1/FcAbonnements/{id},GET,Consulter,GetById,authentifie
+Abonnement,FcAbonnements,/api/Abonnement/v1/FcAbonnements/{id},PUT,Modifier,Update,authentifie
+Abonnement,MConvention,/api/Abonnement/v1/MConvention,GET,Lister,GetAll,authentifie
+Abonnement,MConvention,/api/Abonnement/v1/MConvention,POST,Créer,Create,authentifie
+Abonnement,MConvention,/api/Abonnement/v1/MConvention/{id:int},DELETE,Supprimer,Delete,authentifie
+Abonnement,MConvention,/api/Abonnement/v1/MConvention/{id:int},GET,Consulter,GetById,authentifie
+Abonnement,MConvention,/api/Abonnement/v1/MConvention/{id:int},PUT,Modifier,Update,authentifie
+Abonnement,MConventionLigne,/api/Abonnement/v1/MConventionLigne,GET,Lister,GetAll,authentifie
+Abonnement,MConventionLigne,/api/Abonnement/v1/MConventionLigne,POST,Créer,Create,authentifie
+Abonnement,MConventionLigne,/api/Abonnement/v1/MConventionLigne/by-convention/{mConventionId:int},GET,Consulter par m convention id,GetByMConventionId,authentifie
+Abonnement,MConventionLigne,/api/Abonnement/v1/MConventionLigne/{id:int},DELETE,Supprimer,Delete,authentifie
+Abonnement,MConventionLigne,/api/Abonnement/v1/MConventionLigne/{id:int},GET,Consulter,GetById,authentifie
+Abonnement,MConventionLigne,/api/Abonnement/v1/MConventionLigne/{id:int},PUT,Modifier,Update,authentifie
+Abonnement,TypeAbonnements,/api/Abonnement/v1/TypeAbonnements,GET,Lister,GetAll,authentifie
+Abonnement,TypeAbonnements,/api/Abonnement/v1/TypeAbonnements,POST,Créer,Create,authentifie
+Abonnement,TypeAbonnements,/api/Abonnement/v1/TypeAbonnements/{id},DELETE,Supprimer,Delete,authentifie
+Abonnement,TypeAbonnements,/api/Abonnement/v1/TypeAbonnements/{id},GET,Consulter,GetById,authentifie
+Abonnement,TypeAbonnements,/api/Abonnement/v1/TypeAbonnements/{id},PUT,Modifier,Update,authentifie
+Achat,ApprovisionnementEntetes,/api/Achat/ApprovisionnementEntetes,GET,Lister,GetAll,authentifie
+Achat,ApprovisionnementEntetes,/api/Achat/ApprovisionnementEntetes,POST,Créer,Create,authentifie
+Achat,ApprovisionnementEntetes,/api/Achat/ApprovisionnementEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,ApprovisionnementEntetes,/api/Achat/ApprovisionnementEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,ApprovisionnementEntetes,/api/Achat/ApprovisionnementEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,ApprovisionnementEntetes,/api/Achat/ApprovisionnementEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,ApprovisionnementLignes,/api/Achat/ApprovisionnementLignes,POST,Créer,Create,authentifie
+Achat,ApprovisionnementLignes,/api/Achat/ApprovisionnementLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,ApprovisionnementLignes,/api/Achat/ApprovisionnementLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,ApprovisionnementLignes,/api/Achat/ApprovisionnementLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,ApprovisionnementLignes,/api/Achat/ApprovisionnementLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes,GET,Lister,GetAll,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes,POST,Créer,Create,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes/by-bon-reception/{idBonReception:int},GET,Consulter par bon reception,GetByBonReception,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes/by-bon-retour/{idBonRetour:int},GET,Consulter par bon retour,GetByBonRetour,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonAvoirEntetes,/api/Achat/BonAvoirEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonAvoirLignes,/api/Achat/BonAvoirLignes,POST,Créer,Create,authentifie
+Achat,BonAvoirLignes,/api/Achat/BonAvoirLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,BonAvoirLignes,/api/Achat/BonAvoirLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonAvoirLignes,/api/Achat/BonAvoirLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonAvoirLignes,/api/Achat/BonAvoirLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes,GET,Lister,GetAll,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes,POST,Créer,Create,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes/by-approvisionnement/{idApprovisionnement:int},GET,Consulter par approvisionnement,GetByApprovisionnement,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes/from-approvisionnement,POST,Convertir depuis  approvisionnement,ConvertFromApprovisionnement,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes/from-approvisionnement/partiel,POST,Convertir depuis  approvisionnement partiel,ConvertFromApprovisionnementPartiel,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonCommandeEntetes,/api/Achat/BonCommandeEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonCommandeLignes,/api/Achat/BonCommandeLignes,POST,Créer,Create,authentifie
+Achat,BonCommandeLignes,/api/Achat/BonCommandeLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,BonCommandeLignes,/api/Achat/BonCommandeLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonCommandeLignes,/api/Achat/BonCommandeLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonCommandeLignes,/api/Achat/BonCommandeLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes,GET,Lister,GetAll,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes,POST,Créer,Create,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes/by-bon-commande/{idBonCommande:int},GET,Consulter par bon commande,GetByBonCommande,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes/from-bon-commande,POST,Convertir depuis  bon commande,ConvertFromBonCommande,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes/from-bon-commande/partiel,POST,Convertir depuis  bon commande partiel,ConvertFromBonCommandePartiel,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonReceptionEntetes,/api/Achat/BonReceptionEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonReceptionLignes,/api/Achat/BonReceptionLignes,POST,Créer,Create,authentifie
+Achat,BonReceptionLignes,/api/Achat/BonReceptionLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,BonReceptionLignes,/api/Achat/BonReceptionLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonReceptionLignes,/api/Achat/BonReceptionLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonReceptionLignes,/api/Achat/BonReceptionLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonRetourEntetes,/api/Achat/BonRetourEntetes,GET,Lister,GetAll,authentifie
+Achat,BonRetourEntetes,/api/Achat/BonRetourEntetes,POST,Créer,Create,authentifie
+Achat,BonRetourEntetes,/api/Achat/BonRetourEntetes/by-bon-reception/{idBonReception:int},GET,Consulter par bon reception,GetByBonReception,authentifie
+Achat,BonRetourEntetes,/api/Achat/BonRetourEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,BonRetourEntetes,/api/Achat/BonRetourEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonRetourEntetes,/api/Achat/BonRetourEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonRetourEntetes,/api/Achat/BonRetourEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,BonRetourLignes,/api/Achat/BonRetourLignes,POST,Créer,Create,authentifie
+Achat,BonRetourLignes,/api/Achat/BonRetourLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,BonRetourLignes,/api/Achat/BonRetourLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,BonRetourLignes,/api/Achat/BonRetourLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,BonRetourLignes,/api/Achat/BonRetourLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureAvoirEntetes,/api/Achat/FactureAvoirEntetes,GET,Lister,GetAll,authentifie
+Achat,FactureAvoirEntetes,/api/Achat/FactureAvoirEntetes,POST,Créer,Create,authentifie
+Achat,FactureAvoirEntetes,/api/Achat/FactureAvoirEntetes/by-bon-avoir/{idBonAvoir:int},GET,Consulter par bon avoir,GetByBonAvoir,authentifie
+Achat,FactureAvoirEntetes,/api/Achat/FactureAvoirEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,FactureAvoirEntetes,/api/Achat/FactureAvoirEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureAvoirEntetes,/api/Achat/FactureAvoirEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureAvoirEntetes,/api/Achat/FactureAvoirEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureAvoirLignes,/api/Achat/FactureAvoirLignes,POST,Créer,Create,authentifie
+Achat,FactureAvoirLignes,/api/Achat/FactureAvoirLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,FactureAvoirLignes,/api/Achat/FactureAvoirLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureAvoirLignes,/api/Achat/FactureAvoirLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureAvoirLignes,/api/Achat/FactureAvoirLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureComptabiliseeEntetes,/api/Achat/FactureComptabiliseeEntetes,GET,Lister,GetAll,authentifie
+Achat,FactureComptabiliseeEntetes,/api/Achat/FactureComptabiliseeEntetes,POST,Créer,Create,authentifie
+Achat,FactureComptabiliseeEntetes,/api/Achat/FactureComptabiliseeEntetes/by-facture/{idFacture:int},GET,Consulter par facture,GetByFacture,authentifie
+Achat,FactureComptabiliseeEntetes,/api/Achat/FactureComptabiliseeEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,FactureComptabiliseeEntetes,/api/Achat/FactureComptabiliseeEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureComptabiliseeEntetes,/api/Achat/FactureComptabiliseeEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureComptabiliseeEntetes,/api/Achat/FactureComptabiliseeEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureComptabiliseeLignes,/api/Achat/FactureComptabiliseeLignes,POST,Créer,Create,authentifie
+Achat,FactureComptabiliseeLignes,/api/Achat/FactureComptabiliseeLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,FactureComptabiliseeLignes,/api/Achat/FactureComptabiliseeLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureComptabiliseeLignes,/api/Achat/FactureComptabiliseeLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureComptabiliseeLignes,/api/Achat/FactureComptabiliseeLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes,GET,Lister,GetAll,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes,POST,Créer,Create,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/by-bon-commande/{idBonCommande:int},GET,Consulter par bon commande,GetByBonCommande,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/by-bon-reception/{idBonReception:int},GET,Consulter par bon reception,GetByBonReception,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/from-bon-commande,POST,Convertir depuis  bon commande,ConvertFromBonCommande,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/from-bon-commande/partiel,POST,Convertir depuis  bon commande partiel,ConvertFromBonCommandePartiel,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureEntetes,/api/Achat/FactureEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureLignes,/api/Achat/FactureLignes,POST,Créer,Create,authentifie
+Achat,FactureLignes,/api/Achat/FactureLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,FactureLignes,/api/Achat/FactureLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureLignes,/api/Achat/FactureLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureLignes,/api/Achat/FactureLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureRetourEntetes,/api/Achat/FactureRetourEntetes,GET,Lister,GetAll,authentifie
+Achat,FactureRetourEntetes,/api/Achat/FactureRetourEntetes,POST,Créer,Create,authentifie
+Achat,FactureRetourEntetes,/api/Achat/FactureRetourEntetes/by-bon-retour/{idBonRetour:int},GET,Consulter par bon retour,GetByBonRetour,authentifie
+Achat,FactureRetourEntetes,/api/Achat/FactureRetourEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,FactureRetourEntetes,/api/Achat/FactureRetourEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureRetourEntetes,/api/Achat/FactureRetourEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureRetourEntetes,/api/Achat/FactureRetourEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,FactureRetourLignes,/api/Achat/FactureRetourLignes,POST,Créer,Create,authentifie
+Achat,FactureRetourLignes,/api/Achat/FactureRetourLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,FactureRetourLignes,/api/Achat/FactureRetourLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,FactureRetourLignes,/api/Achat/FactureRetourLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,FactureRetourLignes,/api/Achat/FactureRetourLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,OffrePrixEntetes,/api/Achat/OffrePrixEntetes,GET,Lister,GetAll,authentifie
+Achat,OffrePrixEntetes,/api/Achat/OffrePrixEntetes,POST,Créer,Create,authentifie
+Achat,OffrePrixEntetes,/api/Achat/OffrePrixEntetes/paged,GET,Lister paginé,GetPaged,authentifie
+Achat,OffrePrixEntetes,/api/Achat/OffrePrixEntetes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,OffrePrixEntetes,/api/Achat/OffrePrixEntetes/{id:int},GET,Consulter,GetById,authentifie
+Achat,OffrePrixEntetes,/api/Achat/OffrePrixEntetes/{id:int},PUT,Modifier,Update,authentifie
+Achat,OffrePrixLignes,/api/Achat/OffrePrixLignes,POST,Créer,Create,authentifie
+Achat,OffrePrixLignes,/api/Achat/OffrePrixLignes/by-entete/{enteteId:int},GET,Consulter par entete id,GetByEnteteId,authentifie
+Achat,OffrePrixLignes,/api/Achat/OffrePrixLignes/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,OffrePrixLignes,/api/Achat/OffrePrixLignes/{id:int},GET,Consulter,GetById,authentifie
+Achat,OffrePrixLignes,/api/Achat/OffrePrixLignes/{id:int},PUT,Modifier,Update,authentifie
+Achat,Services,/api/Achat/Services,GET,Lister paginé,GetPaged,authentifie
+Achat,Services,/api/Achat/Services,POST,Créer,Create,authentifie
+Achat,Services,/api/Achat/Services/all,GET,Lister,GetAll,authentifie
+Achat,Services,/api/Achat/Services/{id:int},DELETE,Supprimer,Delete,authentifie
+Achat,Services,/api/Achat/Services/{id:int},GET,Consulter,GetById,authentifie
+Achat,Services,/api/Achat/Services/{id:int},PUT,Modifier,Update,authentifie
+Achat,Souches,/api/Achat/Souches,GET,Lister,GetAll,authentifie
+Achat,Souches,/api/Achat/Souches/{idSouche:int}/statuts,GET,Consulter statuts,GetStatuts,authentifie
+Authentification,Auth,/api/Authentification/Auth/change-password,POST,Changer le mot de passe,ChangePassword,authentifie
+Authentification,Auth,/api/Authentification/Auth/confirm-email,POST,Confirmer l'adresse,ConfirmEmail,anonyme
+Authentification,Auth,/api/Authentification/Auth/forgot-password,POST,Mot de passe oublié,ForgotPassword,anonyme
+Authentification,Auth,/api/Authentification/Auth/login,POST,Se connecter,Login,anonyme
+Authentification,Auth,/api/Authentification/Auth/logout,POST,Se déconnecter,Logout,authentifie
+Authentification,Auth,/api/Authentification/Auth/me,GET,Consulter me,GetMe,authentifie
+Authentification,Auth,/api/Authentification/Auth/me,PUT,Modifier me,UpdateMe,authentifie
+Authentification,Auth,/api/Authentification/Auth/refresh-token,POST,Renouveler le jeton,RefreshToken,anonyme
+Authentification,Auth,/api/Authentification/Auth/register,POST,S'inscrire,Register,anonyme
+Authentification,Auth,/api/Authentification/Auth/reset-password,POST,Réinitialiser le mot de passe,ResetPassword,anonyme
+Authentification,Auth,/api/Authentification/Auth/revoke-token,POST,Révoquer le jeton,RevokeToken,authentifie
+Authentification,Me,/api/Authentification/Me,GET,Consulter my profile,GetMyProfile,authentifie
+Authentification,Roles,/api/Authentification/Roles,GET,Consulter roles,GetRoles,authentifie
+Authentification,Roles,/api/Authentification/Roles,POST,Créer role,CreateRole,authentifie
+Authentification,Roles,/api/Authentification/Roles/permissions,GET,Lister permissions,GetAllPermissions,authentifie
+Authentification,Roles,/api/Authentification/Roles/permissions,POST,Créer permission,CreatePermission,authentifie
+Authentification,Roles,/api/Authentification/Roles/permissions/{id:guid},DELETE,Supprimer permission,DeletePermission,authentifie
+Authentification,Roles,/api/Authentification/Roles/permissions/{id:guid},PUT,Modifier permission,UpdatePermission,authentifie
+Authentification,Roles,/api/Authentification/Roles/query,POST,Rechercher roles,QueryRoles,authentifie
+Authentification,Roles,/api/Authentification/Roles/{id:guid},DELETE,Supprimer role,DeleteRole,authentifie
+Authentification,Roles,/api/Authentification/Roles/{id:guid},GET,Consulter role by id,GetRoleById,authentifie
+Authentification,Roles,/api/Authentification/Roles/{id:guid},PUT,Modifier role,UpdateRole,authentifie
+Authentification,Users,/api/Authentification/Users,GET,Consulter users,GetUsers,authentifie
+Authentification,Users,/api/Authentification/Users,POST,Créer user,CreateUser,authentifie
+Authentification,Users,/api/Authentification/Users/query,POST,Rechercher users,QueryUsers,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid},DELETE,Supprimer user,DeleteUser,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid},GET,Consulter user by id,GetUserById,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid},PUT,Modifier user,UpdateUser,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid}/lock,POST,Verrouiller user,LockUser,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid}/photo,DELETE,Supprimer photo,DeletePhoto,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid}/photo,POST,Téléverser photo,UploadPhoto,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid}/roles,PUT,Affecter les rôles,AssignRoles,authentifie
+Authentification,Users,/api/Authentification/Users/{id:guid}/unlock,POST,Déverrouiller user,UnlockUser,authentifie
+ERPNEW,WeatherForecast,/WeatherForecast,GET,Consulter,Get,non_protege
+GestionEtat,EtatDefinitions,/api/GestionEtat/EtatDefinitions,GET,Lister (société),GetBySociete,authentifie
+GestionEtat,EtatDefinitions,/api/GestionEtat/EtatDefinitions,POST,Créer,Create,authentifie
+GestionEtat,EtatDefinitions,/api/GestionEtat/EtatDefinitions/{id:int},DELETE,Supprimer,Delete,authentifie
+GestionEtat,EtatDefinitions,/api/GestionEtat/EtatDefinitions/{id:int},GET,Consulter,GetById,authentifie
+GestionEtat,EtatDefinitions,/api/GestionEtat/EtatDefinitions/{id:int},PUT,Modifier,Update,authentifie
+GestionEtat,Widgets,/api/GestionEtat/Widgets/execute,POST,Execute,Execute,authentifie
+GestionEtat,Widgets,/api/GestionEtat/Widgets/sources,GET,Consulter sources,GetSources,authentifie
+Production,Achats,/api/Production/v1/Achats/suggestions,GET,Consulter suggestions,GetSuggestions,droit
+Production,Achats,/api/Production/v1/Achats/suggestions/accepter,POST,Accepter,Accepter,droit
+Production,Achats,/api/Production/v1/Achats/suggestions/{id:int}/rejeter,POST,Rejeter,Rejeter,droit
+Production,AffectationsEquipe,/api/Production/v1/AffectationsEquipe,GET,Lister,GetAll,droit
+Production,AffectationsEquipe,/api/Production/v1/AffectationsEquipe,POST,Créer,Create,droit
+Production,AffectationsEquipe,/api/Production/v1/AffectationsEquipe/dupliquer,POST,Dupliquer,Dupliquer,droit
+Production,AffectationsEquipe,/api/Production/v1/AffectationsEquipe/jour,GET,Consulter du jour,GetDuJour,droit
+Production,AffectationsEquipe,/api/Production/v1/AffectationsEquipe/{id:int},DELETE,Supprimer,Delete,droit
+Production,AffectationsEquipe,/api/Production/v1/AffectationsEquipe/{id:int},GET,Consulter,GetById,droit
+Production,AffectationsEquipe,/api/Production/v1/AffectationsEquipe/{id:int},PUT,Modifier,Update,droit
+Production,Atelier,/api/Production/v1/Atelier/operateurs/{operateurId:int}/identification,PUT,Définir identification,DefinirIdentification,droit
+Production,Atelier,/api/Production/v1/Atelier/pointer,POST,Pointer,Pointer,droit
+Production,Atelier,/api/Production/v1/Atelier/poste/{posteChargeId:int},GET,Consulter ecran poste,GetEcranPoste,droit
+Production,Attributs,/api/Production/v1/Attributs,GET,Lister,GetAll,droit
+Production,Attributs,/api/Production/v1/Attributs,POST,Créer,Create,droit
+Production,Attributs,/api/Production/v1/Attributs/applicables,GET,Consulter applicables,GetApplicables,droit
+Production,Attributs,/api/Production/v1/Attributs/{id:int},DELETE,Supprimer,Delete,droit
+Production,Attributs,/api/Production/v1/Attributs/{id:int},GET,Consulter,GetById,droit
+Production,Attributs,/api/Production/v1/Attributs/{id:int},PUT,Modifier,Update,droit
+Production,BaremesCout,/api/Production/v1/BaremesCout,GET,Lister,GetAll,droit
+Production,BaremesCout,/api/Production/v1/BaremesCout,POST,Créer,Create,droit
+Production,BaremesCout,/api/Production/v1/BaremesCout/applicable,GET,Consulter applicable,GetApplicable,droit
+Production,BaremesCout,/api/Production/v1/BaremesCout/{id:int},DELETE,Supprimer,Delete,droit
+Production,BaremesCout,/api/Production/v1/BaremesCout/{id:int},GET,Consulter,GetById,droit
+Production,BaremesCout,/api/Production/v1/BaremesCout/{id:int},PUT,Modifier,Update,droit
+Production,Besoins,/api/Production/v1/Besoins,GET,Lister,GetAll,droit
+Production,Besoins,/api/Production/v1/Besoins/calculer,POST,Calculer,Calculer,droit
+Production,Besoins,/api/Production/v1/Besoins/{id:int},GET,Consulter le détail,GetDetail,droit
+Production,CalendriersCapacite,/api/Production/v1/CalendriersCapacite,GET,Lister,GetAll,droit
+Production,CalendriersCapacite,/api/Production/v1/CalendriersCapacite,POST,Upsert,Upsert,droit
+Production,CalendriersCapacite,/api/Production/v1/CalendriersCapacite/periode,POST,Appliquer periode,AppliquerPeriode,droit
+Production,CalendriersCapacite,/api/Production/v1/CalendriersCapacite/{id:int},DELETE,Supprimer,Supprimer,droit
+Production,Caracteristiques,/api/Production/v1/Caracteristiques,GET,Lister,GetAll,droit
+Production,Caracteristiques,/api/Production/v1/Caracteristiques,POST,Créer,Create,droit
+Production,Caracteristiques,/api/Production/v1/Caracteristiques/{id:int},DELETE,Supprimer,Delete,droit
+Production,Caracteristiques,/api/Production/v1/Caracteristiques/{id:int},GET,Consulter,GetById,droit
+Production,Caracteristiques,/api/Production/v1/Caracteristiques/{id:int},PUT,Modifier,Update,droit
+Production,Chantiers,/api/Production/v1/Chantiers,GET,Lister,GetAll,droit
+Production,Chantiers,/api/Production/v1/Chantiers,POST,Créer,Create,droit
+Production,Chantiers,/api/Production/v1/Chantiers/{id:int},DELETE,Supprimer,Delete,droit
+Production,Chantiers,/api/Production/v1/Chantiers/{id:int},GET,Consulter,GetById,droit
+Production,Chantiers,/api/Production/v1/Chantiers/{id:int},PUT,Modifier,Update,droit
+Production,Chantiers,/api/Production/v1/Chantiers/{id:int}/lots,GET,Consulter lots,GetLots,droit
+Production,Chantiers,/api/Production/v1/Chantiers/{id:int}/lots,POST,Ajouter lot,AjouterLot,droit
+Production,Chantiers,/api/Production/v1/Chantiers/{id:int}/lots/{lotId:int}/avancement,POST,Déclarer avancement,DeclarerAvancement,droit
+Production,Consommations,/api/Production/v1/Consommations,POST,Consommer,Consommer,droit
+Production,Consommations,/api/Production/v1/Consommations/ordre/{ordreId:int},GET,Consulter par ordre,GetParOrdre,droit
+Production,ControlesQualite,/api/Production/v1/ControlesQualite,GET,Lister,GetAll,droit
+Production,ControlesQualite,/api/Production/v1/ControlesQualite,POST,Créer,Creer,droit
+Production,ControlesQualite,/api/Production/v1/ControlesQualite/carte/{caracteristiqueId:int},GET,Consulter carte controle,GetCarteControle,droit
+Production,ControlesQualite,/api/Production/v1/ControlesQualite/mesures/dues,GET,Consulter mesures dues,GetMesuresDues,droit
+Production,ControlesQualite,/api/Production/v1/ControlesQualite/mesures/{mesureId:int},POST,Saisir Mesure,SaisirMesure,droit
+Production,ControlesQualite,/api/Production/v1/ControlesQualite/mesures/{mesureId:int}/deroger,POST,Deroger,Deroger,droit
+Production,ControlesQualite,/api/Production/v1/ControlesQualite/{id:int},GET,Consulter,GetById,droit
+Production,CoutsRevient,/api/Production/v1/CoutsRevient,GET,Lister,GetAll,droit
+Production,CoutsRevient,/api/Production/v1/CoutsRevient/ordre/{ordreId:int}/calculer,POST,Calculer,Calculer,droit
+Production,CoutsRevient,/api/Production/v1/CoutsRevient/ordre/{ordreId:int}/comparaison,GET,Comparer,Comparer,droit
+Production,CoutsRevient,/api/Production/v1/CoutsRevient/ordre/{ordreId:int}/dernier,GET,Consulter dernier,GetDernier,droit
+Production,CoutsRevient,/api/Production/v1/CoutsRevient/simulations,GET,Consulter simulations,GetSimulations,droit
+Production,CoutsRevient,/api/Production/v1/CoutsRevient/simuler,POST,Simuler,Simuler,droit
+Production,CoutsRevient,/api/Production/v1/CoutsRevient/{id:int},GET,Consulter,GetById,droit
+Production,Declarations,/api/Production/v1/Declarations,GET,Lister,GetAll,droit
+Production,Declarations,/api/Production/v1/Declarations,POST,Déclarer,Declarer,droit
+Production,Declarations,/api/Production/v1/Declarations/synthese,GET,Consulter synthese,GetSynthese,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro,GET,Lister,GetAll,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro,POST,Créer,Create,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro/{id:int},DELETE,Supprimer,Delete,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro/{id:int},GET,Consulter,GetById,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro/{id:int},PUT,Modifier,Update,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro/{id:int}/decider,POST,Décider,Decider,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro/{id:int}/detail,GET,Consulter le détail,GetDetail,droit
+Production,DemandesAppro,/api/Production/v1/DemandesAppro/{id:int}/soumettre,POST,Soumettre,Soumettre,droit
+Production,DemandesIntervention,/api/Production/v1/DemandesIntervention,GET,Lister,GetAll,droit
+Production,DemandesIntervention,/api/Production/v1/DemandesIntervention,POST,Créer,Creer,droit
+Production,DemandesIntervention,/api/Production/v1/DemandesIntervention/{id:int},GET,Consulter,GetById,droit
+Production,DemandesIntervention,/api/Production/v1/DemandesIntervention/{id:int}/decider,POST,Décider,Decider,droit
+Production,Equipements,/api/Production/v1/Equipements,GET,Lister,GetAll,droit
+Production,Equipements,/api/Production/v1/Equipements,POST,Créer,Create,droit
+Production,Equipements,/api/Production/v1/Equipements/exists,GET,Vérifier l'existence,Exists,droit
+Production,Equipements,/api/Production/v1/Equipements/poste/{posteChargeId:int},GET,Consulter par poste,GetByPoste,droit
+Production,Equipements,/api/Production/v1/Equipements/{id:int},DELETE,Supprimer,Delete,droit
+Production,Equipements,/api/Production/v1/Equipements/{id:int},GET,Consulter,GetById,droit
+Production,Equipements,/api/Production/v1/Equipements/{id:int},PUT,Modifier,Update,droit
+Production,Equipements,/api/Production/v1/Equipements/{id:int}/etat,POST,Changer etat,ChangerEtat,droit
+Production,Equipements,/api/Production/v1/Equipements/{id:int}/regimes,POST,Ajouter regime,AjouterRegime,droit
+Production,Equipements,/api/Production/v1/Equipements/{id:int}/releves,POST,Ajouter releve,AjouterReleve,droit
+Production,Equipes,/api/Production/v1/Equipes,GET,Lister,GetAll,droit
+Production,Equipes,/api/Production/v1/Equipes,POST,Créer,Create,droit
+Production,Equipes,/api/Production/v1/Equipes/exists,GET,Vérifier l'existence,Exists,droit
+Production,Equipes,/api/Production/v1/Equipes/{id:int},DELETE,Supprimer,Delete,droit
+Production,Equipes,/api/Production/v1/Equipes/{id:int},GET,Consulter,GetById,droit
+Production,Equipes,/api/Production/v1/Equipes/{id:int},PUT,Modifier,Update,droit
+Production,Familles,/api/Production/v1/Familles,GET,Lister,GetAll,droit
+Production,Familles,/api/Production/v1/Familles,POST,Créer,Create,droit
+Production,Familles,/api/Production/v1/Familles/profil/{profilMetierId:int},GET,Consulter par profil,GetByProfil,droit
+Production,Familles,/api/Production/v1/Familles/{id:int},DELETE,Supprimer,Delete,droit
+Production,Familles,/api/Production/v1/Familles/{id:int},GET,Consulter,GetById,droit
+Production,Familles,/api/Production/v1/Familles/{id:int},PUT,Modifier,Update,droit
+Production,Gammes,/api/Production/v1/Gammes,GET,Lister,GetAll,droit
+Production,Gammes,/api/Production/v1/Gammes,POST,Créer,Create,droit
+Production,Gammes,/api/Production/v1/Gammes/article/{articleCode},GET,Consulter par article,GetByArticle,droit
+Production,Gammes,/api/Production/v1/Gammes/chantier/{chantierId:int},GET,Consulter par chantier,GetByChantier,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int},DELETE,Supprimer,Delete,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int},GET,Consulter,GetById,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int},PUT,Modifier,Update,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/detail,GET,Consulter le détail,GetDetail,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes,GET,Consulter etapes,GetEtapes,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes,POST,Ajouter etape,AjouterEtape,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes/reordonner,POST,Réordonner,Reordonner,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes/{etapeId:int},DELETE,Supprimer etape,SupprimerEtape,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes/{etapeId:int},PUT,Modifier Etape,ModifierEtape,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes/{etapeId:int}/equipements,POST,Ajouter equipement,AjouterEquipement,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes/{etapeId:int}/equipements/{lienId:int},DELETE,Retirer Equipement,RetirerEquipement,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes/{etapeId:int}/outillages,POST,Ajouter outillage,AjouterOutillage,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/etapes/{etapeId:int}/outillages/{lienId:int},DELETE,Retirer Outillage,RetirerOutillage,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/publier,POST,Publier,Publier,droit
+Production,Gammes,/api/Production/v1/Gammes/{id:int}/versions,POST,Créer version,CreerVersion,droit
+Production,Instruments,/api/Production/v1/Instruments,GET,Lister,GetAll,droit
+Production,Instruments,/api/Production/v1/Instruments,POST,Créer,Create,droit
+Production,Instruments,/api/Production/v1/Instruments/a-etalonner,GET,Consulter a etalonner,GetAEtalonner,droit
+Production,Instruments,/api/Production/v1/Instruments/{id:int},DELETE,Supprimer,Delete,droit
+Production,Instruments,/api/Production/v1/Instruments/{id:int},GET,Consulter,GetById,droit
+Production,Instruments,/api/Production/v1/Instruments/{id:int},PUT,Modifier,Update,droit
+Production,Instruments,/api/Production/v1/Instruments/{id:int}/etalonner,POST,Etalonner,Etalonner,droit
+Production,MotifsArret,/api/Production/v1/MotifsArret,GET,Lister,GetAll,droit
+Production,MotifsArret,/api/Production/v1/MotifsArret,POST,Créer,Create,droit
+Production,MotifsArret,/api/Production/v1/MotifsArret/exists,GET,Vérifier l'existence,Exists,droit
+Production,MotifsArret,/api/Production/v1/MotifsArret/{id:int},DELETE,Supprimer,Delete,droit
+Production,MotifsArret,/api/Production/v1/MotifsArret/{id:int},GET,Consulter,GetById,droit
+Production,MotifsArret,/api/Production/v1/MotifsArret/{id:int},PUT,Modifier,Update,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures,GET,Lister,GetAll,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures,POST,Créer,Create,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures/lignes,POST,Créer ligne,CreateLigne,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures/lignes/{id:int},DELETE,Supprimer ligne,DeleteLigne,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures/lignes/{id:int},PUT,Modifier ligne,UpdateLigne,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures/{id:int},DELETE,Supprimer,Delete,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures/{id:int},PUT,Modifier,Update,droit
+Production,NomenclaturesProxy,/api/Production/v1/Nomenclatures/{id:int}/composants,GET,Consulter composants,GetComposants,droit
+Production,NonConformites,/api/Production/v1/NonConformites,GET,Lister,GetAll,droit
+Production,NonConformites,/api/Production/v1/NonConformites,POST,Créer,Creer,droit
+Production,NonConformites,/api/Production/v1/NonConformites/{id:int}/cloturer,POST,Clôturer,Cloturer,droit
+Production,NonConformites,/api/Production/v1/NonConformites/{id:int}/decider,POST,Décider,Decider,droit
+Production,Operateurs,/api/Production/v1/Operateurs,GET,Lister,GetAll,droit
+Production,Operateurs,/api/Production/v1/Operateurs,POST,Créer,Create,droit
+Production,Operateurs,/api/Production/v1/Operateurs/employes-rh,GET,Consulter employes r h,GetEmployesRH,droit
+Production,Operateurs,/api/Production/v1/Operateurs/habilites,GET,Consulter habilites,GetHabilites,droit
+Production,Operateurs,/api/Production/v1/Operateurs/{id:int},DELETE,Supprimer,Delete,droit
+Production,Operateurs,/api/Production/v1/Operateurs/{id:int},GET,Consulter,GetById,droit
+Production,Operateurs,/api/Production/v1/Operateurs/{id:int},PUT,Modifier,Update,droit
+Production,Operateurs,/api/Production/v1/Operateurs/{id:int}/competences,POST,Ajouter competence,AjouterCompetence,droit
+Production,Operateurs,/api/Production/v1/Operateurs/{id:int}/competences/{competenceId:int},DELETE,Retirer Competence,RetirerCompetence,droit
+Production,Operations,/api/Production/v1/Operations,GET,Lister,GetAll,droit
+Production,Operations,/api/Production/v1/Operations,POST,Créer,Create,droit
+Production,Operations,/api/Production/v1/Operations/exists,GET,Vérifier l'existence,Exists,droit
+Production,Operations,/api/Production/v1/Operations/{id:int},DELETE,Supprimer,Delete,droit
+Production,Operations,/api/Production/v1/Operations/{id:int},GET,Consulter,GetById,droit
+Production,Operations,/api/Production/v1/Operations/{id:int},PUT,Modifier,Update,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication,GET,Lister,GetAll,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication,POST,Créer,Create,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/commandes-ouvertes,GET,Consulter commandes ouvertes,GetCommandesOuvertes,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/mode/{mode:int},GET,Consulter par mode,GetParMode,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int},DELETE,Supprimer,Delete,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int},GET,Consulter,GetById,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int},PUT,Modifier,Update,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/annuler,POST,Annuler,Annuler,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/cloturer,POST,Clôturer,Cloturer,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/creneaux,GET,Consulter creneaux,GetCreneaux,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/creneaux,POST,Ajouter creneau,AjouterCreneau,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/creneaux/{creneauId:int},PUT,Modifier creneau,MajCreneau,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/detail,GET,Consulter le détail,GetDetail,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/faisabilite,GET,Verifier Faisabilite,VerifierFaisabilite,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/historique,GET,Consulter historique,GetHistorique,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/lancer,POST,Lancer,Lancer,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/mode,POST,Changer mode,ChangerMode,droit
+Production,OrdresFabrication,/api/Production/v1/OrdresFabrication/{id:int}/sorties,POST,Déclarer sortie,DeclarerSortie,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail,GET,Lister,GetAll,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail,POST,Créer,Create,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/equipement/{equipementId:int}/sante,GET,Consulter sante,GetSante,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int},DELETE,Supprimer,Delete,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int},GET,Consulter,GetById,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int},PUT,Modifier,Update,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int}/cloturer,POST,Clôturer,Cloturer,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int}/demarrer,POST,Demarrer,Demarrer,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int}/detail,GET,Consulter le détail,GetDetail,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int}/lignes,POST,Ajouter ligne,AjouterLigne,droit
+Production,OrdresTravail,/api/Production/v1/OrdresTravail/{id:int}/lignes/{ligneId:int},DELETE,Supprimer ligne,SupprimerLigne,droit
+Production,PlansControle,/api/Production/v1/PlansControle,GET,Lister,GetAll,droit
+Production,PlansControle,/api/Production/v1/PlansControle,POST,Créer,Create,droit
+Production,PlansControle,/api/Production/v1/PlansControle/applicable,GET,Consulter applicable,GetApplicable,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int},DELETE,Supprimer,Delete,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int},GET,Consulter,GetById,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int},PUT,Modifier,Update,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int}/detail,GET,Consulter le détail,GetDetail,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int}/lignes,GET,Consulter lignes,GetLignes,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int}/lignes,POST,Ajouter ligne,AjouterLigne,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int}/lignes/{ligneId:int},DELETE,Supprimer ligne,SupprimerLigne,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int}/lignes/{ligneId:int},PUT,Modifier ligne,MajLigne,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int}/nouvelle-version,POST,Nouvelle Version,NouvelleVersion,droit
+Production,PlansControle,/api/Production/v1/PlansControle/{id:int}/publier,POST,Publier,Publier,droit
+Production,PlansPreventifs,/api/Production/v1/PlansPreventifs,GET,Lister,GetAll,droit
+Production,PlansPreventifs,/api/Production/v1/PlansPreventifs,POST,Créer,Create,droit
+Production,PlansPreventifs,/api/Production/v1/PlansPreventifs/echeances,GET,Consulter echeances,GetEcheances,droit
+Production,PlansPreventifs,/api/Production/v1/PlansPreventifs/generer-ordres,POST,Generer Ordres,GenererOrdres,droit
+Production,PlansPreventifs,/api/Production/v1/PlansPreventifs/{id:int},DELETE,Supprimer,Delete,droit
+Production,PlansPreventifs,/api/Production/v1/PlansPreventifs/{id:int},GET,Consulter,GetById,droit
+Production,PlansPreventifs,/api/Production/v1/PlansPreventifs/{id:int},PUT,Modifier,Update,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction,GET,Lister,GetAll,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction,POST,Créer,Create,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/reference,GET,Consulter reference,GetReference,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int},DELETE,Supprimer,Delete,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int},GET,Consulter,GetById,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int},PUT,Modifier,Update,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/alertes,GET,Consulter alertes,GetAlertes,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/appliquer,POST,Appliquer aux ordres,AppliquerAuxOrdres,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/charge,GET,Consulter charge,GetCharge,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/dupliquer,POST,Dupliquer,Dupliquer,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/lignes,GET,Consulter lignes,GetLignes,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/lignes,POST,Ajouter ligne,AjouterLigne,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/lignes/{ligneId:int},DELETE,Supprimer ligne,SupprimerLigne,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/lignes/{ligneId:int},PUT,Modifier ligne,MajLigne,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/lignes/{ligneId:int}/deplacer,POST,Déplacer ligne,DeplacerLigne,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/ordres/{ordreId:int}/planifier,DELETE,Deplanifier Ordre,DeplanifierOrdre,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/ordres/{ordreId:int}/planifier,POST,Planifier ordre,PlanifierOrdre,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/reference,POST,Définir reference,DefinirReference,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/statut,POST,Changer statut,ChangerStatut,droit
+Production,PlansProduction,/api/Production/v1/PlansProduction/{id:int}/tableau,GET,Consulter tableau,GetTableau,droit
+Production,PostesCharge,/api/Production/v1/PostesCharge,GET,Lister,GetAll,droit
+Production,PostesCharge,/api/Production/v1/PostesCharge,POST,Créer,Create,droit
+Production,PostesCharge,/api/Production/v1/PostesCharge/exists,GET,Vérifier l'existence,Exists,droit
+Production,PostesCharge,/api/Production/v1/PostesCharge/site/{siteId:int},GET,Consulter par site,GetBySite,droit
+Production,PostesCharge,/api/Production/v1/PostesCharge/{id:int},DELETE,Supprimer,Delete,droit
+Production,PostesCharge,/api/Production/v1/PostesCharge/{id:int},GET,Consulter,GetById,droit
+Production,PostesCharge,/api/Production/v1/PostesCharge/{id:int},PUT,Modifier,Update,droit
+Production,ProfilsMetier,/api/Production/v1/ProfilsMetier,GET,Lister,GetAll,droit
+Production,ProfilsMetier,/api/Production/v1/ProfilsMetier,POST,Créer,Create,droit
+Production,ProfilsMetier,/api/Production/v1/ProfilsMetier/{id:int},DELETE,Supprimer,Delete,droit
+Production,ProfilsMetier,/api/Production/v1/ProfilsMetier/{id:int},GET,Consulter,GetById,droit
+Production,ProfilsMetier,/api/Production/v1/ProfilsMetier/{id:int},PUT,Modifier,Update,droit
+Production,Retours,/api/Production/v1/Retours,GET,Lister,GetAll,droit
+Production,Retours,/api/Production/v1/Retours,POST,Enregistrer,Enregistrer,droit
+Production,Sites,/api/Production/v1/Sites,GET,Lister,GetAll,droit
+Production,Sites,/api/Production/v1/Sites,POST,Créer,Create,droit
+Production,Sites,/api/Production/v1/Sites/exists,GET,Vérifier l'existence,Exists,droit
+Production,Sites,/api/Production/v1/Sites/{id:int},DELETE,Supprimer,Delete,droit
+Production,Sites,/api/Production/v1/Sites/{id:int},GET,Consulter,GetById,droit
+Production,Sites,/api/Production/v1/Sites/{id:int},PUT,Modifier,Update,droit
+Production,Tracabilite,/api/Production/v1/Tracabilite/{code},GET,Consulter genealogie,GetGenealogie,droit
+Production,UnitesProduites,/api/Production/v1/UnitesProduites,GET,Lister,GetAll,droit
+Production,UnitesProduites,/api/Production/v1/UnitesProduites/ordre/{ordreId:int}/generer,POST,Generer,Generer,droit
+Production,UnitesProduites,/api/Production/v1/UnitesProduites/{uniteId:int}/passages,POST,Enregistrer Passage,EnregistrerPassage,droit
+Production,UnitesStockage,/api/Production/v1/UnitesStockage,GET,Lister,GetAll,droit
+Production,UnitesStockage,/api/Production/v1/UnitesStockage,POST,Créer,Create,droit
+Production,UnitesStockage,/api/Production/v1/UnitesStockage/site/{siteId:int},GET,Consulter par site,GetBySite,droit
+Production,UnitesStockage,/api/Production/v1/UnitesStockage/{id:int},DELETE,Supprimer,Delete,droit
+Production,UnitesStockage,/api/Production/v1/UnitesStockage/{id:int},GET,Consulter,GetById,droit
+Production,UnitesStockage,/api/Production/v1/UnitesStockage/{id:int},PUT,Modifier,Update,droit
+Stock,ArticleStockConfigs,/api/Stock/v1/ArticleStockConfigs,GET,Lister,GetAll,authentifie
+Stock,ArticleStockConfigs,/api/Stock/v1/ArticleStockConfigs,POST,Créer,Create,authentifie
+Stock,ArticleStockConfigs,/api/Stock/v1/ArticleStockConfigs/{articleCode},DELETE,Supprimer,Delete,authentifie
+Stock,ArticleStockConfigs,/api/Stock/v1/ArticleStockConfigs/{articleCode},GET,Consulter par code,GetByCode,authentifie
+Stock,ArticleStockConfigs,/api/Stock/v1/ArticleStockConfigs/{articleCode},PUT,Modifier,Update,authentifie
+Stock,Mouvements,/api/Stock/v1/Mouvements,GET,Lister,GetAll,authentifie
+Stock,Mouvements,/api/Stock/v1/Mouvements/entree,POST,Entrée de stock,Entree,authentifie
+Stock,Mouvements,/api/Stock/v1/Mouvements/inventaire,POST,Inventaire,Inventaire,authentifie
+Stock,Mouvements,/api/Stock/v1/Mouvements/regenerer,POST,Régénérer,Regenerer,authentifie
+Stock,Mouvements,/api/Stock/v1/Mouvements/sortie,POST,Sortie de stock,Sortie,authentifie
+Stock,Mouvements,/api/Stock/v1/Mouvements/transfert,POST,Transfert de stock,Transfert,authentifie
+Stock,Mouvements,/api/Stock/v1/Mouvements/{id:int}/annuler,POST,Annuler,Annuler,authentifie
+Stock,ReportingQuery,/api/Stock/Reporting/metadata,GET,Consulter metadata,GetMetadata,authentifie
+Stock,ReportingQuery,/api/Stock/Reporting/query,POST,Rechercher,Query,authentifie
+Stock,Reservations,/api/Stock/v1/Reservations,GET,Lister,GetAll,authentifie
+Stock,Reservations,/api/Stock/v1/Reservations,POST,Reserve,Reserve,authentifie
+Stock,Reservations,/api/Stock/v1/Reservations/document/{documentOrigine}/{documentId},GET,Consulter par document,GetByDocument,authentifie
+Stock,Reservations,/api/Stock/v1/Reservations/{id},GET,Consulter,GetById,authentifie
+Stock,Reservations,/api/Stock/v1/Reservations/{id}/issue,POST,Convertir to issue,ConvertToIssue,authentifie
+Stock,Reservations,/api/Stock/v1/Reservations/{id}/release,POST,Release,Release,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments,GET,Lister,GetAll,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments,POST,Créer,Create,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments/inventaire,POST,Créer inventaire,CreateInventaire,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments/{id:int},DELETE,Supprimer,Delete,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments/{id:int},GET,Consulter,GetById,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments/{id:int},PUT,Modifier,Update,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments/{id:int}/annuler,POST,Annuler,Annuler,authentifie
+Stock,StockDocuments,/api/Stock/v1/StockDocuments/{id:int}/valider,POST,Valider,Valider,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks,GET,Lister,GetAll,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/alertes,GET,Consulter alertes,GetAlertes,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/article/{articleCode}/global,GET,Consulter global article,GetGlobalArticle,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/detail,GET,Consulter le détail,GetDetail,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/disponibilite,GET,Consulter disponibilite,GetDisponibilite,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/epuises,GET,Consulter epuises,GetEpuises,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/lots,GET,Consulter lots,GetLots,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/reserver,POST,Reserver,Reserver,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/valorisation,GET,Consulter valorisation,GetValorisation,authentifie
+Stock,Stocks,/api/Stock/v1/Stocks/{articleCode}/depots/{depotId:int}/seuils,PUT,Modifier seuils,MajSeuils,authentifie
+Structure,Adress,/api/Structure/Adress/AddAdressClient,POST,Ajouter adress client,AddAdressClient,authentifie
+Structure,Adress,/api/Structure/Adress/AddAdressEmploye,POST,Ajouter adress employe,AddAdressEmploye,authentifie
+Structure,Adress,/api/Structure/Adress/AddAdressFournisseur,POST,Ajouter adress fournisseur,AddAdressFournisseur,authentifie
+Structure,Adress,/api/Structure/Adress/AddAdressProspect,POST,Ajouter adress prospect,AddAdressProspect,authentifie
+Structure,Adress,/api/Structure/Adress/DeleteAdressClient,DELETE,Supprimer adress client,DeleteAdressClient,authentifie
+Structure,Adress,/api/Structure/Adress/DeleteAdressEmploye,DELETE,Supprimer adress employe,DeleteAdressEmploye,authentifie
+Structure,Adress,/api/Structure/Adress/DeleteAdressFournisseur,DELETE,Supprimer adress fournisseur,DeleteAdressFournisseur,authentifie
+Structure,Adress,/api/Structure/Adress/DeleteAdressProspect,DELETE,Supprimer adress prospect,DeleteAdressProspect,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressClientByClient,GET,Consulter adress client by client,GetAdressClientByClient,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressClientById,GET,Consulter adress client by id,GetAdressClientById,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressEmployeByEmploye,GET,Consulter adress employe by employe,GetAdressEmployeByEmploye,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressEmployeById,GET,Consulter adress employe by id,GetAdressEmployeById,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressFournisseurByFournisseur,GET,Consulter adress fournisseur by fournisseur,GetAdressFournisseurByFournisseur,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressFournisseurById,GET,Consulter adress fournisseur by id,GetAdressFournisseurById,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressProspectById,GET,Consulter adress prospect by id,GetAdressProspectById,authentifie
+Structure,Adress,/api/Structure/Adress/GetAdressProspectByProspect,GET,Consulter adress prospect by prospect,GetAdressProspectByProspect,authentifie
+Structure,Adress,/api/Structure/Adress/GetAllAdressClient,GET,Lister adress client,GetAllAdressClient,authentifie
+Structure,Adress,/api/Structure/Adress/GetAllAdressEmploye,GET,Lister adress employe,GetAllAdressEmploye,authentifie
+Structure,Adress,/api/Structure/Adress/GetAllAdressFournisseur,GET,Lister adress fournisseur,GetAllAdressFournisseur,authentifie
+Structure,Adress,/api/Structure/Adress/GetAllAdressProspect,GET,Lister adress prospect,GetAllAdressProspect,authentifie
+Structure,Adress,/api/Structure/Adress/UpdateAdressClient,PUT,Modifier adress client,UpdateAdressClient,authentifie
+Structure,Adress,/api/Structure/Adress/UpdateAdressEmploye,PUT,Modifier adress employe,UpdateAdressEmploye,authentifie
+Structure,Adress,/api/Structure/Adress/UpdateAdressFournisseur,PUT,Modifier adress fournisseur,UpdateAdressFournisseur,authentifie
+Structure,Adress,/api/Structure/Adress/UpdateAdressProspect,PUT,Modifier adress prospect,UpdateAdressProspect,authentifie
+Structure,Agence,/api/Structure/Agence/CreateAgence,POST,Créer,Create,authentifie
+Structure,Agence,/api/Structure/Agence/DeleteAgence/{id},DELETE,Supprimer,Delete,authentifie
+Structure,Agence,/api/Structure/Agence/GetAllAgence,GET,Lister,GetAll,authentifie
+Structure,Agence,/api/Structure/Agence/UpdateAgence,PUT,Modifier,Update,authentifie
+Structure,Alignement,/api/Structure/Alignement,GET,Lister,GetAll,authentifie
+Structure,Alignement,/api/Structure/Alignement,POST,Créer,Create,authentifie
+Structure,Alignement,/api/Structure/Alignement/{id},DELETE,Supprimer,Delete,authentifie
+Structure,Alignement,/api/Structure/Alignement/{id},GET,Consulter,Get,authentifie
+Structure,Alignement,/api/Structure/Alignement/{id},PUT,Modifier,Update,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta,GET,Lister,GetAll,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta,POST,Créer,Create,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta/{artRef},DELETE,Supprimer,Delete,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta/{artRef},GET,Consulter,GetById,authentifie
+Structure,ArtCompta,/api/Structure/ArtCompta/{artRef},PUT,Modifier,Update,authentifie
+Structure,ArtGammes,/api/Structure/ArtGammes,POST,Créer,Create,authentifie
+Structure,ArtGammes,/api/Structure/ArtGammes/by-article/{arRef},GET,Consulter par article ref,GetByArticleRef,authentifie
+Structure,ArtGammes,/api/Structure/ArtGammes/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients,GET,Lister,GetAll,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients,POST,Créer,Create,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients/by-article/{articleId:int},GET,Consulter par article id,GetByArticleId,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients/by-client/{clientId:int},GET,Consulter par client id,GetByClientId,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients/by-ref/{arRef}/upsert-prix-vente,POST,Upsert Prix Vente,UpsertPrixVente,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients/{id:int},GET,Consulter,GetById,authentifie
+Structure,ArticleClients,/api/Structure/ArticleClients/{id:int},PUT,Modifier,Update,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs,GET,Lister,GetAll,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs,POST,Créer,Create,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs/by-article-code/{articleCode},GET,Consulter par article code,GetByArticleCode,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs/by-article/{articleId:int},GET,Consulter par article id,GetByArticleId,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs/{id:int},GET,Consulter,GetById,authentifie
+Structure,ArticleFournisseurs,/api/Structure/ArticleFournisseurs/{id:int},PUT,Modifier,Update,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers,GET,Lister,GetAll,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers,POST,Créer,Create,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/by-article/{parentArticleId:int},GET,Consulter par parent article id,GetByParentArticleId,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{headerId:int}/lines,GET,Consulter lines,GetLines,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{headerId:int}/lines,POST,Créer line,CreateLine,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{headerId:int}/lines/{lineId:int},DELETE,Supprimer line,DeleteLine,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{headerId:int}/lines/{lineId:int},GET,Consulter line by id,GetLineById,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{headerId:int}/lines/{lineId:int},PUT,Modifier line,UpdateLine,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{id:int},GET,Consulter,GetById,authentifie
+Structure,ArticleLiers,/api/Structure/ArticleLiers/{id:int},PUT,Modifier,Update,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes,GET,Lister,GetAll,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes,POST,Créer,Create,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes/by-article/{arRef},GET,Consulter par article ref,GetByArticleRef,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes/by-article/{arRef}/client/{clientCode},GET,Consulter par article ref and client,GetByArticleRefAndClient,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes/by-article/{arRef}/{codeVariante}/set-prix-vente,POST,Définir prix vente,SetPrixVente,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes/{id:int},GET,Consulter,GetById,authentifie
+Structure,ArticleVariantes,/api/Structure/ArticleVariantes/{id:int},PUT,Modifier,Update,authentifie
+Structure,Articles,/api/Structure/Articles,GET,Lister,GetAll,authentifie
+Structure,Articles,/api/Structure/Articles,POST,Créer,Create,authentifie
+Structure,Articles,/api/Structure/Articles/by-ref/{arRef},GET,Consulter par référence,GetByRef,authentifie
+Structure,Articles,/api/Structure/Articles/by-ref/{arRef}/set-prix-vente,POST,Définir prix vente,SetPrixVente,authentifie
+Structure,Articles,/api/Structure/Articles/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,Articles,/api/Structure/Articles/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,Articles,/api/Structure/Articles/next-reference,GET,Référence suivante,GetNextReference,authentifie
+Structure,Articles,/api/Structure/Articles/next-reference/increment,POST,Incrémenter next reference,IncrementNextReference,authentifie
+Structure,Articles,/api/Structure/Articles/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Articles,/api/Structure/Articles/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Articles,/api/Structure/Articles/{id:int},GET,Consulter,GetById,authentifie
+Structure,Articles,/api/Structure/Articles/{id:int},PUT,Modifier,Update,authentifie
+Structure,Articles,/api/Structure/Articles/{id:int}/duplicate-data,GET,Données de duplication,GetDuplicateData,authentifie
+Structure,Articles,/api/Structure/Articles/{id:int}/image,POST,Téléverser image,UploadImage,authentifie
+Structure,Banque,/api/Structure/Banque/AddBanque,POST,Créer,Create,authentifie
+Structure,Banque,/api/Structure/Banque/GetBanque,GET,Lister,GetAll,authentifie
+Structure,Banque,/api/Structure/Banque/UpdateBanque,PUT,Modifier,Update,authentifie
+Structure,Banque,/api/Structure/Banque/{id},DELETE,Supprimer,Delete,authentifie
+Structure,Caisses,/api/Structure/Caisses,GET,Lister,GetAll,authentifie
+Structure,Caisses,/api/Structure/Caisses,POST,Créer,Create,authentifie
+Structure,Caisses,/api/Structure/Caisses/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Caisses,/api/Structure/Caisses/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Caisses,/api/Structure/Caisses/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Caisses,/api/Structure/Caisses/{id:int},GET,Consulter,GetById,authentifie
+Structure,Caisses,/api/Structure/Caisses/{id:int},PUT,Modifier,Update,authentifie
+Structure,Caisses,/api/Structure/Caisses/{id:int}/adjust-solde,POST,Adjust Solde,AdjustSolde,authentifie
+Structure,Caisses,/api/Structure/Caisses/{id:int}/adjust-solde-caution,POST,Adjust Solde Caution,AdjustSoldeCaution,authentifie
+Structure,Caisses,/api/Structure/Caisses/{id:int}/transformer-solde-caution,POST,Transformer Solde Caution,TransformerSoldeCaution,authentifie
+Structure,CarnetCheque,/api/Structure/CarnetCheque/AddCarnetCheque,POST,Créer,Create,authentifie
+Structure,CarnetCheque,/api/Structure/CarnetCheque/GetCarnetCheque,GET,Lister,GetAll,authentifie
+Structure,CarnetCheque,/api/Structure/CarnetCheque/UpdateCarnetCheque,PUT,Modifier,Update,authentifie
+Structure,CarnetCheque,/api/Structure/CarnetCheque/{id},DELETE,Supprimer,Delete,authentifie
+Structure,CarnetCheque,/api/Structure/CarnetCheque/{id},GET,Consulter,GetById,authentifie
+Structure,CarnetTraite,/api/Structure/CarnetTraite/AddCarnetTraite,POST,Créer,Create,authentifie
+Structure,CarnetTraite,/api/Structure/CarnetTraite/GetCarnetTraite,GET,Lister,GetAll,authentifie
+Structure,CarnetTraite,/api/Structure/CarnetTraite/UpdateCarnetTraite,PUT,Modifier,Update,authentifie
+Structure,CarnetTraite,/api/Structure/CarnetTraite/{id},DELETE,Supprimer,Delete,authentifie
+Structure,CarnetTraite,/api/Structure/CarnetTraite/{id},GET,Consulter,GetById,authentifie
+Structure,Categories,/api/Structure/Categories,GET,Lister,GetAll,authentifie
+Structure,Categories,/api/Structure/Categories,POST,Créer,Create,authentifie
+Structure,Categories,/api/Structure/Categories/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,Categories,/api/Structure/Categories/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,Categories,/api/Structure/Categories/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Categories,/api/Structure/Categories/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Categories,/api/Structure/Categories/{id:int},GET,Consulter,GetById,authentifie
+Structure,Categories,/api/Structure/Categories/{id:int},PUT,Modifier,Update,authentifie
+Structure,ChampMatriciel,/api/Structure/ChampMatriciel,GET,Lister,GetAll,authentifie
+Structure,ChampMatriciel,/api/Structure/ChampMatriciel,POST,Créer,Create,authentifie
+Structure,ChampMatriciel,/api/Structure/ChampMatriciel/ByModeleImpression/{modeleImpressionId},GET,Consulter par modele impression,GetByModeleImpression,authentifie
+Structure,ChampMatriciel,/api/Structure/ChampMatriciel/{id},DELETE,Supprimer,Delete,authentifie
+Structure,ChampMatriciel,/api/Structure/ChampMatriciel/{id},GET,Consulter,Get,authentifie
+Structure,ChampMatriciel,/api/Structure/ChampMatriciel/{id},PUT,Modifier,Update,authentifie
+Structure,Client,/api/Structure/Client,GET,Lister,GetAll,authentifie
+Structure,Client,/api/Structure/Client,POST,Ajouter client,AddClient,authentifie
+Structure,Client,/api/Structure/Client/GetClientById,GET,Consulter,GetById,authentifie
+Structure,Client,/api/Structure/Client/UpdateClient,PUT,Modifier client,UpdateClient,authentifie
+Structure,Client,/api/Structure/Client/{id},DELETE,Supprimer client,DeleteClient,authentifie
+Structure,Companies,/api/Structure/Companies/AddComptesGeneraux,POST,Ajouter comptes generaux,AddComptesGeneraux,authentifie
+Structure,Companies,/api/Structure/Companies/Create,POST,Créer,Create,authentifie
+Structure,Companies,/api/Structure/Companies/CreateComplex,POST,Créer (complet),CreateComplex,authentifie
+Structure,Companies,/api/Structure/Companies/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,Companies,/api/Structure/Companies/EditStatus,PUT,Modifier status,EditStatus,authentifie
+Structure,Companies,/api/Structure/Companies/Get/{id},GET,Consulter,GetById,authentifie
+Structure,Companies,/api/Structure/Companies/GetAll,GET,Lister,GetAll,authentifie
+Structure,Companies,/api/Structure/Companies/GetByStatus/{status},GET,Lister par statut,GetByStatus,authentifie
+Structure,Companies,/api/Structure/Companies/Update,PUT,Modifier,Update,authentifie
+Structure,Companies,/api/Structure/Companies/UpdateComplex,PUT,Modifier (complet),UpdateComplex,authentifie
+Structure,Companies,/api/Structure/Companies/UpdateComptesGeneraux,PUT,Modifier comptes generaux,UpdateComptesGeneraux,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/Create,POST,Créer,Create,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/DeleteByCompany/{companyId},DELETE,Supprimer by company,DeleteByCompany,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/Get/{id},GET,Consulter,GetById,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetAll,GET,Lister,GetAll,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetByCompany/{companyId},GET,Consulter par company id,GetByCompanyId,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetByCoordinates,GET,Consulter par coordinates,GetByCoordinates,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetByCountry/{countryId},GET,Consulter par country id,GetByCountryId,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetByMunicipality/{municipalityId},GET,Consulter par municipality id,GetByMunicipalityId,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetByPostalCode/{postalCode},GET,Consulter par postal code,GetByPostalCode,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetByState/{stateId},GET,Consulter par state id,GetByStateId,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/GetCompanyPrimary/{companyId},GET,Consulter company primary,GetCompanyPrimary,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/SetToPrimary/{id},PUT,Définir to primary,SetToPrimary,authentifie
+Structure,CompaniesAddresses,/api/Structure/CompaniesAddresses/Update,PUT,Modifier,Update,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/Create,POST,Créer,Create,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/DeleteByCompany/{companyId},DELETE,Supprimer by company,DeleteByCompany,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/Get/{id},GET,Consulter,GetById,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/GetAll,GET,Lister,GetAll,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/GetByCompany/{companyId},GET,Consulter par company id,GetByCompanyId,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/GetByKey/{key},GET,Consulter par key,GetByKey,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/GetByStatus/{isPrimary},GET,Lister par statut,GetByStatus,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/SetToPrimary/{id},PUT,Définir to primary,SetToPrimary,authentifie
+Structure,CompaniesContacts,/api/Structure/CompaniesContacts/Update,PUT,Modifier,Update,authentifie
+Structure,CompaniesSettings,/api/Structure/CompaniesSettings/Create,POST,Créer,Create,authentifie
+Structure,CompaniesSettings,/api/Structure/CompaniesSettings/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,CompaniesSettings,/api/Structure/CompaniesSettings/DeleteByCompany/{companyId},DELETE,Supprimer by company,DeleteByCompany,authentifie
+Structure,CompaniesSettings,/api/Structure/CompaniesSettings/Get/{id},GET,Consulter,GetById,authentifie
+Structure,CompaniesSettings,/api/Structure/CompaniesSettings/GetAll,GET,Lister,GetAll,authentifie
+Structure,CompaniesSettings,/api/Structure/CompaniesSettings/GetByCompany/{companyId},GET,Consulter par company id,GetByCompanyId,authentifie
+Structure,CompaniesSettings,/api/Structure/CompaniesSettings/Update,PUT,Modifier,Update,authentifie
+Structure,CompaniesSettingsKeys,/api/Structure/CompaniesSettingsKeys/Get/{id},GET,Consulter,GetById,authentifie
+Structure,CompaniesSettingsKeys,/api/Structure/CompaniesSettingsKeys/GetAll,GET,Lister,GetAll,authentifie
+Structure,CompaniesSettingsKeys,/api/Structure/CompaniesSettingsKeys/Values/Create,POST,Créer value,CreateValue,authentifie
+Structure,CompaniesSettingsKeys,/api/Structure/CompaniesSettingsKeys/Values/Delete/{id},DELETE,Supprimer value,DeleteValue,authentifie
+Structure,CompaniesSettingsKeys,/api/Structure/CompaniesSettingsKeys/Values/Update,PUT,Modifier value,UpdateValue,authentifie
+Structure,CompanyComptesGeneraux,/api/Structure/CompanyComptesGeneraux,POST,Ajouter,Add,authentifie
+Structure,CompanyComptesGeneraux,/api/Structure/CompanyComptesGeneraux,PUT,Modifier,Update,authentifie
+Structure,CompanyComptesGeneraux,/api/Structure/CompanyComptesGeneraux/{companyId:int},GET,Consulter,GetById,authentifie
+Structure,CompteBancaire,/api/Structure/CompteBancaire/AddCompteBancaires,POST,Créer,Create,authentifie
+Structure,CompteBancaire,/api/Structure/CompteBancaire/GetAllCompteBancaires,GET,Lister,GetAll,authentifie
+Structure,CompteBancaire,/api/Structure/CompteBancaire/UpdateCompteBancaires,PUT,Modifier,Update,authentifie
+Structure,CompteBancaire,/api/Structure/CompteBancaire/{id},DELETE,Supprimer,Delete,authentifie
+Structure,CompteBancaire,/api/Structure/CompteBancaire/{id},GET,Consulter,GetById,authentifie
+Structure,ComptesGeneraux,/api/Structure/ComptesGeneraux,GET,Lister,GetAll,authentifie
+Structure,ComptesGeneraux,/api/Structure/ComptesGeneraux,POST,Créer,Create,authentifie
+Structure,ComptesGeneraux,/api/Structure/ComptesGeneraux/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,ComptesGeneraux,/api/Structure/ComptesGeneraux/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,ComptesGeneraux,/api/Structure/ComptesGeneraux/{id:int},GET,Consulter,GetById,authentifie
+Structure,ComptesGeneraux,/api/Structure/ComptesGeneraux/{id:int},PUT,Modifier,Update,authentifie
+Structure,ConditionsLivraison,/api/Structure/ConditionsLivraison,GET,Lister,GetAll,authentifie
+Structure,ConditionsLivraison,/api/Structure/ConditionsLivraison,POST,Créer,Create,authentifie
+Structure,ConditionsLivraison,/api/Structure/ConditionsLivraison/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,ConditionsLivraison,/api/Structure/ConditionsLivraison/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,ConditionsLivraison,/api/Structure/ConditionsLivraison/{id:int},GET,Consulter,GetById,authentifie
+Structure,ConditionsLivraison,/api/Structure/ConditionsLivraison/{id:int},PUT,Modifier,Update,authentifie
+Structure,Contact,/api/Structure/Contact/AddContactClient,POST,Ajouter contact client,AddContactClient,authentifie
+Structure,Contact,/api/Structure/Contact/AddContactEmploye,POST,Ajouter contact employe,AddContactEmploye,authentifie
+Structure,Contact,/api/Structure/Contact/AddContactFournisseur,POST,Ajouter contact fournisseur,AddContactFournisseur,authentifie
+Structure,Contact,/api/Structure/Contact/AddContactProspect,POST,Ajouter contact prospect,AddContactProspect,authentifie
+Structure,Contact,/api/Structure/Contact/DeleteContactClient,DELETE,Supprimer adress client,DeleteAdressClient,authentifie
+Structure,Contact,/api/Structure/Contact/DeleteContactEmploye,DELETE,Supprimer adress employe,DeleteAdressEmploye,authentifie
+Structure,Contact,/api/Structure/Contact/DeleteContactFournisseur,DELETE,Supprimer adress fournisseur,DeleteAdressFournisseur,authentifie
+Structure,Contact,/api/Structure/Contact/DeleteContactProspect,DELETE,Supprimer adress prospect,DeleteAdressProspect,authentifie
+Structure,Contact,/api/Structure/Contact/GetAllContactClient,GET,Lister contact client,GetAllContactClient,authentifie
+Structure,Contact,/api/Structure/Contact/GetAllContactEmploye,GET,Lister contact employe,GetAllContactEmploye,authentifie
+Structure,Contact,/api/Structure/Contact/GetAllContactFournisseur,GET,Lister contact fournisseur,GetAllContactFournisseur,authentifie
+Structure,Contact,/api/Structure/Contact/GetAllContactProspect,GET,Lister contact prospect,GetAllContactProspect,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactClientByClient,GET,Consulter contact client by client,GetContactClientByClient,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactClientById,GET,Consulter contact client by id,GetContactClientById,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactEmployeByEmploye,GET,Consulter contact employe by employe,GetContactEmployeByEmploye,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactEmployeById,GET,Consulter contact employe by id,GetContactEmployeById,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactFournisseurByFournisseur,GET,Consulter contact fournisseur by fournisseur,GetContactFournisseurByFournisseur,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactFournisseurById,GET,Consulter contact fournisseur by id,GetContactFournisseurById,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactProspectById,GET,Consulter contact prospect by id,GetContactProspectById,authentifie
+Structure,Contact,/api/Structure/Contact/GetContactProspectByProspect,GET,Consulter contact prospect by prospect,GetContactProspectByProspect,authentifie
+Structure,Contact,/api/Structure/Contact/UpdateContactClient,PUT,Modifier contact client,UpdateContactClient,authentifie
+Structure,Contact,/api/Structure/Contact/UpdateContactEmploye,PUT,Modifier contact employe,UpdateContactEmploye,authentifie
+Structure,Contact,/api/Structure/Contact/UpdateContactFournisseur,PUT,Modifier contact fournisseur,UpdateContactFournisseur,authentifie
+Structure,Contact,/api/Structure/Contact/UpdateContactProspect,PUT,Modifier contact prospect,UpdateContactProspect,authentifie
+Structure,Countries,/api/Structure/Countries/Create,POST,Créer,Create,authentifie
+Structure,Countries,/api/Structure/Countries/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,Countries,/api/Structure/Countries/Get/{id},GET,Consulter,GetById,authentifie
+Structure,Countries,/api/Structure/Countries/GetAll,GET,Lister,GetAll,authentifie
+Structure,Countries,/api/Structure/Countries/Update,PUT,Modifier,Update,authentifie
+Structure,Depot,/api/Structure/Depot,GET,Lister depot async,GetAllDepotAsync,authentifie
+Structure,Depot,/api/Structure/Depot,POST,Ajouter depot async,AddDepotAsync,authentifie
+Structure,Depot,/api/Structure/Depot,PUT,Modifier depot async,UpdateDepotAsync,authentifie
+Structure,Depot,/api/Structure/Depot/{id},DELETE,Supprimer depot async,DeleteDepotAsync,authentifie
+Structure,Depot,/api/Structure/Depot/{id},GET,Consulter depot by id async,GetDepotByIdAsync,authentifie
+Structure,DepotUser,/api/Structure/DepotUser,GET,Lister,GetAll,authentifie
+Structure,DepotUser,/api/Structure/DepotUser,POST,Créer,Create,authentifie
+Structure,DepotUser,/api/Structure/DepotUser/by-depot/{idDepot:int},GET,Consulter par depot,GetByDepot,authentifie
+Structure,DepotUser,/api/Structure/DepotUser/by-user-connecte,GET,Consulter for current user,GetForCurrentUser,authentifie
+Structure,DepotUser,/api/Structure/DepotUser/by-user/{idUser},GET,Consulter par user,GetByUser,authentifie
+Structure,DepotUser,/api/Structure/DepotUser/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,DepotUser,/api/Structure/DepotUser/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,DepotUser,/api/Structure/DepotUser/{id:int},GET,Consulter,GetById,authentifie
+Structure,DepotUser,/api/Structure/DepotUser/{id:int},PUT,Modifier,Update,authentifie
+Structure,Devises,/api/Structure/Devises,GET,Lister,GetAll,authentifie
+Structure,Devises,/api/Structure/Devises,POST,Créer,Create,authentifie
+Structure,Devises,/api/Structure/Devises/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Devises,/api/Structure/Devises/convert,GET,Convertir,Convert,authentifie
+Structure,Devises,/api/Structure/Devises/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Devises,/api/Structure/Devises/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Devises,/api/Structure/Devises/{id:int},GET,Consulter,GetById,authentifie
+Structure,Devises,/api/Structure/Devises/{id:int},PUT,Modifier,Update,authentifie
+Structure,Devises,/api/Structure/Devises/{id:int}/refresh-taux,POST,Refresh Taux,RefreshTaux,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces,GET,Lister,GetAll,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces,POST,Créer,Create,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/by-domaine-souche,GET,Consulter par domaine and souche,GetByDomaineAndSouche,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/increment-numero,POST,Incrémenter numero,IncrementNumero,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/{id:int},GET,Consulter,GetById,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/{id:int},PUT,Modifier,Update,authentifie
+Structure,DoccurentPieces,/api/Structure/DoccurentPieces/{id:int}/increment,POST,Incrémenter,Increment,authentifie
+Structure,Document,/api/Structure/Document/AddDocClient,POST,Ajouter doc client,AddDocClient,authentifie
+Structure,Document,/api/Structure/Document/AddDocEmploye,POST,Ajouter doc employe,AddDocEmploye,authentifie
+Structure,Document,/api/Structure/Document/AddDocFournisseur,POST,Ajouter doc fournisseur,AddDocFournisseur,authentifie
+Structure,Document,/api/Structure/Document/AddDocProspect,POST,Ajouter doc prospect,AddDocProspect,authentifie
+Structure,Document,/api/Structure/Document/DeleteDocClient,DELETE,Supprimer doc client,DeleteDocClient,authentifie
+Structure,Document,/api/Structure/Document/DeleteDocEmploye,DELETE,Supprimer doc employe,DeleteDocEmploye,authentifie
+Structure,Document,/api/Structure/Document/DeleteDocFournisseur,DELETE,Supprimer doc fournisseur,DeleteDocFournisseur,authentifie
+Structure,Document,/api/Structure/Document/DeleteDocProspect,DELETE,Supprimer doc prospect,DeleteDocProspect,authentifie
+Structure,Document,/api/Structure/Document/Download,GET,Télécharger,Download,authentifie
+Structure,Document,/api/Structure/Document/GetAllDocClient,GET,Lister doc client,GetAllDocClient,authentifie
+Structure,Document,/api/Structure/Document/GetAllDocEmploye,GET,Lister doc employe,GetAllDocEmploye,authentifie
+Structure,Document,/api/Structure/Document/GetAllDocFournisseur,GET,Lister doc fournisseur,GetAllDocFournisseur,authentifie
+Structure,Document,/api/Structure/Document/GetAllDocProspect,GET,Lister doc prospect,GetAllDocProspect,authentifie
+Structure,Document,/api/Structure/Document/GetDocClientByClient,GET,Consulter doc client by client,GetDocClientByClient,authentifie
+Structure,Document,/api/Structure/Document/GetDocClientById,GET,Consulter doc client by id,GetDocClientById,authentifie
+Structure,Document,/api/Structure/Document/GetDocEmployeByEmploye,GET,Consulter doc employe by employe,GetDocEmployeByEmploye,authentifie
+Structure,Document,/api/Structure/Document/GetDocEmployeById,GET,Consulter doc employe by id,GetDocEmployeById,authentifie
+Structure,Document,/api/Structure/Document/GetDocFournisseurByFournisseur,GET,Consulter doc fournisseur by fournisseur,GetDocFournisseurByFournisseur,authentifie
+Structure,Document,/api/Structure/Document/GetDocFournisseurById,GET,Consulter doc fournisseur by id,GetDocFournisseurById,authentifie
+Structure,Document,/api/Structure/Document/GetDocProspectById,GET,Consulter doc prospect by id,GetDocProspectById,authentifie
+Structure,Document,/api/Structure/Document/GetDocProspectByProspect,GET,Consulter doc prospect by prospect,GetDocProspectByProspect,authentifie
+Structure,Document,/api/Structure/Document/UpdateDocClient,PUT,Modifier doc client,UpdateDocClient,authentifie
+Structure,Document,/api/Structure/Document/UpdateDocEmploye,PUT,Modifier doc employe,UpdateDocEmploye,authentifie
+Structure,Document,/api/Structure/Document/UpdateDocFournisseur,PUT,Modifier doc fournisseur,UpdateDocFournisseur,authentifie
+Structure,Document,/api/Structure/Document/UpdateDocProspect,PUT,Modifier doc prospect,UpdateDocProspect,authentifie
+Structure,Document,/api/Structure/Document/Upload,POST,Téléverser,Upload,authentifie
+Structure,Emplacement,/api/Structure/Emplacement,GET,Lister emplacement async,GetAllEmplacementAsync,authentifie
+Structure,Emplacement,/api/Structure/Emplacement,POST,Ajouter emplacement async,AddEmplacementAsync,authentifie
+Structure,Emplacement,/api/Structure/Emplacement,PUT,Modifier emplacement async,UpdateEmplacementAsync,authentifie
+Structure,Emplacement,/api/Structure/Emplacement/{id},DELETE,Supprimer emplacement async,DeleteEmplacementAsync,authentifie
+Structure,Emplacement,/api/Structure/Emplacement/{id},GET,Consulter emplacement by id async,GetEmplacementByIdAsync,authentifie
+Structure,Employe,/api/Structure/Employe/AddEmploye,POST,Créer,Create,authentifie
+Structure,Employe,/api/Structure/Employe/DeleteEmploye,DELETE,Supprimer,Delete,authentifie
+Structure,Employe,/api/Structure/Employe/GetAllEmploye,GET,Lister,GetAll,authentifie
+Structure,Employe,/api/Structure/Employe/GetEmployeById,GET,Consulter,GetById,authentifie
+Structure,Employe,/api/Structure/Employe/UpdateEmploye,PUT,Modifier,Update,authentifie
+Structure,EnumGammes,/api/Structure/EnumGammes,GET,Lister,GetAll,authentifie
+Structure,EnumGammes,/api/Structure/EnumGammes,POST,Créer,Create,authentifie
+Structure,EnumGammes,/api/Structure/EnumGammes/by-gamme/{gammeId:int},GET,Consulter par gamme id,GetByGammeId,authentifie
+Structure,EnumGammes,/api/Structure/EnumGammes/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,EnumGammes,/api/Structure/EnumGammes/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,EnumGammes,/api/Structure/EnumGammes/{id:int},GET,Consulter,GetById,authentifie
+Structure,EnumGammes,/api/Structure/EnumGammes/{id:int},PUT,Modifier,Update,authentifie
+Structure,Familles,/api/Structure/Familles,GET,Lister,GetAll,authentifie
+Structure,Familles,/api/Structure/Familles,POST,Créer,Create,authentifie
+Structure,Familles,/api/Structure/Familles/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Familles,/api/Structure/Familles/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Familles,/api/Structure/Familles/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Familles,/api/Structure/Familles/{id:int},GET,Consulter,GetById,authentifie
+Structure,Familles,/api/Structure/Familles/{id:int},PUT,Modifier,Update,authentifie
+Structure,Fonctions,/api/Structure/Fonctions,GET,Lister,GetAll,authentifie
+Structure,Fonctions,/api/Structure/Fonctions,POST,Créer,Create,authentifie
+Structure,Fonctions,/api/Structure/Fonctions/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Fonctions,/api/Structure/Fonctions/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Fonctions,/api/Structure/Fonctions/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Fonctions,/api/Structure/Fonctions/{id:int},GET,Consulter,GetById,authentifie
+Structure,Fonctions,/api/Structure/Fonctions/{id:int},PUT,Modifier,Update,authentifie
+Structure,Format,/api/Format,GET,Lister,GetAll,authentifie
+Structure,Format,/api/Format,POST,Créer,Create,authentifie
+Structure,Format,/api/Format/{id},DELETE,Supprimer,Delete,authentifie
+Structure,Format,/api/Format/{id},GET,Consulter,GetById,authentifie
+Structure,Format,/api/Format/{id},PUT,Modifier,Update,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur,GET,Lister,GetAll,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur,POST,Ajouter fournisseur,AddFournisseur,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/AddFournisseur,POST,Créer,Create,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/DeleteFournisseur,DELETE,Supprimer,Delete,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/GetAllFournisseur,GET,Lister,GetAll,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/GetFournisseurById,GET,Consulter,GetById,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/UpdateFournisseur,PUT,Modifier,Update,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/{id},DELETE,Supprimer fournisseur,DeleteFournisseur,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/{id},GET,Consulter,GetById,authentifie
+Structure,Fournisseur,/api/Structure/Fournisseur/{id},PUT,Modifier fournisseur,UpdateFournisseur,authentifie
+Structure,Gammes,/api/Structure/Gammes,GET,Lister,GetAll,authentifie
+Structure,Gammes,/api/Structure/Gammes,POST,Créer,Create,authentifie
+Structure,Gammes,/api/Structure/Gammes/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,Gammes,/api/Structure/Gammes/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,Gammes,/api/Structure/Gammes/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Gammes,/api/Structure/Gammes/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Gammes,/api/Structure/Gammes/{id:int},GET,Consulter,GetById,authentifie
+Structure,Gammes,/api/Structure/Gammes/{id:int},PUT,Modifier,Update,authentifie
+Structure,Journaux,/api/Structure/Journaux,GET,Lister,GetAll,authentifie
+Structure,Journaux,/api/Structure/Journaux,POST,Créer,Create,authentifie
+Structure,Journaux,/api/Structure/Journaux/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Journaux,/api/Structure/Journaux/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Journaux,/api/Structure/Journaux/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Journaux,/api/Structure/Journaux/{id:int},GET,Consulter,GetById,authentifie
+Structure,Journaux,/api/Structure/Journaux/{id:int},PUT,Modifier,Update,authentifie
+Structure,ModeleImpression,/api/Structure/ModeleImpression,GET,Lister,GetAll,authentifie
+Structure,ModeleImpression,/api/Structure/ModeleImpression,POST,Créer,Create,authentifie
+Structure,ModeleImpression,/api/Structure/ModeleImpression/{id},DELETE,Supprimer,Delete,authentifie
+Structure,ModeleImpression,/api/Structure/ModeleImpression/{id},GET,Consulter,Get,authentifie
+Structure,ModeleImpression,/api/Structure/ModeleImpression/{id},PUT,Modifier,Update,authentifie
+Structure,ModelePaiement,/api/Structure/ModelePaiement,GET,Lister modele paiement async,GetAllModelePaiementAsync,authentifie
+Structure,ModelePaiement,/api/Structure/ModelePaiement,POST,Ajouter modele paiement async,AddModelePaiementAsync,authentifie
+Structure,ModelePaiement,/api/Structure/ModelePaiement/{id},DELETE,Supprimer modele paiement async,DeleteModelePaiementAsync,authentifie
+Structure,ModelePaiement,/api/Structure/ModelePaiement/{id},GET,Consulter modele paiement by id async,GetModelePaiementByIdAsync,authentifie
+Structure,ModelePaiement,/api/Structure/ModelePaiement/{id},PUT,Modifier modele paiement async,UpdateModelePaiementAsync,authentifie
+Structure,ModelePaiementLigne,/api/Structure/ModelePaiementLigne,GET,Lister,GetAll,authentifie
+Structure,ModelePaiementLigne,/api/Structure/ModelePaiementLigne,POST,Créer,Create,authentifie
+Structure,ModelePaiementLigne,/api/Structure/ModelePaiementLigne,PUT,Modifier,Update,authentifie
+Structure,ModelePaiementLigne,/api/Structure/ModelePaiementLigne/{id},DELETE,Supprimer,Delete,authentifie
+Structure,ModelePaiementLigne,/api/Structure/ModelePaiementLigne/{id},GET,Consulter,GetById,authentifie
+Structure,Municipalities,/api/Structure/Municipalities/Create,POST,Créer,Create,authentifie
+Structure,Municipalities,/api/Structure/Municipalities/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,Municipalities,/api/Structure/Municipalities/DeleteByState/{stateId},DELETE,Supprimer by state,DeleteByState,authentifie
+Structure,Municipalities,/api/Structure/Municipalities/Get/{id},GET,Consulter,GetById,authentifie
+Structure,Municipalities,/api/Structure/Municipalities/GetAll,GET,Lister,GetAll,authentifie
+Structure,Municipalities,/api/Structure/Municipalities/GetByState/{stateId},GET,Consulter par state id,GetByStateId,authentifie
+Structure,Municipalities,/api/Structure/Municipalities/Update,PUT,Modifier,Update,authentifie
+Structure,Natures,/api/Structure/Natures,GET,Lister,GetAll,authentifie
+Structure,Natures,/api/Structure/Natures,POST,Créer,Create,authentifie
+Structure,Natures,/api/Structure/Natures/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,Natures,/api/Structure/Natures/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,Natures,/api/Structure/Natures/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Natures,/api/Structure/Natures/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Natures,/api/Structure/Natures/{id:int},GET,Consulter,GetById,authentifie
+Structure,Natures,/api/Structure/Natures/{id:int},PUT,Modifier,Update,authentifie
+Structure,NomenclatureLines,/api/Structure/NomenclatureLines,POST,Créer,Create,authentifie
+Structure,NomenclatureLines,/api/Structure/NomenclatureLines/by-nomenclature/{nomenclatureId:int},GET,Consulter par nomenclature id,GetByNomenclatureId,authentifie
+Structure,NomenclatureLines,/api/Structure/NomenclatureLines/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,NomenclatureLines,/api/Structure/NomenclatureLines/{id:int},GET,Consulter,GetById,authentifie
+Structure,NomenclatureLines,/api/Structure/NomenclatureLines/{id:int},PUT,Modifier,Update,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures,GET,Lister,GetAll,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures,POST,Créer,Create,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/by-article-code/{articleCode},GET,Consulter par article code,GetByArticleCode,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/by-article/{articleId:int},GET,Consulter par article id,GetByArticleId,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/{id:int},GET,Consulter,GetById,authentifie
+Structure,Nomenclatures,/api/Structure/Nomenclatures/{id:int},PUT,Modifier,Update,authentifie
+Structure,Palier,/api/Structure/Palier,GET,Lister,GetAll,authentifie
+Structure,Palier,/api/Structure/Palier,POST,Créer,Create,authentifie
+Structure,Palier,/api/Structure/Palier/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,Palier,/api/Structure/Palier/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,Palier,/api/Structure/Palier/by-unite/{uniteId:int},GET,Consulter par unite id,GetByUniteId,authentifie
+Structure,Palier,/api/Structure/Palier/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Palier,/api/Structure/Palier/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Palier,/api/Structure/Palier/{id:int},GET,Consulter,GetById,authentifie
+Structure,Palier,/api/Structure/Palier/{id:int},PUT,Modifier,Update,authentifie
+Structure,Palier,/api/Structure/Palier/{id:int}/activate,POST,Activate,Activate,authentifie
+Structure,Palier,/api/Structure/Palier/{id:int}/deactivate,POST,Deactivate,Deactivate,authentifie
+Structure,PalierLigne,/api/Structure/PalierLigne,POST,Créer,Create,authentifie
+Structure,PalierLigne,/api/Structure/PalierLigne/by-palier/{palierId:int},GET,Consulter par palier id,GetByPalierId,authentifie
+Structure,PalierLigne,/api/Structure/PalierLigne/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,PalierLigne,/api/Structure/PalierLigne/{id:int},GET,Consulter,GetById,authentifie
+Structure,PalierLigne,/api/Structure/PalierLigne/{id:int},PUT,Modifier,Update,authentifie
+Structure,Prospect,/api/Structure/Prospect/AddProspect,POST,Créer,Create,authentifie
+Structure,Prospect,/api/Structure/Prospect/DeleteProspect,DELETE,Supprimer,Delete,authentifie
+Structure,Prospect,/api/Structure/Prospect/GetAllProspect,GET,Lister,GetAll,authentifie
+Structure,Prospect,/api/Structure/Prospect/GetProspectById,GET,Consulter,GetById,authentifie
+Structure,Prospect,/api/Structure/Prospect/UpdateProspect,PUT,Modifier,Update,authentifie
+Structure,Prospect,/api/Structure/Prospect/{id}/ConvertToClient,POST,Convertir to client,ConvertToClient,authentifie
+Structure,Qualifications,/api/Structure/Qualifications,GET,Lister,GetAll,authentifie
+Structure,Qualifications,/api/Structure/Qualifications,POST,Créer,Create,authentifie
+Structure,Qualifications,/api/Structure/Qualifications/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Qualifications,/api/Structure/Qualifications/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Qualifications,/api/Structure/Qualifications/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Qualifications,/api/Structure/Qualifications/{id:int},GET,Consulter,GetById,authentifie
+Structure,Qualifications,/api/Structure/Qualifications/{id:int},PUT,Modifier,Update,authentifie
+Structure,Qualites,/api/Structure/Qualites,GET,Lister,GetAll,authentifie
+Structure,Qualites,/api/Structure/Qualites,POST,Créer,Create,authentifie
+Structure,Qualites,/api/Structure/Qualites/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Qualites,/api/Structure/Qualites/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Qualites,/api/Structure/Qualites/{id:int},GET,Consulter,GetById,authentifie
+Structure,Qualites,/api/Structure/Qualites/{id:int},PUT,Modifier,Update,authentifie
+Structure,Remises,/api/Structure/Remises,GET,Lister,GetAll,authentifie
+Structure,Remises,/api/Structure/Remises,POST,Créer,Create,authentifie
+Structure,Remises,/api/Structure/Remises/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Remises,/api/Structure/Remises/resolve,POST,Resolve,Resolve,authentifie
+Structure,Remises,/api/Structure/Remises/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Remises,/api/Structure/Remises/{id:int},GET,Consulter,GetById,authentifie
+Structure,Remises,/api/Structure/Remises/{id:int},PUT,Modifier,Update,authentifie
+Structure,ReportingQuery,/api/Structure/Reporting/metadata,GET,Consulter metadata,GetMetadata,authentifie
+Structure,ReportingQuery,/api/Structure/Reporting/query,POST,Rechercher,Query,authentifie
+Structure,RolePaiement,/api/Structure/RolePaiement,GET,Lister,GetAll,authentifie
+Structure,RolePaiement,/api/Structure/RolePaiement,POST,Créer,Create,authentifie
+Structure,RolePaiement,/api/Structure/RolePaiement,PUT,Modifier,Update,authentifie
+Structure,RolePaiement,/api/Structure/RolePaiement/{id},DELETE,Supprimer,Delete,authentifie
+Structure,RolePaiement,/api/Structure/RolePaiement/{id},GET,Consulter,GetById,authentifie
+Structure,SoucheClient,/api/Structure/SoucheClient,GET,Lister,GetAll,authentifie
+Structure,SoucheClient,/api/Structure/SoucheClient,POST,Ajouter souchesclient,AddSouchesclient,authentifie
+Structure,SoucheClient,/api/Structure/SoucheClient/{id},DELETE,Supprimer souchesclient,DeleteSouchesclient,authentifie
+Structure,SoucheClient,/api/Structure/SoucheClient/{id},GET,Consulter,GetById,authentifie
+Structure,SoucheClient,/api/Structure/SoucheClient/{id},PUT,Modifier souchesclient,UpdateSouchesclient,authentifie
+Structure,SoucheClient,/api/Structure/SoucheClient/{id}/PreviewCode,GET,Preview Code,PreviewCode,authentifie
+Structure,Souches,/api/Structure/Souches,GET,Lister,GetAll,authentifie
+Structure,Souches,/api/Structure/Souches,POST,Créer,Create,authentifie
+Structure,Souches,/api/Structure/Souches/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Souches,/api/Structure/Souches/by-societe/domaine/{domaine:int},GET,Lister (société) and domaine,GetAllBySocieteAndDomaine,authentifie
+Structure,Souches,/api/Structure/Souches/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Souches,/api/Structure/Souches/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Souches,/api/Structure/Souches/{id:int},GET,Consulter,GetById,authentifie
+Structure,Souches,/api/Structure/Souches/{id:int},PUT,Modifier,Update,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers,GET,Lister,GetAll,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers,POST,Créer,Create,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers/by-user-connecte/domaine/{domaine:int},GET,Consulter souches for current user by domaine,GetSouchesForCurrentUserByDomaine,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers/by-user/{idUser},GET,Consulter user,GetByIdUser,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers/by-user/{idUser},PUT,Définir for user,SetForUser,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers/{id:int},GET,Consulter,GetById,authentifie
+Structure,SouchesUsers,/api/Structure/SouchesUsers/{id:int},PUT,Modifier,Update,authentifie
+Structure,States,/api/Structure/States/Create,POST,Créer,Create,authentifie
+Structure,States,/api/Structure/States/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,States,/api/Structure/States/DeleteByCountry/{countryId},DELETE,Supprimer by country,DeleteByCountry,authentifie
+Structure,States,/api/Structure/States/Get/{id},GET,Consulter,GetById,authentifie
+Structure,States,/api/Structure/States/GetAll,GET,Lister,GetAll,authentifie
+Structure,States,/api/Structure/States/GetByCountry/{countryId},GET,Consulter par country id,GetByCountryId,authentifie
+Structure,States,/api/Structure/States/Update,PUT,Modifier,Update,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments,GET,Lister,GetAll,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments,POST,Créer,Create,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments/by-domaine-souche-piece,GET,Consulter par domaine souche and piece,GetByDomaineSoucheAndPiece,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments/{id:int},GET,Consulter,GetById,authentifie
+Structure,StatutDocuments,/api/Structure/StatutDocuments/{id:int},PUT,Modifier,Update,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations,GET,Lister,GetAll,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations,POST,Créer,Create,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations/increment,POST,Incrémenter,Increment,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations/{id:int},GET,Consulter,GetById,authentifie
+Structure,TableNumerotations,/api/Structure/TableNumerotations/{id:int},PUT,Modifier,Update,authentifie
+Structure,Taxes,/api/Structure/Taxes,GET,Lister,GetAll,authentifie
+Structure,Taxes,/api/Structure/Taxes,POST,Créer,Create,authentifie
+Structure,Taxes,/api/Structure/Taxes/by-societe,GET,Lister (société),GetAllBySociete,authentifie
+Structure,Taxes,/api/Structure/Taxes/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Taxes,/api/Structure/Taxes/resolve,POST,Resolve,Resolve,authentifie
+Structure,Taxes,/api/Structure/Taxes/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Taxes,/api/Structure/Taxes/{id:int},GET,Consulter,GetById,authentifie
+Structure,Taxes,/api/Structure/Taxes/{id:int},PUT,Modifier,Update,authentifie
+Structure,TypeDocument,/api/Structure/TypeDocument/Create,POST,Créer,Create,authentifie
+Structure,TypeDocument,/api/Structure/TypeDocument/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Structure,TypeDocument,/api/Structure/TypeDocument/GetAll,GET,Lister,GetAll,authentifie
+Structure,TypeDocument,/api/Structure/TypeDocument/GetById/{id},GET,Consulter,GetById,authentifie
+Structure,TypeDocument,/api/Structure/TypeDocument/Update,PUT,Modifier,Update,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures,GET,Lister,GetAll,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures,POST,Créer,Create,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures/{id:int},GET,Consulter,GetById,authentifie
+Structure,TypeNatures,/api/Structure/TypeNatures/{id:int},PUT,Modifier,Update,authentifie
+Structure,TypePaiement,/api/Structure/TypePaiement,GET,Lister,GetAll,authentifie
+Structure,TypePaiement,/api/Structure/TypePaiement,POST,Créer,Create,authentifie
+Structure,TypePaiement,/api/Structure/TypePaiement,PUT,Modifier,Update,authentifie
+Structure,TypePaiement,/api/Structure/TypePaiement/{id},DELETE,Supprimer,Delete,authentifie
+Structure,TypePaiement,/api/Structure/TypePaiement/{id},GET,Consulter,GetById,authentifie
+Structure,UniteDelai,/api/Structure/UniteDelai,GET,Lister,GetAll,authentifie
+Structure,UniteDelai,/api/Structure/UniteDelai/{id},GET,Consulter,GetById,authentifie
+Structure,Unites,/api/Structure/Unites,GET,Lister,GetAll,authentifie
+Structure,Unites,/api/Structure/Unites,POST,Créer,Create,authentifie
+Structure,Unites,/api/Structure/Unites/by-societe,GET,Lister (société),GetBySociete,authentifie
+Structure,Unites,/api/Structure/Unites/by-societe/paged,GET,Lister paginé (société),GetPagedBySociete,authentifie
+Structure,Unites,/api/Structure/Unites/paged,GET,Lister paginé,GetPaged,authentifie
+Structure,Unites,/api/Structure/Unites/{id:int},DELETE,Supprimer,Delete,authentifie
+Structure,Unites,/api/Structure/Unites/{id:int},GET,Consulter,GetById,authentifie
+Structure,Unites,/api/Structure/Unites/{id:int},PUT,Modifier,Update,authentifie
+Structure,WorkflowDefinition,/api/Structure/WorkflowDefinition/AddWorkflowDefinition,POST,Créer,Create,authentifie
+Structure,WorkflowDefinition,/api/Structure/WorkflowDefinition/GetWorkflowDefinition,GET,Lister,GetAll,authentifie
+Structure,WorkflowDefinition,/api/Structure/WorkflowDefinition/GetWorkflowDefinitionById/{workflowId},GET,Consulter,GetById,authentifie
+Structure,WorkflowDefinition,/api/Structure/WorkflowDefinition/UpdateWorkflowDefinition,PUT,Modifier,Update,authentifie
+Structure,WorkflowDefinition,/api/Structure/WorkflowDefinition/{workflowId},DELETE,Supprimer,Delete,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/ExecuteStep,POST,Exécuter l'étape,ExecuteStep,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/GetByDocumentId/{documentId},GET,Consulter par document id,GetByDocumentId,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/GetLogs/{instanceId},GET,Consulter logs,GetLogs,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/GetWorkflowInstance,GET,Lister,GetAll,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/GetWorkflowInstanceById/{instanceId},GET,Consulter,GetById,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/Rollback,POST,Revenir en arrière,Rollback,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/Start,POST,Démarrer,Start,authentifie
+Structure,WorkflowInstance,/api/Structure/WorkflowInstance/Transition,POST,Faire transiter,Transition,authentifie
+Structure,WorkflowStep,/api/Structure/WorkflowStep/AddWorkflowStep,POST,Créer,Create,authentifie
+Structure,WorkflowStep,/api/Structure/WorkflowStep/GetStepsByWorkflowId/{workflowId},GET,Consulter par workflow,GetByWorkflow,authentifie
+Structure,WorkflowStep,/api/Structure/WorkflowStep/UpdateWorkflowStep,PUT,Modifier,Update,authentifie
+Structure,WorkflowStep,/api/Structure/WorkflowStep/{stepId},DELETE,Supprimer,Delete,authentifie
+Structure,WorkflowTransition,/api/Structure/WorkflowTransition/AddWorkflowTransition,POST,Créer,Create,authentifie
+Structure,WorkflowTransition,/api/Structure/WorkflowTransition/GetTransitionsByStepId/{stepSourceId},GET,Consulter par step id,GetByStepId,authentifie
+Structure,WorkflowTransition,/api/Structure/WorkflowTransition/UpdateWorkflowTransition,PUT,Modifier,Update,authentifie
+Structure,WorkflowTransition,/api/Structure/WorkflowTransition/{transitionId},DELETE,Supprimer,Delete,authentifie
+Subscription,Functions,/api/Subscription/Functions/Create,POST,Créer,Create,authentifie
+Subscription,Functions,/api/Subscription/Functions/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,Functions,/api/Subscription/Functions/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,Functions,/api/Subscription/Functions/GetAll,GET,Lister,GetAll,authentifie
+Subscription,Functions,/api/Subscription/Functions/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,Functions,/api/Subscription/Functions/Update,PUT,Modifier,Update,authentifie
+Subscription,ModuleFunctions,/api/Subscription/ModuleFunctions/Create,POST,Créer,Create,authentifie
+Subscription,ModuleFunctions,/api/Subscription/ModuleFunctions/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,ModuleFunctions,/api/Subscription/ModuleFunctions/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,ModuleFunctions,/api/Subscription/ModuleFunctions/GetAll,GET,Lister,GetAll,authentifie
+Subscription,ModuleFunctions,/api/Subscription/ModuleFunctions/Update,PUT,Modifier,Update,authentifie
+Subscription,Modules,/api/Subscription/Modules/Create,POST,Créer,Create,authentifie
+Subscription,Modules,/api/Subscription/Modules/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,Modules,/api/Subscription/Modules/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,Modules,/api/Subscription/Modules/GetAll,GET,Lister,GetAll,authentifie
+Subscription,Modules,/api/Subscription/Modules/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,Modules,/api/Subscription/Modules/TogglePromo,PUT,Basculer la promotion,TogglePromo,authentifie
+Subscription,Modules,/api/Subscription/Modules/ToggleStatus/{id},PUT,Activer / désactiver,ToggleStatus,authentifie
+Subscription,Modules,/api/Subscription/Modules/ToggleVisibility/{id},PUT,Afficher / masquer,ToggleVisibility,authentifie
+Subscription,Modules,/api/Subscription/Modules/Update,PUT,Modifier,Update,authentifie
+Subscription,PackLines,/api/Subscription/PackLines/Create,POST,Créer,Create,authentifie
+Subscription,PackLines,/api/Subscription/PackLines/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,PackLines,/api/Subscription/PackLines/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,PackLines,/api/Subscription/PackLines/GetAll,GET,Lister,GetAll,authentifie
+Subscription,PackLines,/api/Subscription/PackLines/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,PackLines,/api/Subscription/PackLines/Update,PUT,Modifier,Update,authentifie
+Subscription,Packs,/api/Subscription/Packs/Create,POST,Créer,Create,authentifie
+Subscription,Packs,/api/Subscription/Packs/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,Packs,/api/Subscription/Packs/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,Packs,/api/Subscription/Packs/GetAll,GET,Lister,GetAll,authentifie
+Subscription,Packs,/api/Subscription/Packs/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,Packs,/api/Subscription/Packs/TogglePromo,PUT,Basculer la promotion,TogglePromo,authentifie
+Subscription,Packs,/api/Subscription/Packs/ToggleStatus/{id},PUT,Activer / désactiver,ToggleStatus,authentifie
+Subscription,Packs,/api/Subscription/Packs/ToggleVisibility/{id},PUT,Afficher / masquer,ToggleVisibility,authentifie
+Subscription,Packs,/api/Subscription/Packs/Update,PUT,Modifier,Update,authentifie
+Subscription,Permissions,/api/Subscription/Permissions/Create,POST,Créer,Create,authentifie
+Subscription,Permissions,/api/Subscription/Permissions/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,Permissions,/api/Subscription/Permissions/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,Permissions,/api/Subscription/Permissions/GetAll,GET,Lister,GetAll,authentifie
+Subscription,Permissions,/api/Subscription/Permissions/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,Permissions,/api/Subscription/Permissions/Update,PUT,Modifier,Update,authentifie
+Subscription,RolePermissions,/api/Subscription/RolePermissions/Create,POST,Créer,Create,authentifie
+Subscription,RolePermissions,/api/Subscription/RolePermissions/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,RolePermissions,/api/Subscription/RolePermissions/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,RolePermissions,/api/Subscription/RolePermissions/GetAll,GET,Lister,GetAll,authentifie
+Subscription,RolePermissions,/api/Subscription/RolePermissions/Update,PUT,Modifier,Update,authentifie
+Subscription,Roles,/api/Subscription/Roles/Create,POST,Créer,Create,authentifie
+Subscription,Roles,/api/Subscription/Roles/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,Roles,/api/Subscription/Roles/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,Roles,/api/Subscription/Roles/GetAll,GET,Lister,GetAll,authentifie
+Subscription,Roles,/api/Subscription/Roles/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,Roles,/api/Subscription/Roles/Update,PUT,Modifier,Update,authentifie
+Subscription,Settings,/api/Subscription/Settings/Create,POST,Créer,Create,authentifie
+Subscription,Settings,/api/Subscription/Settings/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,Settings,/api/Subscription/Settings/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,Settings,/api/Subscription/Settings/GetAll,GET,Lister,GetAll,authentifie
+Subscription,Settings,/api/Subscription/Settings/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,Settings,/api/Subscription/Settings/Update,PUT,Modifier,Update,authentifie
+Subscription,SettingsKeys,/api/Subscription/SettingsKeys/Create,POST,Créer,Create,authentifie
+Subscription,SettingsKeys,/api/Subscription/SettingsKeys/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,SettingsKeys,/api/Subscription/SettingsKeys/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,SettingsKeys,/api/Subscription/SettingsKeys/GetAll,GET,Lister,GetAll,authentifie
+Subscription,SettingsKeys,/api/Subscription/SettingsKeys/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,SettingsKeys,/api/Subscription/SettingsKeys/Update,PUT,Modifier,Update,authentifie
+Subscription,SubscriptionFeatures,/api/Subscription/SubscriptionFeatures/Create,POST,Créer,Create,authentifie
+Subscription,SubscriptionFeatures,/api/Subscription/SubscriptionFeatures/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,SubscriptionFeatures,/api/Subscription/SubscriptionFeatures/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,SubscriptionFeatures,/api/Subscription/SubscriptionFeatures/GetAll,GET,Lister,GetAll,authentifie
+Subscription,SubscriptionFeatures,/api/Subscription/SubscriptionFeatures/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,SubscriptionFeatures,/api/Subscription/SubscriptionFeatures/Update,PUT,Modifier,Update,authentifie
+Subscription,SubscriptionRequests,/api/Subscription/SubscriptionRequests/Approve,POST,Approve,Approve,authentifie
+Subscription,SubscriptionRequests,/api/Subscription/SubscriptionRequests/Create,POST,Créer,Create,authentifie
+Subscription,SubscriptionRequests,/api/Subscription/SubscriptionRequests/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,SubscriptionRequests,/api/Subscription/SubscriptionRequests/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,SubscriptionRequests,/api/Subscription/SubscriptionRequests/GetAll,GET,Lister,GetAll,authentifie
+Subscription,SubscriptionRequests,/api/Subscription/SubscriptionRequests/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,SubscriptionRequests,/api/Subscription/SubscriptionRequests/Update,PUT,Modifier,Update,authentifie
+Subscription,SubscriptionSettingKeys,/api/Subscription/SubscriptionSettingKeys/Create,POST,Créer,Create,authentifie
+Subscription,SubscriptionSettingKeys,/api/Subscription/SubscriptionSettingKeys/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,SubscriptionSettingKeys,/api/Subscription/SubscriptionSettingKeys/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,SubscriptionSettingKeys,/api/Subscription/SubscriptionSettingKeys/GetAll,GET,Lister,GetAll,authentifie
+Subscription,SubscriptionSettingKeys,/api/Subscription/SubscriptionSettingKeys/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,SubscriptionSettingKeys,/api/Subscription/SubscriptionSettingKeys/Update,PUT,Modifier,Update,authentifie
+Subscription,SubscriptionSettings,/api/Subscription/SubscriptionSettings/Create,POST,Créer,Create,authentifie
+Subscription,SubscriptionSettings,/api/Subscription/SubscriptionSettings/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,SubscriptionSettings,/api/Subscription/SubscriptionSettings/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,SubscriptionSettings,/api/Subscription/SubscriptionSettings/GetAll,GET,Lister,GetAll,authentifie
+Subscription,SubscriptionSettings,/api/Subscription/SubscriptionSettings/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,SubscriptionSettings,/api/Subscription/SubscriptionSettings/Update,PUT,Modifier,Update,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/Create,POST,Créer,Create,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/Delete/{id},DELETE,Supprimer,Delete,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/Get/{id},GET,Consulter,GetById,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/GetAll,GET,Lister,GetAll,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/SoftDelete/{id},DELETE,Supprimer (logique),SoftDelete,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/ToggleAutoSubscription/{id},PUT,Basculer auto subscription,ToggleAutoSubscription,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/TogglePromo,PUT,Basculer la promotion,TogglePromo,authentifie
+Subscription,Subscriptions,/api/Subscription/Subscriptions/Update,PUT,Modifier,Update,authentifie
+Tresorerie,CaisseOperations,/api/Tresorerie/CaisseOperations,GET,Lister,GetAll,authentifie
+Tresorerie,CaisseOperations,/api/Tresorerie/CaisseOperations,POST,Créer,Create,authentifie
+Tresorerie,CaisseOperations,/api/Tresorerie/CaisseOperations/{id:int},DELETE,Supprimer,Delete,authentifie
+Tresorerie,CaisseOperations,/api/Tresorerie/CaisseOperations/{id:int},GET,Consulter,GetById,authentifie
+Tresorerie,CaisseOperations,/api/Tresorerie/CaisseOperations/{id:int},PUT,Modifier,Update,authentifie
+Tresorerie,CaisseOperations,/api/Tresorerie/CaisseOperations/{id:int}/annuler,POST,Annuler,Annuler,authentifie
+Tresorerie,CaisseOperations,/api/Tresorerie/CaisseOperations/{id:int}/valider,POST,Valider,Valider,authentifie
+Tresorerie,Cautions,/api/Tresorerie/Cautions,GET,Lister,GetAll,authentifie
+Tresorerie,Cautions,/api/Tresorerie/Cautions/{id:int}/rendre,POST,Rendre,Rendre,authentifie
+Tresorerie,Cautions,/api/Tresorerie/Cautions/{id:int}/transformer,POST,Transformer,Transformer,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements,GET,Lister,GetAll,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements,POST,Créer,Create,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/factures-ouvertes,GET,Consulter open factures,GetOpenFactures,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/statuts,GET,Consulter statuts,GetStatuts,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/{id:int},DELETE,Supprimer,Delete,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/{id:int},GET,Consulter,GetById,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/{id:int},PUT,Modifier,Update,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/{id:int}/annuler,POST,Annuler,Annuler,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/{id:int}/imputer,POST,Imputer,Imputer,authentifie
+Tresorerie,Decaissements,/api/Tresorerie/Decaissements/{id:int}/valider,POST,Valider,Valider,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements,GET,Lister,GetAll,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements,POST,Créer,Create,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/factures-ouvertes,GET,Consulter open factures,GetOpenFactures,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/statuts,GET,Consulter statuts,GetStatuts,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/{id:int},DELETE,Supprimer,Delete,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/{id:int},GET,Consulter,GetById,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/{id:int},PUT,Modifier,Update,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/{id:int}/annuler,POST,Annuler,Annuler,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/{id:int}/imputer,POST,Imputer,Imputer,authentifie
+Tresorerie,Encaissements,/api/Tresorerie/Encaissements/{id:int}/valider,POST,Valider,Valider,authentifie
+Tresorerie,ReportingQuery,/api/Tresorerie/Reporting/metadata,GET,Consulter metadata,GetMetadata,authentifie
+Tresorerie,ReportingQuery,/api/Tresorerie/Reporting/query,POST,Rechercher,Query,authentifie
+Tresorerie,Retenues,/api/Tresorerie/Retenues,GET,Lister,GetAll,authentifie
+Tresorerie,Retenues,/api/Tresorerie/Retenues,POST,Créer,Create,authentifie
+Tresorerie,Retenues,/api/Tresorerie/Retenues/{id:int},DELETE,Supprimer,Delete,authentifie
+Tresorerie,Retenues,/api/Tresorerie/Retenues/{id:int},GET,Consulter,GetById,authentifie
+Tresorerie,Retenues,/api/Tresorerie/Retenues/{id:int},PUT,Modifier,Update,authentifie
+Tresorerie,Retenues,/api/Tresorerie/Retenues/{id:int}/imputer,POST,Imputer,Imputer,authentifie
+Vente,BonCommande,/api/Vente/BonCommande,GET,Lister paginé,GetPaged,authentifie
+Vente,BonCommande,/api/Vente/BonCommande,POST,Créer,Create,authentifie
+Vente,BonCommande,/api/Vente/BonCommande/from-devis,POST,Convertir depuis  devis,ConvertFromDevis,authentifie
+Vente,BonCommande,/api/Vente/BonCommande/{id},DELETE,Supprimer,Delete,authentifie
+Vente,BonCommande,/api/Vente/BonCommande/{id},GET,Consulter,GetById,authentifie
+Vente,BonCommande,/api/Vente/BonCommande/{id},PUT,Modifier,Update,authentifie
+Vente,BonCommande,/api/Vente/BonCommande/{id}/regenerate,POST,Régénérer,Regenerate,authentifie
+Vente,BonCommandeLignes,/api/Vente/BonCommandeLignes,POST,Créer,Create,authentifie
+Vente,BonCommandeLignes,/api/Vente/BonCommandeLignes/by-bon-commande/{bonCommandeId},GET,Consulter par bon commande id,GetByBonCommandeId,authentifie
+Vente,BonCommandeLignes,/api/Vente/BonCommandeLignes/{id},DELETE,Supprimer,Delete,authentifie
+Vente,BonCommandeLignes,/api/Vente/BonCommandeLignes/{id},GET,Consulter,GetById,authentifie
+Vente,BonCommandeLignes,/api/Vente/BonCommandeLignes/{id},PUT,Modifier,Update,authentifie
+Vente,BonLivraison,/api/Vente/BonLivraison,GET,Lister paginé,GetPaged,authentifie
+Vente,BonLivraison,/api/Vente/BonLivraison,POST,Créer,Create,authentifie
+Vente,BonLivraison,/api/Vente/BonLivraison/from-bon-commande,POST,Convertir depuis  bon commande,ConvertFromBonCommande,authentifie
+Vente,BonLivraison,/api/Vente/BonLivraison/{id},DELETE,Supprimer,Delete,authentifie
+Vente,BonLivraison,/api/Vente/BonLivraison/{id},GET,Consulter,GetById,authentifie
+Vente,BonLivraison,/api/Vente/BonLivraison/{id},PUT,Modifier,Update,authentifie
+Vente,BonLivraison,/api/Vente/BonLivraison/{id}/regenerate,POST,Régénérer,Regenerate,authentifie
+Vente,BonLivraisonLignes,/api/Vente/BonLivraisonLignes,POST,Créer,Create,authentifie
+Vente,BonLivraisonLignes,/api/Vente/BonLivraisonLignes/by-bon-livraison/{bonLivraisonId},GET,Consulter par bon livraison id,GetByBonLivraisonId,authentifie
+Vente,BonLivraisonLignes,/api/Vente/BonLivraisonLignes/{id},DELETE,Supprimer,Delete,authentifie
+Vente,BonLivraisonLignes,/api/Vente/BonLivraisonLignes/{id},GET,Consulter,GetById,authentifie
+Vente,BonLivraisonLignes,/api/Vente/BonLivraisonLignes/{id},PUT,Modifier,Update,authentifie
+Vente,BonRetour,/api/Vente/BonRetour,GET,Lister paginé,GetPaged,authentifie
+Vente,BonRetour,/api/Vente/BonRetour,POST,Créer,Create,authentifie
+Vente,BonRetour,/api/Vente/BonRetour/from-bon-livraison,POST,Convertir depuis  bon livraison,ConvertFromBonLivraison,authentifie
+Vente,BonRetour,/api/Vente/BonRetour/{id},DELETE,Supprimer,Delete,authentifie
+Vente,BonRetour,/api/Vente/BonRetour/{id},GET,Consulter,GetById,authentifie
+Vente,BonRetour,/api/Vente/BonRetour/{id},PUT,Modifier,Update,authentifie
+Vente,BonRetour,/api/Vente/BonRetour/{id}/regenerate,POST,Régénérer,Regenerate,authentifie
+Vente,BonRetourLignes,/api/Vente/BonRetourLignes,POST,Créer,Create,authentifie
+Vente,BonRetourLignes,/api/Vente/BonRetourLignes/by-bon-retour/{bonRetourId},GET,Consulter par bon retour id,GetByBonRetourId,authentifie
+Vente,BonRetourLignes,/api/Vente/BonRetourLignes/{id},DELETE,Supprimer,Delete,authentifie
+Vente,BonRetourLignes,/api/Vente/BonRetourLignes/{id},GET,Consulter,GetById,authentifie
+Vente,BonRetourLignes,/api/Vente/BonRetourLignes/{id},PUT,Modifier,Update,authentifie
+Vente,Devis,/api/Vente/Devis,GET,Lister paginé,GetPaged,authentifie
+Vente,Devis,/api/Vente/Devis,POST,Créer,Create,authentifie
+Vente,Devis,/api/Vente/Devis/{id},DELETE,Supprimer,Delete,authentifie
+Vente,Devis,/api/Vente/Devis/{id},GET,Consulter,GetById,authentifie
+Vente,Devis,/api/Vente/Devis/{id},PUT,Modifier,Update,authentifie
+Vente,Devis,/api/Vente/Devis/{id}/duplicate,POST,Dupliquer,Duplicate,authentifie
+Vente,Devis,/api/Vente/Devis/{id}/regenerate,POST,Régénérer,Regenerate,authentifie
+Vente,DevisLignes,/api/Vente/DevisLignes,POST,Créer,Create,authentifie
+Vente,DevisLignes,/api/Vente/DevisLignes/by-devis/{devisId},GET,Consulter par devis id,GetByDevisId,authentifie
+Vente,DevisLignes,/api/Vente/DevisLignes/{id},DELETE,Supprimer,Delete,authentifie
+Vente,DevisLignes,/api/Vente/DevisLignes/{id},GET,Consulter,GetById,authentifie
+Vente,DevisLignes,/api/Vente/DevisLignes/{id},PUT,Modifier,Update,authentifie
+Vente,Devises,/api/Vente/Devises/calculate-total,GET,Calculate Total,CalculateTotal,authentifie
+Vente,DocumentEmail,/api/Vente/DocumentEmail/send,POST,Send,Send,authentifie
+Vente,DocumentEmail,/api/Vente/DocumentEmail/send-bulk,POST,Send Bulk,SendBulk,authentifie
+Vente,DocumentHistorique,/api/Vente/DocumentHistorique/feed,GET,Consulter feed,GetFeed,authentifie
+Vente,DocumentHistorique,/api/Vente/DocumentHistorique/piece/{piece},GET,Consulter historique by piece,GetHistoriqueByPiece,authentifie
+Vente,DocumentHistorique,/api/Vente/DocumentHistorique/{id},GET,Consulter historique by id,GetHistoriqueById,authentifie
+Vente,DocumentHistorique,/api/Vente/DocumentHistorique/{type}/{id},GET,Consulter historique,GetHistorique,authentifie
+Vente,Echeances,/api/Vente/Echeances,POST,Créer,Create,authentifie
+Vente,Echeances,/api/Vente/Echeances/{id},DELETE,Supprimer,Delete,authentifie
+Vente,Echeances,/api/Vente/Echeances/{id},GET,Consulter,GetById,authentifie
+Vente,Echeances,/api/Vente/Echeances/{id},PUT,Modifier,Update,authentifie
+Vente,Echeances,/api/Vente/Echeances/{type}/{documentId},GET,Consulter par document,GetByDocument,authentifie
+Vente,FactureAvoir,/api/Vente/FactureAvoir,GET,Lister paginé,GetPaged,authentifie
+Vente,FactureAvoir,/api/Vente/FactureAvoir,POST,Créer,Create,authentifie
+Vente,FactureAvoir,/api/Vente/FactureAvoir/from-bon-retour,POST,Convertir depuis  bon retour,ConvertFromBonRetour,authentifie
+Vente,FactureAvoir,/api/Vente/FactureAvoir/from-facture,POST,Convertir depuis  facture,ConvertFromFacture,authentifie
+Vente,FactureAvoir,/api/Vente/FactureAvoir/{id},DELETE,Supprimer,Delete,authentifie
+Vente,FactureAvoir,/api/Vente/FactureAvoir/{id},GET,Consulter,GetById,authentifie
+Vente,FactureAvoir,/api/Vente/FactureAvoir/{id},PUT,Modifier,Update,authentifie
+Vente,FactureAvoirLignes,/api/Vente/FactureAvoirLignes,POST,Créer,Create,authentifie
+Vente,FactureAvoirLignes,/api/Vente/FactureAvoirLignes/by-facture-avoir/{factureAvoirId},GET,Consulter par facture avoir id,GetByFactureAvoirId,authentifie
+Vente,FactureAvoirLignes,/api/Vente/FactureAvoirLignes/{id},DELETE,Supprimer,Delete,authentifie
+Vente,FactureAvoirLignes,/api/Vente/FactureAvoirLignes/{id},GET,Consulter,GetById,authentifie
+Vente,FactureAvoirLignes,/api/Vente/FactureAvoirLignes/{id},PUT,Modifier,Update,authentifie
+Vente,FactureLignes,/api/Vente/FactureLignes,POST,Créer,Create,authentifie
+Vente,FactureLignes,/api/Vente/FactureLignes/by-facture/{factureId},GET,Consulter par facture id,GetByFactureId,authentifie
+Vente,FactureLignes,/api/Vente/FactureLignes/{id},DELETE,Supprimer,Delete,authentifie
+Vente,FactureLignes,/api/Vente/FactureLignes/{id},GET,Consulter,GetById,authentifie
+Vente,FactureLignes,/api/Vente/FactureLignes/{id},PUT,Modifier,Update,authentifie
+Vente,Factures,/api/Vente/Factures,GET,Lister paginé,GetPaged,authentifie
+Vente,Factures,/api/Vente/Factures,POST,Créer,Create,authentifie
+Vente,Factures,/api/Vente/Factures/annuler-imputation,POST,Annuler imputation,AnnulerImputation,authentifie
+Vente,Factures,/api/Vente/Factures/from-bon-commande,POST,Convertir depuis  bon commande,ConvertFromBonCommande,authentifie
+Vente,Factures,/api/Vente/Factures/from-bon-livraison,POST,Convertir depuis  bon livraison,ConvertFromBonLivraison,authentifie
+Vente,Factures,/api/Vente/Factures/from-devis,POST,Convertir depuis  devis,ConvertFromDevis,authentifie
+Vente,Factures,/api/Vente/Factures/imputer,POST,Imputer,Imputer,authentifie
+Vente,Factures,/api/Vente/Factures/ouvertes,GET,Consulter open by tiers,GetOpenByTiers,authentifie
+Vente,Factures,/api/Vente/Factures/{id},DELETE,Supprimer,Delete,authentifie
+Vente,Factures,/api/Vente/Factures/{id},GET,Consulter,GetById,authentifie
+Vente,Factures,/api/Vente/Factures/{id},PUT,Modifier,Update,authentifie
+Vente,Pricing,/api/Vente/Pricing/preview,GET,Preview,Preview,authentifie
+Vente,PrintTemplates,/api/Vente/PrintTemplates,GET,Lister (société),GetBySociete,authentifie
+Vente,PrintTemplates,/api/Vente/PrintTemplates,POST,Créer,Create,authentifie
+Vente,PrintTemplates,/api/Vente/PrintTemplates/by-type/{docType},GET,Consulter par doc type,GetByDocType,authentifie
+Vente,PrintTemplates,/api/Vente/PrintTemplates/{id:int},DELETE,Supprimer,Delete,authentifie
+Vente,PrintTemplates,/api/Vente/PrintTemplates/{id:int},GET,Consulter,GetById,authentifie
+Vente,PrintTemplates,/api/Vente/PrintTemplates/{id:int},PUT,Modifier,Update,authentifie
+Vente,ReportingQuery,/api/Vente/Reporting/metadata,GET,Consulter metadata,GetMetadata,authentifie
+Vente,ReportingQuery,/api/Vente/Reporting/query,POST,Rechercher,Query,authentifie
+Vente,Souches,/api/Vente/Souches,GET,Lister,GetAll,authentifie
+Vente,Souches,/api/Vente/Souches/{idSouche}/statuts,GET,Consulter statuts,GetStatuts,authentifie

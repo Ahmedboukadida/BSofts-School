@@ -1,0 +1,197 @@
+<!-- Updated: 2026-02-07 -->
+# Local Service Business SEO Strategy Template
+
+## Industry Characteristics
+
+- Geographic-focused searches
+- High intent, quick decision making
+- Reviews heavily influence decisions
+- Phone calls are primary conversion
+- Mobile-first user behavior
+- Emergency/urgent service needs
+
+## Recommended Site Architecture
+
+```
+/
+├── Home
+├── /services
+│   ├── /service-1
+│   ├── /service-2
+│   └── ...
+├── /locations
+│   ├── /city-1
+│   │   ├── /service-1-city-1
+│   │   └── ...
+│   ├── /city-2
+│   └── ...
+├── /about
+├── /reviews
+├── /gallery (or /portfolio)
+├── /blog
+├── /contact
+├── /emergency (if applicable)
+└── /faq
+```
+
+## Quality Gates
+
+### Location Page Limits
+- ⚠️ **WARNING** at 30+ location pages
+- 🛑 **HARD STOP** at 50+ location pages
+
+### Unique Content Requirements
+| Page Type | Min Words | Unique % |
+|-----------|-----------|----------|
+| Primary Location | 600 | 60%+ |
+| Service Area | 500 | 40%+ |
+| Service Page | 800 | 100% |
+
+### What Makes Location Pages Unique
+- Local landmarks and neighborhoods
+- Specific services offered at that location
+- Local team members
+- Location-specific testimonials
+- Community involvement
+- Local regulations or considerations
+
+## Schema Recommendations
+
+| Page Type | Schema Types |
+|-----------|-------------|
+| Homepage | LocalBusiness, Organization |
+| Service Pages | Service, LocalBusiness |
+| Location Pages | LocalBusiness (with geo) |
+| Contact | ContactPage, LocalBusiness |
+| Reviews | LocalBusiness (with AggregateRating) |
+
+### LocalBusiness Schema Example
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "LocalBusiness",
+  "name": "Business Name",
+  "address": {
+    "@type": "PostalAddress",
+    "streetAddress": "123 Main St",
+    "addressLocality": "City",
+    "addressRegion": "State",
+    "postalCode": "12345"
+  },
+  "telephone": "+1-555-555-5555",
+  "openingHours": "Mo-Fr 08:00-18:00",
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": "40.7128",
+    "longitude": "-74.0060"
+  },
+  "areaServed": ["City 1", "City 2"],
+  "priceRange": "$$"
+}
+```
+
+## Google Business Profile Integration
+
+- Ensure NAP consistency (Name, Address, Phone)
+- Sync service categories
+- Regular post updates
+- Photo uploads
+- Review response strategy
+
+### Google Business Profile Updates (2025-2026)
+
+- **Video verification** is now standard: postcard verification has been largely phased out. Prepare for a short video verification process showing the business location or service area.
+- **WhatsApp integration** replaced Google Business Chat (deprecated). Businesses can connect WhatsApp as their primary messaging channel.
+- **Q&A removed from Maps**: replaced by AI-generated answers. Ensure your GBP description, services, and website FAQ are comprehensive, as Google AI uses them to answer queries.
+- **Business hours are a top-5 ranking factor**: "Business is open at time of search" ranked as a top individual factor for the first time (Whitespark 2026 Local Search Ranking Factors Report). Keep hours accurate; consider extended hours if feasible.
+- **Review "Stories" format**: Google Maps now shows review snippets in a swipeable Stories format on mobile. Encourage detailed, descriptive reviews with photos.
+
+### Service Area Business (SAB) Update (June 2025)
+
+Google updated SAB guidelines to **disallow entire states or countries** as service areas. SABs must specify: cities, postal/ZIP codes, or neighborhoods. If you serve an entire metro area, list the major cities within it rather than the state.
+
+### AI Visibility for Local Businesses
+
+AI Overviews appear for only ~0.14% of local keywords (March 2025 data), local SEO faces significantly less AI disruption than other verticals. However, ChatGPT and Perplexity are increasingly used for local recommendations.
+
+To optimize for AI local visibility:
+- Ensure presence on expert-curated "best of" lists (ranked #1 AI visibility factor in Whitespark 2026 report)
+- Maintain consistent NAP (Name, Address, Phone) across all platforms
+- Build genuine review volume and quality
+- Use LocalBusiness schema with complete properties (geo, openingHours, priceRange, areaServed)
+
+## Content Priorities
+
+### High Priority
+1. Homepage with clear service area
+2. Core service pages
+3. Primary city page
+4. Contact page with all locations
+
+### Medium Priority
+1. Service + location combination pages
+2. FAQ page
+3. About/team page
+4. Reviews/testimonials page
+
+### Blog Topics
+- Seasonal maintenance tips
+- How to choose a [service provider]
+- Warning signs of [problem]
+- DIY vs professional comparisons
+- Local regulations and permits
+
+## Key Metrics to Track
+
+- Local pack rankings
+- Phone call volume from organic
+- Direction requests
+- Google Business Profile insights
+- Reviews count and rating
+
+## Generative Engine Optimization (GEO) for Local
+
+- [ ] Include clear, quotable service descriptions and pricing ranges
+- [ ] Use LocalBusiness schema with complete geo, openingHours, and areaServed
+- [ ] Build presence on curated "best of" and local directory lists
+- [ ] Maintain consistent NAP across all platforms (Google, Yelp, Apple Maps)
+- [ ] Include original photos of work, team, and location
+- [ ] Structure FAQ content for common local service questions
+- [ ] Monitor AI citation in ChatGPT and Perplexity local recommendations
+
+
+---
+
+## 🛠️ Mandatory Workspace & Governance Directives (Upgraded Standards)
+
+1. **Project Root & Paths**: Primary project workspace is E:\ToDo\BSofts.
+2. **Auxiliary Workspace Directory Layout (.agents/bonus/)**:
+   - **Scratch**: E:\ToDo\BSofts\.agents\bonus\Scratch — Scripting directory for creating temporary JS/TS scripts to inspect, verify, extract, or audit database & API components.
+   - **Output**: E:\ToDo\BSofts\.agents\bonus\Scratch\Output — Deliverable directory for exported reports, data dumps, and persistent deliverables.
+   - **Vault**: E:\ToDo\BSofts\.agents\bonus\Vault — Persistent memory vault directory holding state files (README.md, STATUS.md, PROGRESS.md, DECISIONS.md, DECLARATIONS.md, PROJECT.md).
+3. **Autonomous Execution Loop (Rule #12)**:
+   [1. Receive Goal] ➔ [2. Work & Implement] ➔ [3. Check & Verify (tsc --noEmit)] ➔ [4. Re-work if not complete] ➔ [5. Deliver Result] ➔ [6. Update Vault Memos].
+4. **Autonomous Execution Permissions (Rule #13)**: Full permission to read, write, create, move files, and execute scripts/commands under E:\ToDo\BSofts without asking for permission.
+5. **Mandatory Deletion Confirmation Guard (Rule #14)**: MUST ALWAYS ask user for explicit confirmation before deleting any file, folder, or database table.
+6. **Zero Database Data Loss Guard (Rule #15)**: NEVER run commands that accept database data loss (such as prisma db push --accept-data-loss or forced table drops).
+
+
+---
+
+## 👥 BSOFT 5-Actor Role Architecture & Permanent Deletion Governance
+
+1. **Developer (System Developer / Me)**:
+   - Full platform god-mode access across all companies, tenants, endpoints, and system settings.
+   - **Exclusive Permanent Deletion Authority**: Hard permanent deletes can ONLY be executed by Developer users. Non-developer delete requests default to soft-delete or throw ForbiddenException.
+2. **Super Admin (Subscription Buyer & Owner)**:
+   - Buyer of the SaaS subscription for his company/companies.
+   - Full administrative control and feature configuration for his own company/companies only.
+3. **Admin (Company Administrator)**:
+   - Highest operational authority in a specific company right after Super Admin.
+   - Manages day-to-day operations, employees, inventory, sales, and finance within his assigned company.
+4. **Employees (Company Staff)**:
+   - Operational staff members (Sales Agent, Accountant, Warehouse Manager) with role-restricted permissions.
+5. **Third Parties (Clients & Providers / Suppliers)**:
+   - External Customers (CLIENT) and Suppliers (FOURNISSEUR) operating in **Spectator Mode** — consult-only access restricted strictly to their own related records.
+
+7. **Permanent Recursive File System Access Guarantee (Rule #16)**: Permanent, unrestricted, recursive read, write, create, and move permissions across all files, directories, subdirectories, and nested paths under E:\ToDo\BSofts at all times without asking for confirmation.

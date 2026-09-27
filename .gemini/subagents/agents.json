@@ -1,0 +1,946 @@
+{
+  "version": "3.0",
+  "description": "BSOFTS School Production Swarm — Upgraded for Master Plan v3.0 Zero-Error Hardening.",
+  "globalSkillsPath": "e:\\ReFactory\\BSofts-School\\.gemini\\skills",
+  "entries": [
+    {
+      "name": "dto-validation-shield",
+      "description": "DTO & Validation Shield: Eliminates 400 Bad Request errors, softens ValidationPipe, aligns all DTOs and handles contract/salary persistence.",
+      "skills": [
+        "class-validator-expert",
+        "backend-security-coder"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "auth-core-specialist",
+      "description": "Auth & Core Services Specialist: Implements PUT /auth/profile, PUT /auth/change-password, MeetingsModule, and SaasFunctionsModule.",
+      "skills": [
+        "jwt-auth-hardening",
+        "saas-multi-tenant"
+      ],
+      "globalSkills": [
+        "clean-architecture-guardrails",
+        "backend-architect"
+      ]
+    },
+    {
+      "name": "analytics-stats-architect",
+      "description": "Analytics & Stats Engine Architect: Builds GET /dashboard/stats and GET /reports/stats, secures subscriptions approval, and system logs persistence.",
+      "skills": [
+        "kpi-dashboard-design",
+        "sql-optimization-patterns"
+      ],
+      "globalSkills": [
+        "postgres-best-practices",
+        "database-optimizer"
+      ]
+    },
+    {
+      "name": "frontend-dataflow-refactorer",
+      "description": "Frontend Data-Flow Refactorer: Aligns community API URLs, form payloads, dynamic dropdowns, error toasts, and strict 5-color solid palette.",
+      "skills": [
+        "frontend-dev-guidelines",
+        "tanstack-table-builder"
+      ],
+      "globalSkills": [
+        "react-ui-patterns",
+        "tailwind-design-system"
+      ]
+    },
+    {
+      "name": "master-judger",
+      "description": "Chief Swarm Architect: Multi-pass deep audits, zero-regression enforcement. Validates zero any types, monetary millimes, controller route ordering, DTO validation, and TypeScript build gate.",
+      "skills": [
+        "bsoft-project-governance",
+        "task-decomposer"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code",
+        "code-review-excellence"
+      ]
+    },
+    {
+      "name": "project-manager",
+      "description": "BSOFTS Master Task & Build Lead: PROJECT.md milestone tracker, task decomposition, build gate (npx tsc --noEmit) after each phase.",
+      "skills": [
+        "bsoft-project-governance",
+        "task-decomposer"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "judger-governance",
+      "description": "Governance Auditor: Enforces BSOFTS coding standards, rules, and phase sequence. Blocks phases if governance standards are violated.",
+      "skills": [
+        "bsoft-project-governance",
+        "task-decomposer"
+      ],
+      "globalSkills": [
+        "clean-code",
+        "code-review-excellence",
+        "backend-dev-guidelines"
+      ]
+    },
+    {
+      "name": "judger-security",
+      "description": "Security Judger: Audits 4-guard chain, multi-tenant isolation, x-company-id header injection, and RBAC matrix.",
+      "skills": [
+        "tenant-isolation-verifier",
+        "rbac-permissions-matrix",
+        "jwt-auth-hardening",
+        "rate-limit-helmet"
+      ],
+      "globalSkills": [
+        "auth-implementation-patterns",
+        "api-security-best-practices",
+        "api-security-testing",
+        "backend-security-coder"
+      ]
+    },
+    {
+      "name": "judger-ui-ux",
+      "description": "UI/UX Judger: Audits dual dark/light mode, glassmorphism tokens, 5-layer anatomy, modal sizes, Tailwind v4 nesting.",
+      "skills": [
+        "glassmorphic-ui-designer",
+        "tailwind-v4-nesting"
+      ],
+      "globalSkills": [
+        "frontend-dev-guidelines",
+        "frontend-architecture",
+        "react-best-practices",
+        "react-ui-patterns"
+      ]
+    },
+    {
+      "name": "judger-performance",
+      "description": "Performance Judger: Audits PostgreSQL composite indexes, Redis TTL caching, BullMQ configs, N+1 queries, pagination.",
+      "skills": [
+        "prisma-index-auditor",
+        "redis-cache-strategy"
+      ],
+      "globalSkills": [
+        "database-optimizer",
+        "postgresql-optimization",
+        "prisma-expert",
+        "bullmq-specialist"
+      ]
+    },
+    {
+      "name": "judger-typescript",
+      "description": "[NEW] TypeScript Strict-Mode Enforcer: Zero any types audit, proper generic constraints, and tsc --noEmit gate across web/ and backend/.",
+      "skills": [
+        "typescript-type-syncer"
+      ],
+      "globalSkills": [
+        "typescript-expert",
+        "typescript-advanced-types",
+        "typescript-pro",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "judger-api-contracts",
+      "description": "[NEW] API Contract Validator: Validates frontend API call shapes exactly match backend DTO and controller response declarations.",
+      "skills": [
+        "axios-client-interceptor",
+        "typescript-type-syncer"
+      ],
+      "globalSkills": [
+        "api-design-principles",
+        "api-designer",
+        "e2e-testing",
+        "e2e-testing-patterns"
+      ]
+    },
+    {
+      "name": "judger-i18n-compliance",
+      "description": "[NEW] i18n Compliance Auditor: Scans all pages for hardcoded strings, enforces 100% useTranslations() and RTL compliance.",
+      "skills": [
+        "next-intl-localizer"
+      ],
+      "globalSkills": [
+        "i18n-localization",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "e2e-api-verifier",
+      "description": "E2E API Probe Verifier: Probe tests all 145 NestJS endpoints against frontend calls. Validates routes, methods, headers, response shapes.",
+      "skills": [
+        "axios-client-interceptor",
+        "nest-route-organizer"
+      ],
+      "globalSkills": [
+        "e2e-testing",
+        "e2e-testing-patterns",
+        "nestjs-expert",
+        "api-design-principles"
+      ]
+    },
+    {
+      "name": "backend-prisma-head",
+      "description": "Head of Prisma Schema: 152-model schema integrity, relations, enums, migrations, is_deleted/company_id standard fields.",
+      "skills": [
+        "prisma-schema-engineer"
+      ],
+      "globalSkills": [
+        "prisma-expert",
+        "database-architect",
+        "postgresql"
+      ]
+    },
+    {
+      "name": "backend-db-engineer",
+      "description": "DB Engineer: PostgreSQL indexes, foreign keys, migration scripts. Auto-generates composite @@index for query patterns.",
+      "skills": [
+        "prisma-index-auditor"
+      ],
+      "globalSkills": [
+        "prisma-expert",
+        "postgresql",
+        "postgresql-optimization",
+        "database-optimizer",
+        "database-architect"
+      ]
+    },
+    {
+      "name": "backend-access-control",
+      "description": "RBAC Lead: 4-guard chain, @RequirePermissions on all write endpoints, roles_permissions_relations seed file.",
+      "skills": [
+        "rbac-permissions-matrix"
+      ],
+      "globalSkills": [
+        "auth-implementation-patterns",
+        "nestjs-expert",
+        "backend-security-coder"
+      ]
+    },
+    {
+      "name": "backend-tenant",
+      "description": "Multi-Tenant Isolation Lead: TenantMiddleware, x-company-id propagation, per-company Prisma clients, 503 on failure.",
+      "skills": [
+        "tenant-isolation-verifier",
+        "prisma-multidb-manager"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "database-architect",
+        "microservices-patterns"
+      ]
+    },
+    {
+      "name": "backend-security",
+      "description": "Auth & Security Hardening: JWT, bcrypt>=12, TOTP 2FA, user_sessions revocation, Helmet CSP, CORS, rate limits.",
+      "skills": [
+        "jwt-auth-hardening",
+        "rate-limit-helmet"
+      ],
+      "globalSkills": [
+        "auth-implementation-patterns",
+        "api-security-best-practices",
+        "backend-security-coder",
+        "nestjs-expert"
+      ]
+    },
+    {
+      "name": "backend-optimizer",
+      "description": "Performance & Caching Lead: CacheService Redis TTL for all findAll, BullMQ processors for exports, N+1 elimination.",
+      "skills": [
+        "redis-cache-strategy",
+        "bullmq-queue-manager",
+        "prisma-index-auditor"
+      ],
+      "globalSkills": [
+        "bullmq-specialist",
+        "prisma-expert",
+        "postgresql-optimization",
+        "database-optimizer"
+      ]
+    },
+    {
+      "name": "backend-websocket",
+      "description": "WebSocket Gateway Lead: Socket.IO with JWT handshake, company rooms, emitNotification/emitMessage, AppModule registration.",
+      "skills": [
+        "websocket-gateway",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "microservices-patterns"
+      ]
+    },
+    {
+      "name": "backend-swagger",
+      "description": "OpenAPI Specification Lead: @ApiTags, @ApiBearerAuth, @ApiOperation, @ApiResponse, @ApiQuery, @ApiParam on all 145+ endpoints.",
+      "skills": [
+        "openapi-swagger-decorator"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "api-design-principles"
+      ]
+    },
+    {
+      "name": "backend-entities-manager",
+      "description": "Entity Classes Manager: Swagger response entities for all 152 models with full @ApiProperty, TypeScript types, enums.",
+      "skills": [
+        "class-validator-expert",
+        "openapi-swagger-decorator"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "typescript-expert",
+        "prisma-expert"
+      ]
+    },
+    {
+      "name": "backend-dtos-manager",
+      "description": "DTO Schema Validation Lead: CreateDto & UpdateDto (PartialType) for 152 models, 100% class-validator coverage, zero any.",
+      "skills": [
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "typescript-expert",
+        "api-design-principles"
+      ]
+    },
+    {
+      "name": "backend-services-manager",
+      "description": "Services Logic Lead: All CRUD for 152 models with soft-delete, company_id scope, pagination, search, cache, toggle, transactions.",
+      "skills": [
+        "base-service-extender",
+        "redis-cache-strategy"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "database-optimizer",
+        "bullmq-specialist"
+      ]
+    },
+    {
+      "name": "backend-controllers-manager",
+      "description": "Controllers Lead: Static-before-parameterized routing, dual path arrays, full CRUD, guard+permission stacks for 152 models.",
+      "skills": [
+        "nest-route-organizer",
+        "rbac-permissions-matrix"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "api-design-principles",
+        "auth-implementation-patterns"
+      ]
+    },
+    {
+      "name": "backend-modules-manager",
+      "description": "Module Wiring Lead: XxxModule for 152 models, AppModule registration, global guard and gateway registration.",
+      "skills": [
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "microservices-patterns",
+        "backend-architect"
+      ]
+    },
+    {
+      "name": "backend-migrations-manager",
+      "description": "[NEW] Migration History Manager: Prisma migration naming conventions, history validation, rollback procedures, production safety.",
+      "skills": [
+        "prisma-schema-engineer"
+      ],
+      "globalSkills": [
+        "prisma-expert",
+        "postgresql",
+        "database-architect"
+      ]
+    },
+    {
+      "name": "backend-seeder",
+      "description": "[NEW] Seed Data Manager: Idempotent seed files for roles, permissions, countries, currencies, system settings, subscription plans.",
+      "skills": [
+        "prisma-schema-engineer",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "prisma-expert",
+        "postgresql",
+        "nestjs-expert"
+      ]
+    },
+    {
+      "name": "backend-email-agent",
+      "description": "[NEW] Email System Lead: Handlebars/MJML templates, BullMQ queue-based delivery via Nodemailer/Resend, tracking, bounce handling.",
+      "skills": [
+        "bullmq-queue-manager",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "bullmq-specialist",
+        "nestjs-expert",
+        "backend-dev-guidelines"
+      ]
+    },
+    {
+      "name": "backend-file-storage",
+      "description": "[NEW] File Storage Lead: S3-compatible storage (MinIO/R2) for documents, images, PDFs. Upload validation, CDN URLs, metadata records.",
+      "skills": [
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "backend-dev-guidelines",
+        "database-architect"
+      ]
+    },
+    {
+      "name": "backend-reporting",
+      "description": "[NEW] Report Generation Lead: PDFKit/ExcelJS reports via BullMQ. Invoices, payslips, stock reports, financial statements.",
+      "skills": [
+        "bullmq-queue-manager",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "bullmq-specialist",
+        "nestjs-expert",
+        "prisma-expert"
+      ]
+    },
+    {
+      "name": "backend-audit-trail",
+      "description": "[NEW] Audit Trail Lead: Automatic audit log for all CUD operations — who, what, when, before/after values, IP/company/user. Immutable.",
+      "skills": [
+        "base-service-extender",
+        "prisma-schema-engineer"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "backend-dev-guidelines"
+      ]
+    },
+    {
+      "name": "saas-expert",
+      "description": "SaaS Architecture Expert: Multi-tenant isolation, subscription feature gates, quota enforcement, tenant onboarding flows.",
+      "skills": [
+        "tenant-isolation-verifier"
+      ],
+      "globalSkills": [
+        "microservices-patterns",
+        "nestjs-expert",
+        "database-architect",
+        "auth-implementation-patterns"
+      ]
+    },
+    {
+      "name": "microservice-expert",
+      "description": "Microservice Expert: BullMQ queue topology, domain events, Socket.IO emission, circuit breakers, domain boundary enforcement.",
+      "skills": [
+        "bullmq-queue-manager",
+        "redis-cache-strategy",
+        "websocket-gateway"
+      ],
+      "globalSkills": [
+        "microservices-patterns",
+        "bullmq-specialist",
+        "event-sourcing-architect",
+        "nestjs-expert"
+      ]
+    },
+    {
+      "name": "web-views",
+      "description": "Dashboard Page Builder: Next.js App Router pages with 5-layer anatomy, real API data, Create/Edit 3xl modals, Delete md modals, permissions.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer"
+      ],
+      "globalSkills": [
+        "nextjs-app-router-patterns",
+        "nextjs-best-practices",
+        "react-best-practices",
+        "react-ui-patterns",
+        "frontend-developer"
+      ]
+    },
+    {
+      "name": "web-components",
+      "description": "Shared Component Builder: DashboardNavbar, Sidebar, NotificationsDrawer, MessagesDrawer, TanStack DataTable, glassmorphic UI.",
+      "skills": [
+        "tanstack-table-builder",
+        "glassmorphic-ui-designer"
+      ],
+      "globalSkills": [
+        "react-best-practices",
+        "react-ui-patterns",
+        "frontend-developer",
+        "frontend-architecture"
+      ]
+    },
+    {
+      "name": "web-contexts",
+      "description": "React Context & Hooks Manager: AuthContext, CompanyContext, useLang, usePermission, useRequireCompany, useWebSocket hooks.",
+      "skills": [
+        "react-context-manager",
+        "frontend-permission-guard"
+      ],
+      "globalSkills": [
+        "react-best-practices",
+        "react-state-management",
+        "nextjs-best-practices"
+      ]
+    },
+    {
+      "name": "web-apis",
+      "description": "Frontend API Layer Manager: apiClient usage, typed helpers, x-company-id headers, paginated response normalization, 401 redirect.",
+      "skills": [
+        "axios-client-interceptor"
+      ],
+      "globalSkills": [
+        "frontend-architecture",
+        "react-nextjs-development",
+        "api-design-principles"
+      ]
+    },
+    {
+      "name": "web-types",
+      "description": "TypeScript Types Sync Agent: web/src/types/ sync with Prisma models, zero any[], interfaces match backend field names.",
+      "skills": [
+        "typescript-type-syncer"
+      ],
+      "globalSkills": [
+        "typescript-expert",
+        "typescript-advanced-types",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "web-styling",
+      "description": "Dual-Theme CSS Agent: Tailwind dark/light compliance audit across all 27+ pages. Fixes dark-only patterns. Enforces BSOFTS design tokens.",
+      "skills": [
+        "tailwind-v4-nesting"
+      ],
+      "globalSkills": [
+        "frontend-dev-guidelines",
+        "react-ui-patterns",
+        "frontend-developer"
+      ]
+    },
+    {
+      "name": "web-i18n",
+      "description": "i18n & RTL Localization Agent: en/fr/ar JSON messages, replaces hardcoded text with useTranslations, RTL layout at layout level.",
+      "skills": [
+        "next-intl-localizer"
+      ],
+      "globalSkills": [
+        "i18n-localization",
+        "nextjs-best-practices",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "web-realtime",
+      "description": "Frontend WebSocket Lead: socket.io-client hook, JWT auth, company rooms, notification/message events, badge counts, toasts.",
+      "skills": [
+        "websocket-gateway",
+        "react-context-manager",
+        "axios-client-interceptor"
+      ],
+      "globalSkills": [
+        "react-best-practices",
+        "nextjs-best-practices",
+        "microservices-patterns"
+      ]
+    },
+    {
+      "name": "web-dashboard-analytics",
+      "description": "[NEW] Analytics Dashboard Builder: Recharts/Chart.js KPI dashboards per domain with real API data, loading states, empty states.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer"
+      ],
+      "globalSkills": [
+        "react-nextjs-development",
+        "frontend-developer",
+        "react-ui-patterns"
+      ]
+    },
+    {
+      "name": "web-forms-manager",
+      "description": "[NEW] Forms & Validation Lead: React Hook Form + Zod, multi-step forms, dynamic field arrays, file upload, error display.",
+      "skills": [
+        "nextjs-app-router-builder"
+      ],
+      "globalSkills": [
+        "react-best-practices",
+        "react-ui-patterns",
+        "frontend-developer",
+        "typescript-expert"
+      ]
+    },
+    {
+      "name": "web-print-manager",
+      "description": "[NEW] Print & PDF Layout Agent: @media print CSS, print-specific Tailwind variants, browser PDF export for invoices, payslips, reports.",
+      "skills": [
+        "glassmorphic-ui-designer",
+        "tailwind-v4-nesting"
+      ],
+      "globalSkills": [
+        "frontend-developer",
+        "react-ui-patterns"
+      ]
+    },
+    {
+      "name": "web-pwa-manager",
+      "description": "[NEW] PWA Lead: Next.js service worker, offline cache, push notifications, app manifest, install prompt.",
+      "skills": [
+        "nextjs-app-router-builder"
+      ],
+      "globalSkills": [
+        "nextjs-best-practices",
+        "nextjs-app-router-patterns",
+        "frontend-developer"
+      ]
+    },
+    {
+      "name": "domain-subagent-erp-core",
+      "description": "ERP Core Expert: System settings, document counters, roles, permissions, audit logs. Full-stack backend + frontend.",
+      "skills": [
+        "bsoft-project-governance",
+        "nextjs-app-router-builder",
+        "nest-route-organizer"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "domain-subagent-crm",
+      "description": "CRM Expert: Third parties, CRM pipeline, stages, leads, opportunities, customer history. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "domain-subagent-finance",
+      "description": "Finance Expert: Caisses, banks, payments, journal entries, taxes, invoices. ALL monetary values = integer millimes. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development",
+        "database-architect"
+      ]
+    },
+    {
+      "name": "domain-subagent-inventory",
+      "description": "Inventory Expert: Warehouses, articles, lots, stock movements, UOM conversions, valuation, alerts. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "base-service-extender",
+        "prisma-schema-engineer"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "domain-subagent-gpao",
+      "description": "GPAO Manufacturing Expert: Factories, machines, BOM, production orders, work orders, operator kiosk. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "domain-subagent-sales-pos",
+      "description": "Sales & POS Expert: POS terminals, sessions, carts, payments, ecommerce, quotes, delivery. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "domain-subagent-hrms-payroll",
+      "description": "HRMS Expert: Employee lifecycle, contracts, attendance, leave, payroll (CNSS/IRPP), payslips. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "domain-subagent-projects",
+      "description": "Projects Expert: Projects, tasks, milestones, time tracking, Gantt display, billing. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "domain-subagent-support",
+      "description": "Support Expert: Tickets, SLA tracking, FAQ, live chat (Socket.IO), CSAT. Full-stack.",
+      "skills": [
+        "nextjs-app-router-builder",
+        "glassmorphic-ui-designer",
+        "websocket-gateway",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "prisma-expert",
+        "react-nextjs-development"
+      ]
+    },
+    {
+      "name": "mobile-flutter",
+      "description": "Flutter Mobile Lead: iOS & Android app, zero dynamic, typed Dart models, Riverpod, Dio with auth/company interceptors, adaptive UI.",
+      "skills": [
+        "dart-type-safety",
+        "flutter-adaptive-ui"
+      ],
+      "globalSkills": [
+        "flutter-expert"
+      ]
+    },
+    {
+      "name": "desktop-tauri",
+      "description": "Tauri Desktop Lead: Rust IPC commands, custom window controls, offline SQLite, FS API, system tray, receipt printer.",
+      "skills": [
+        "tauri-bridge"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "typescript-expert"
+      ]
+    },
+    {
+      "name": "devops-docker-compose",
+      "description": "[NEW] Docker Compose Lead: Docker Compose for PostgreSQL, Redis, NestJS, Next.js, MinIO. Dev and production variants.",
+      "skills": [
+        "bsoft-project-governance"
+      ],
+      "globalSkills": [
+        "docker-expert",
+        "backend-dev-guidelines",
+        "postgresql"
+      ]
+    },
+    {
+      "name": "devops-ci-cd",
+      "description": "[NEW] CI/CD Pipeline Lead: GitHub Actions for build, test, migrate (prisma migrate deploy), and zero-downtime deploy.",
+      "skills": [
+        "bsoft-project-governance"
+      ],
+      "globalSkills": [
+        "docker-expert",
+        "backend-dev-guidelines"
+      ]
+    },
+    {
+      "name": "devops-monitoring",
+      "description": "[NEW] Observability Lead: Sentry error tracking, uptime monitoring, Prometheus/Grafana for queues/Redis/DB/API latency.",
+      "skills": [
+        "bsoft-project-governance"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "database-optimizer"
+      ]
+    },
+    {
+      "name": "ai-assistant-agent",
+      "description": "[NEW] AI/ML Integration Lead: Gemini/OpenAI APIs for ERP chatbot, document summarization, smart invoice OCR, semantic search, anomaly detection.",
+      "skills": [
+        "bsoft-project-governance",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "nestjs-expert",
+        "backend-dev-guidelines"
+      ]
+    },
+    {
+      "name": "lims-labo-expert",
+      "description": "Civil engineering geotechnical LIMS math engine (Atterberg Limits, Concrete fc28, Sieve Analysis curves, Proctor Compaction, AST evaluation, Static Certificate Freeze). Extracted from AxiaLabo.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "board-meetings-governance-expert",
+      "description": "Board meeting governance, LiveKit WebRTC video, Quorum math, hand-raise queue (turn_request), AI Word minute generation (PV). Extracted from AxiaMeetings.",
+      "skills": [
+        "websocket-gateway",
+        "base-service-extender"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "syndic-property-expert",
+      "description": "Building co-ownership management, owner tantièmes share distribution, fund calls (Appels de fonds), utility meter reading deltas (Compteur). Extracted from AxiaSyndic.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "pv-solar-mes-expert",
+      "description": "Photovoltaic solar module MES, Sun Simulator Flash tester IV curve characterization (Pmax, Voc, Isc, FF, efficiency), 5W power binning, EL micro-crack defect tracking, landed customs cost engine (CIF, DD, FODEC). Extracted from IFRISOL.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "academic-school-expert",
+      "description": "Academic hierarchy (School -> Cycle -> Level -> Class), timetabling collision detection algorithms, GPA & class ranking math, tuition billing. Extracted from EasySchool.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "realestate-urbanism-expert",
+      "description": "Real estate development, urban planning surface ratios (COS / CES), net sales price & VAT math, 15-day deposit hold expiration state machine. Extracted from SPIZ.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "events-marketplace-expert",
+      "description": "Event booking marketplace, 3-tier geography (Country -> State -> City), temporal slot collision math (item_occupation), and payment installments. Extracted from OSSEvents.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "recruitment-hrms-expert",
+      "description": "HR recruitment candidate application pipeline (JobOffers -> JobApplications), candidate filtering state machine, automated response emails, and tenant service catalog. Extracted from AxiaSolution.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "portfolio-analytics-expert",
+      "description": "Business showcase portfolio, visitor GeoIP analytics, device fingerprinting (SHA256(IP + UserAgent)), and lead capture inbox. Extracted from KBS.",
+      "skills": [
+        "base-service-extender",
+        "class-validator-expert"
+      ],
+      "globalSkills": [
+        "backend-dev-guidelines",
+        "clean-code"
+      ]
+    },
+    {
+      "name": "test-engineer",
+      "description": "[NEW 2.1] Test Suite Lead: Backend currently has 33 scaffolded specs, web has ZERO tests despite vitest.config.ts existing. Owns: Vitest web smoke tests, Jest backend service tests, tenant-isolation (company_id leakage) tests, permissions-guard matrix tests, auth flow e2e. Gates every phase.",
+      "skills": [
+        "bsoft-project-governance"
+      ],
+      "globalSkills": [
+        "vitest-skill",
+        "jest-skill",
+        "testing-patterns",
+        "javascript-testing-patterns"
+      ]
+    },
+    {
+      "name": "devops-git-release",
+      "description": "[NEW 2.1] Git & Release Hygiene Lead: Repository initialized 2026-08-23 (main). Owns: conventional commits, branch strategy (feat/fix/chore), pre-commit quality gates, secret-scan before push, release tagging. Enforces Windows chunked-staging rules from AGENTS.md rule 25.",
+      "skills": [
+        "bsoft-project-governance",
+        "task-decomposer"
+      ],
+      "globalSkills": [
+        "smart-git-automation",
+        "commit",
+        "git-hooks-automation",
+        "unslop-commit"
+      ]
+    }
+  ]
+}
