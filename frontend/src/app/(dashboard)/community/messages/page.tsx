@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import type { MessageThread } from '@/types';
 
 export default function CommunityMessagesPage() {
@@ -92,27 +93,31 @@ export default function CommunityMessagesPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/messages', formData).catch(() => {});
+      const res = await api.post('/messages', formData);
+      const created = res.data?.data || res.data || {};
       const newThread: MessageThread = {
-        id: `msg-${Date.now()}`,
-        subject: formData.subject,
-        senderName: 'Direction Pédagogique',
-        senderRole: 'ADMIN',
-        recipientName: formData.recipientTarget,
-        recipientGroup: formData.recipientTarget,
-        lastMessage: formData.messageContent,
+        id: created.id || `msg-${Date.now()}`,
+        subject: created.subject || formData.subject,
+        senderName: created.senderName || 'Direction Pédagogique',
+        senderRole: (created.senderRole as any) || 'ADMIN',
+        recipientName: created.recipientName || formData.recipientTarget,
+        recipientGroup: created.recipientGroup || formData.recipientTarget,
+        lastMessage: created.lastMessage || created.body || formData.messageContent,
         lastMessageTime: 'À l’instant',
         unreadCount: 0,
-        priority: formData.priority,
+        priority: created.priority || formData.priority,
         isArchived: false,
-        createdAt: new Date().toISOString(),
-        createdBy: 'u-root',
-        createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-        updatedAt: new Date().toISOString(),
+        createdAt: created.createdAt || new Date().toISOString(),
+        createdBy: created.createdBy || 'u-root',
+        createdByName: created.createdByName || 'Ahmed Zitouni (@root) [ROOT]',
+        updatedAt: created.updatedAt || new Date().toISOString(),
         isDeleted: false,
       };
       setThreads((prev) => [newThread, ...prev]);
       setIsFormModalOpen(false);
+      showToast.success('Message envoyé avec succès');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’envoi du message');
     } finally {
       setIsSubmitting(false);
     }
@@ -129,10 +134,11 @@ export default function CommunityMessagesPage() {
     try {
       await api.delete(`/messages/${row.id}`, {
         params: { permanent: permanent && isRoot },
-      }).catch(() => {});
+      });
 
       if (permanent) {
         setThreads((prev) => prev.filter((t) => t.id !== row.id));
+        showToast.success('Conversation définitivement supprimée');
       } else {
         setThreads((prev) =>
           prev.map((t) =>
@@ -146,16 +152,17 @@ export default function CommunityMessagesPage() {
               : t
           )
         );
+        showToast.success('Conversation déplacée dans la corbeille');
       }
-    } catch {
-      // Handled
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la suppression de la conversation');
     }
   };
 
   const handleRestore = async (row: MessageThread) => {
     if (!window.confirm(`Restaurer la conversation "${row.subject}" ?`)) return;
     try {
-      await api.post(`/messages/${row.id}/restore`).catch(() => {});
+      await api.post(`/messages/${row.id}/restore`);
       setThreads((prev) =>
         prev.map((t) =>
           t.id === row.id
@@ -163,8 +170,9 @@ export default function CommunityMessagesPage() {
             : t
         )
       );
-    } catch {
-      // Handled
+      showToast.success('Conversation restaurée avec succès');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la restauration de la conversation');
     }
   };
 

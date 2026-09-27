@@ -17,6 +17,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import type { FunctionItem } from '@/types';
 
 const AVAILABLE_PERMISSIONS_CATALOG = [
@@ -142,35 +143,52 @@ export default function SaaSFunctionsPage() {
       };
 
       if (editingItem) {
-        await api.put(`/saas-functions/${editingItem.id}`, payload).catch(() => {});
+        await api.put(`/saas-functions/${editingItem.id}`, payload);
+        showToast.success('Fonctionnalité mise à jour avec succès');
       } else {
-        await api.post('/saas-functions', payload).catch(() => {});
+        await api.post('/saas-functions', payload);
+        showToast.success('Fonctionnalité créée avec succès');
       }
       setIsFormModalOpen(false);
       fetchFunctions();
-    } catch {
-      setIsFormModalOpen(false);
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement de la fonctionnalité');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: FunctionItem) => {
-    await api.delete(`/saas-functions/${item.id}`).catch(() => {});
-    setFunctions((prev) => prev.filter((f) => f.id !== item.id));
+    try {
+      await api.delete(`/saas-functions/${item.id}`);
+      setFunctions((prev) => prev.filter((f) => f.id !== item.id));
+      showToast.success('Fonctionnalité archivée');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’archivage');
+    }
   };
 
   const handlePermanentDelete = async (item: FunctionItem) => {
-    await api.delete(`/saas-functions/${item.id}?permanent=true`).catch(() => {});
-    setFunctions((prev) => prev.filter((f) => f.id !== item.id));
+    try {
+      await api.delete(`/saas-functions/${item.id}?permanent=true`);
+      setFunctions((prev) => prev.filter((f) => f.id !== item.id));
+      showToast.success('Fonctionnalité définitivement supprimée');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive');
+    }
   };
 
   const handleToggleStatus = async (item: FunctionItem) => {
     const updated = !item.isActive;
-    await api.put(`/saas-functions/${item.id}`, { isActive: updated }).catch(() => {});
-    setFunctions((prev) =>
-      prev.map((f) => (f.id === item.id ? { ...f, isActive: updated } : f))
-    );
+    try {
+      await api.put(`/saas-functions/${item.id}`, { isActive: updated });
+      setFunctions((prev) =>
+        prev.map((f) => (f.id === item.id ? { ...f, isActive: updated } : f))
+      );
+      showToast.success(updated ? 'Fonctionnalité activée' : 'Fonctionnalité désactivée');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors du changement de statut');
+    }
   };
 
   // Filtered functions

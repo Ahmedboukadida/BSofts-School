@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import type { ModuleItem } from '@/types';
 
 export default function SaaSAdminModulesPage() {
@@ -117,35 +118,52 @@ export default function SaaSAdminModulesPage() {
     setIsSubmitting(true);
     try {
       if (editingItem) {
-        await api.put(`/saas-modules/${editingItem.id}`, formData).catch(() => {});
+        await api.put(`/saas-modules/${editingItem.id}`, formData);
+        showToast.success('Module mis à jour avec succès');
       } else {
-        await api.post('/saas-modules', formData).catch(() => {});
+        await api.post('/saas-modules', formData);
+        showToast.success('Module créé avec succès');
       }
       setIsFormModalOpen(false);
       fetchModules();
-    } catch {
-      setIsFormModalOpen(false);
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement du module');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleDelete = async (item: ModuleItem) => {
-    await api.delete(`/saas-modules/${item.id}`).catch(() => {});
-    setModules((prev) => prev.filter((m) => m.id !== item.id));
+    try {
+      await api.delete(`/saas-modules/${item.id}`);
+      setModules((prev) => prev.filter((m) => m.id !== item.id));
+      showToast.success('Module désactivé / archivé');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la désactivation du module');
+    }
   };
 
   const handlePermanentDelete = async (item: ModuleItem) => {
-    await api.delete(`/saas-modules/${item.id}?permanent=true`).catch(() => {});
-    setModules((prev) => prev.filter((m) => m.id !== item.id));
+    try {
+      await api.delete(`/saas-modules/${item.id}?permanent=true`);
+      setModules((prev) => prev.filter((m) => m.id !== item.id));
+      showToast.success('Module définitivement supprimé');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la suppression définitive du module');
+    }
   };
 
   const handleToggleStatus = async (item: ModuleItem) => {
     const updated = !item.isActive;
-    await api.put(`/saas-modules/${item.id}`, { isActive: updated }).catch(() => {});
-    setModules((prev) =>
-      prev.map((m) => (m.id === item.id ? { ...m, isActive: updated } : m))
-    );
+    try {
+      await api.put(`/saas-modules/${item.id}`, { isActive: updated });
+      setModules((prev) =>
+        prev.map((m) => (m.id === item.id ? { ...m, isActive: updated } : m))
+      );
+      showToast.success(updated ? 'Module activé' : 'Module désactivé');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la modification du statut');
+    }
   };
 
   const getCategoryBadge = (category: ModuleItem['category']) => {

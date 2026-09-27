@@ -22,6 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import type { NotificationItem } from '@/types';
 
 export default function CommunityNotificationsPage() {
@@ -90,26 +91,30 @@ export default function CommunityNotificationsPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.post('/notifications', formData).catch(() => {});
+      const res = await api.post('/notifications', formData);
+      const created = res.data?.data || res.data || {};
       const newNotif: NotificationItem = {
-        id: `notif-${Date.now()}`,
-        title: formData.title,
-        channel: formData.channel,
-        targetAudience: formData.targetAudience,
-        totalRecipients: formData.totalRecipients,
-        deliveredCount: formData.totalRecipients,
+        id: created.id || `notif-${Date.now()}`,
+        title: created.title || formData.title,
+        channel: created.channel || formData.channel,
+        targetAudience: created.targetAudience || formData.targetAudience,
+        totalRecipients: Number(created.totalRecipients || formData.totalRecipients),
+        deliveredCount: Number(created.deliveredCount ?? created.totalRecipients ?? formData.totalRecipients),
         failedCount: 0,
-        status: 'SENT',
+        status: created.status || 'SENT',
         sentAt: 'À l’instant',
-        content: formData.content,
-        createdAt: new Date().toISOString(),
-        createdBy: 'u-root',
-        createdByName: 'Ahmed Zitouni (@root) [ROOT]',
-        updatedAt: new Date().toISOString(),
+        content: created.content || formData.content,
+        createdAt: created.createdAt || new Date().toISOString(),
+        createdBy: created.createdBy || 'u-root',
+        createdByName: created.createdByName || 'Ahmed Zitouni (@root) [ROOT]',
+        updatedAt: created.updatedAt || new Date().toISOString(),
         isDeleted: false,
       };
       setNotifications((prev) => [newNotif, ...prev]);
       setIsFormModalOpen(false);
+      showToast.success('Notification diffusée avec succès');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’envoi de la notification');
     } finally {
       setIsSubmitting(false);
     }
@@ -126,10 +131,11 @@ export default function CommunityNotificationsPage() {
     try {
       await api.delete(`/notifications/${row.id}`, {
         params: { permanent: permanent && isRoot },
-      }).catch(() => {});
+      });
 
       if (permanent) {
         setNotifications((prev) => prev.filter((n) => n.id !== row.id));
+        showToast.success('Notification définitivement supprimée');
       } else {
         setNotifications((prev) =>
           prev.map((n) =>
@@ -143,16 +149,17 @@ export default function CommunityNotificationsPage() {
               : n
           )
         );
+        showToast.success('Notification déplacée dans la corbeille');
       }
-    } catch {
-      // Handled
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la suppression de la notification');
     }
   };
 
   const handleRestore = async (row: NotificationItem) => {
     if (!window.confirm(`Restaurer la notification "${row.title}" ?`)) return;
     try {
-      await api.post(`/notifications/${row.id}/restore`).catch(() => {});
+      await api.post(`/notifications/${row.id}/restore`);
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === row.id
@@ -160,8 +167,9 @@ export default function CommunityNotificationsPage() {
             : n
         )
       );
-    } catch {
-      // Handled
+      showToast.success('Notification restaurée avec succès');
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de la restauration de la notification');
     }
   };
 

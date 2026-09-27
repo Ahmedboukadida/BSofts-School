@@ -36,12 +36,12 @@ export default function EstablishmentsPage() {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
-    category: 'HIGH_SCHOOL' as EstablishmentItem['category'],
+    category: 'PRIMARY' as EstablishmentItem['category'],
     address: '',
     phone: '',
     email: '',
     directorName: '',
-    capacity: 500,
+    capacity: 200,
     tenantId: '',
   });
 
@@ -104,12 +104,12 @@ export default function EstablishmentsPage() {
     setFormData({
       name: '',
       code: '',
-      category: 'HIGH_SCHOOL',
+      category: 'PRIMARY',
       address: '',
       phone: '',
       email: '',
       directorName: '',
-      capacity: 500,
+      capacity: 200,
       tenantId: defaultTenant,
     });
     setIsFormModalOpen(true);

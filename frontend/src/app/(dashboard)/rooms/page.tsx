@@ -41,11 +41,11 @@ export default function RoomsPage() {
     name: '',
     code: '',
     type: 'CLASSROOM' as RoomItem['type'],
-    capacity: 30,
-    floor: '1',
-    building: 'Bâtiment Principal',
+    capacity: 25,
+    floor: '',
+    building: '',
     description: '',
-    equipment: ['Projecteur', 'Tableau Blanc'],
+    equipment: [] as string[],
   });
   const [newEquipmentTag, setNewEquipmentTag] = useState('');
 
@@ -101,11 +101,11 @@ export default function RoomsPage() {
       name: '',
       code: '',
       type: 'CLASSROOM',
-      capacity: 30,
-      floor: '1',
-      building: 'Bâtiment Principal',
+      capacity: 25,
+      floor: '',
+      building: '',
       description: '',
-      equipment: ['Projecteur', 'Tableau Blanc'],
+      equipment: [],
     });
     setNewEquipmentTag('');
     setIsFormModalOpen(true);

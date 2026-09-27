@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import api from '@/lib/api';
+import { showToast, showApiErrorToast } from '@/components/ui/toast';
 
 export default function SaaSPlatformSettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -108,7 +109,9 @@ export default function SaaSPlatformSettingsPage() {
           setSettings((prev) => ({ ...prev, ...res.data }));
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Initial saas-settings load using defaults:', err?.message || err);
+      });
 
     api.get('/mail/config')
       .then((res) => {
@@ -126,7 +129,9 @@ export default function SaaSPlatformSettingsPage() {
           });
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Initial mail config load using defaults:', err?.message || err);
+      });
 
     api.get('/livekit/config')
       .then((res) => {
@@ -139,7 +144,9 @@ export default function SaaSPlatformSettingsPage() {
           });
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Initial livekit config load using defaults:', err?.message || err);
+      });
 
     api.get('/billing/config')
       .then((res) => {
@@ -162,7 +169,9 @@ export default function SaaSPlatformSettingsPage() {
           });
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Initial billing config load using defaults:', err?.message || err);
+      });
   }, []);
 
   const handleSavePaymentConfig = async (e: React.FormEvent) => {
@@ -249,9 +258,12 @@ export default function SaaSPlatformSettingsPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await api.post('/saas-settings', settings).catch(() => {});
+      await api.post('/saas-settings', settings);
       setSavedSuccess(true);
+      showToast.success('Paramètres SaaS enregistrés avec succès');
       setTimeout(() => setSavedSuccess(false), 3500);
+    } catch (err) {
+      showApiErrorToast(err, 'Erreur lors de l’enregistrement des paramètres');
     } finally {
       setIsLoading(false);
     }

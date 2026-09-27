@@ -37,11 +37,11 @@ export default function HomeworkPage() {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    className: '4-MATH (Bac)',
-    matiereName: 'Mathématiques',
+    className: '',
+    matiereName: '',
     assignedDate: new Date().toISOString().split('T')[0],
-    dueDate: '2026-09-22',
-    totalStudents: 32,
+    dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+    totalStudents: 0,
     status: 'OPEN' as 'OPEN' | 'SUBMITTED' | 'GRADED' | 'EXPIRED',
   });
 
@@ -84,11 +84,11 @@ export default function HomeworkPage() {
     setFormData({
       title: '',
       description: '',
-      className: '4-MATH (Bac)',
-      matiereName: 'Mathématiques',
+      className: '',
+      matiereName: '',
       assignedDate: new Date().toISOString().split('T')[0],
       dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-      totalStudents: 32,
+      totalStudents: 0,
       status: 'OPEN',
     });
     setIsFormModalOpen(true);

@@ -29,7 +29,7 @@ import type { StudentItem } from '@/types';
 export default function StudentsPage() {
   const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
-  const { currentEstablishmentId, establishments } = useEstablishmentStore();
+  const { currentEstablishmentId, establishments, academicYears, currentAcademicYearId } = useEstablishmentStore();
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrashMode, setIsTrashMode] = useState(false);
@@ -46,21 +46,21 @@ export default function StudentsPage() {
     firstName: '',
     lastName: '',
     gender: 'MALE' as 'MALE' | 'FEMALE',
-    dateOfBirth: '2008-05-14',
-    birthPlace: 'Tunis',
-    nationalId: '14520987',
+    dateOfBirth: '',
+    birthPlace: '',
+    nationalId: '',
     email: '',
-    phone: '+216 98 123 456',
-    address: '12 Rue de la Liberté',
-    city: 'Tunis',
-    className: '4-MATH (Bac)',
-    academicYear: '2025/2026',
-    parentName: 'Youssef Trabelsi',
-    parentPhone: '+216 98 456 789',
-    parentEmail: 'youssef.trabelsi@gmail.com',
-    paymentStatus: 'PAID' as 'PAID' | 'PARTIAL' | 'UNPAID' | 'EXEMPT',
-    tuitionDue: 3600,
-    tuitionPaid: 3600,
+    phone: '',
+    address: '',
+    city: '',
+    className: '',
+    academicYear: '',
+    parentName: '',
+    parentPhone: '',
+    parentEmail: '',
+    paymentStatus: 'UNPAID' as 'PAID' | 'PARTIAL' | 'UNPAID' | 'EXEMPT',
+    tuitionDue: 0,
+    tuitionPaid: 0,
     isActive: true,
     establishmentId: '',
   });
@@ -135,26 +135,27 @@ export default function StudentsPage() {
     const defaultEst = (currentEstablishmentId && currentEstablishmentId !== 'ALL' && currentEstablishmentId !== 'all')
       ? currentEstablishmentId
       : (establishments[0]?.id || user?.establishmentId || '');
+    const currentYear = academicYears.find((y) => y.id === currentAcademicYearId) || academicYears.find((y) => y.isCurrent);
     setFormData({
       matricule: `ELEV-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
       firstName: '',
       lastName: '',
       gender: 'MALE',
-      dateOfBirth: '2008-05-14',
-      birthPlace: 'Tunis',
+      dateOfBirth: '',
+      birthPlace: '',
       nationalId: '',
       email: '',
-      phone: '+216 ',
+      phone: '',
       address: '',
-      city: 'Tunis',
-      className: '4-MATH (Bac)',
-      academicYear: '2025/2026',
+      city: '',
+      className: '',
+      academicYear: currentYear?.name || '',
       parentName: '',
-      parentPhone: '+216 ',
+      parentPhone: '',
       parentEmail: '',
-      paymentStatus: 'PAID',
-      tuitionDue: 3600,
-      tuitionPaid: 3600,
+      paymentStatus: 'UNPAID',
+      tuitionDue: 0,
+      tuitionPaid: 0,
       isActive: true,
       establishmentId: defaultEst,
     });

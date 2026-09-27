@@ -1,248 +1,133 @@
-# BSofts School - School Management System
+# BSofts School - Enterprise Multi-Tenant School Management Platform
 
-A comprehensive multi-tenant SaaS school management system built with modern technologies.
+A modern, production-grade multi-tenant SaaS educational management platform built with NestJS 12, Next.js 16 (App Router), Tailwind CSS v4, Prisma 7, PostgreSQL, Redis, and LiveKit Cloud WebRTC.
 
-## Features
+---
 
-### Core Modules
-- **Authentication & Authorization**: JWT-based auth with role-based access control
-- **User Management**: Students, Teachers, Parents, Employees
-- **Academic Structure**: Classes, Academic Years, Periods, Subjects
-- **Attendance**: Student and Teacher attendance tracking
-- **Exams & Grades**: Exam creation, grading, and reports
-- **Payments**: Student fee collection and tracking
-- **Finance**: Caisse management, transactions, payroll
-- **Communication**: Messages, notifications, conversations
-- **Reports**: Analytics, charts, and data export
+## 🚀 Key Architectural Features
 
-### SaaS Features
-- **Multi-tenancy**: Shared database with tenant isolation
-- **Role-based Access**: Root, Super Admin, Admin, Teacher, Student, Parent
-- **Subscription Plans**: Basic, Standard, Premium tiers
-- **Landing Page**: Marketing site with pricing
+### 🏢 Multi-Tenant Architecture & Data Isolation
+- **Tenant & Establishment Hierarchy**: Multi-tier organization supporting multiple campuses/establishments per tenant.
+- **Strict Data Scoping**: All domain tables and operations partitioned by `establishmentId` / `tenantId`.
+- **Soft-Delete & Audit Lifecycle**: Standardized `isDeleted`, `deletedAt`, `deletedBy`, `createdBy`, `updatedBy` with full audit history tracking.
 
-## Tech Stack
+### 💳 Decoupled Dual-Gateway Payments
+- **Level 1 — SaaS Platform Level (`PlatformPaymentConfig`)**: Decoupled ClicToPay (SMT / Monétique Tunisie) and Stripe (International) gateways for platform subscription plans and renewals.
+- **Level 2 — Tenant School Level (`PaymentConfig`)**: Decoupled ClicToPay and Stripe gateways for tuition fees, inscription, cafeteria, and transport.
+- **Adaptive Consumer Experience**: Direct checkout when 1 gateway is active; interactive modal selection when both gateways are active.
+
+### 📹 LiveKit Cloud WebRTC Meetings Suite
+- **Interactive Virtual Classrooms & Councils**: Powered by LiveKit Cloud WebRTC (`@livekit/components-react`).
+- **Deliberative Agenda Voting**: Real-time voting points (`YES`, `NO`, `ABSTAIN`) with instantaneous tallying.
+- **Hand-Raise & Turn Management**: Real-time speaking requests with golden visual indicators.
+- **Dynamic Configuration**: Managed via `PlatformSetting` with dynamic JWT token signing.
+
+### 🧩 Modular High-Density DataTables
+- 100% backward compatible modularized DataTable system in `frontend/src/components/ui/data-table/`:
+  - `data-table-toolbar.tsx`: Multi-criteria filters, search, and density switches.
+  - `data-table-pagination.tsx`: Reusable bottom navigation and page sizing.
+  - `data-table-row-actions.tsx`: View, edit, soft-delete, and restore actions.
+  - `data-table-modals.tsx`: Audit timeline modal, delete modal, CSV wizard.
+
+### 🔍 Observability, Structured Logging & Health Probes
+- **Structured Logging**: Zero raw `console.*` policy across all backend services via NestJS `Logger`.
+- **Probes**:
+  - `GET /health`: System uptime, timestamp, memory usage.
+  - `GET /health/db`: PostgreSQL live ping (`SELECT 1`).
+  - `GET /health/redis`: Cache ping, latency, and in-memory fallback detection.
+  - `GET /health/liveness`: Kubernetes/Render container liveness probe.
+  - `GET /health/readiness`: Aggregate database + cache readiness check.
+- **Incident Resolution**: `PATCH /system-logs/:id/resolve` for permanent tracking of resolved issues.
+
+### 📊 Server-Side Aggregations
+- **Dashboard Stats**: `GET /dashboard/stats` pre-computes active students, teachers, classes, revenue, and attendance via SQL aggregations with 60s Redis caching.
+- **Reports Stats**: `GET /reports/stats` pre-computes status breakdowns for charts without client-side `limit=200` downloads.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology | Version | Purpose |
+|---|---|---|---|
+| **Backend** | NestJS | 12.x | Modular REST API & WebSockets |
+| **ORM** | Prisma | 7.x | Type-safe Database Mapping & Migrations |
+| **Database** | PostgreSQL | 16 / 17 | Primary Relational Storage |
+| **Cache & Realtime** | Redis / Socket.IO | 7.x | Key-Value Cache & Live Notifications |
+| **WebRTC Video** | LiveKit Cloud | 2.x | Real-time audio/video conferencing |
+| **Testing** | Vitest | 4.x | Fast, modern TypeScript testing suite |
+| **Frontend** | Next.js (Turbopack) | 16.x | Server Components & App Router |
+| **UI & Styling** | React 19 / Tailwind CSS | 4.x | Component primitives & 5-color palette |
+| **State Management** | Zustand | 5.x | Client auth and establishment store |
+
+---
+
+## 🎨 Design System & Color Palette
+
+Strict adherence to a solid 5-color palette with **zero gradients**:
+- **Deep Navy**: `#242F40`
+- **Charcoal / Anthracite**: `#363636`
+- **Warm Ochre / Gold**: `#CCA43B`
+- **Soft Light Grey**: `#E5E5E5`
+- **Pure White**: `#FFFFFF`
+
+---
+
+## 📦 Containerization & Deployment
+
+### Run with Docker Compose
+```bash
+# Clone the repository
+git clone https://github.com/Ahmedboukadida/BSofts-School.git
+cd BSofts-School
+
+# Start full production stack
+docker compose up -d --build
+```
+This boots:
+- `postgres` (PostgreSQL 16 Alpine on port 5432)
+- `redis` (Redis 7 Alpine on port 6379)
+- `backend` (NestJS on port 3025)
+- `frontend` (Next.js on port 3000)
+
+### CI/CD Pipeline (`.github/workflows/ci.yml`)
+Automated GitHub Actions quality gates on every push/PR to `main`:
+1. **Backend CI**: Prisma schema validation, Prisma Client generation, TypeScript compilation, Vitest unit test suite (97 tests).
+2. **Frontend CI**: Dependency audit, Static typecheck (`npx tsc --noEmit`), Next.js 16 production build.
+3. **Docker Images**: Concurrent build verification for backend and frontend Dockerfiles.
+
+---
+
+## 💻 Local Development Setup
 
 ### Backend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| NestJS | 12.x | API Framework |
-| Prisma | 7.x | ORM |
-| PostgreSQL | 17 | Database |
-| Vitest | 4.x | Testing |
-| TypeScript | 6.x | Language |
-
-### Frontend
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Next.js | 16.x | Framework |
-| React | 19.x | UI Library |
-| Tailwind CSS | 4.x | Styling |
-| Zustand | - | State Management |
-| Recharts | - | Charts |
-| Axios | - | HTTP Client |
-
-## Project Structure
-
-```
-BSofts-School/
-├── backend/                  # NestJS API & Prisma ORM
-│   ├── prisma/               # Schema & seed data
-│   └── src/                  # Modules, Controllers, Services, DTOs
-├── frontend/                 # Next.js 16 App Router & Tailwind CSS
-│   ├── src/app/              # 38 Dashboard views & portals
-│   ├── src/components/       # UI components & DataTables
-│   └── messages/             # i18n dictionaries (FR, EN, AR)
-└── .gemini/                  # Centralized Project Hub & Intelligence
-    ├── skills/               # 269 specialized engineering skills
-    ├── plugins/              # Tooling & integration plugins
-    ├── mcp/                  # MCP server configurations (Prisma, Neon, Firebase, etc.)
-    ├── subagents/            # Domain & layer subagents specification (SUBAGENTS.md)
-    ├── AGENTS.md             # Agents roster & routing rules
-    ├── DESIGN_SYSTEM.md      # Solid 5-color palette & UI specifications
-    ├── DEPLOYMENT.md         # Deployment & production hosting guides
-    ├── implementation_plan.md# Active Master Implementation Plan
-    ├── walkthrough.md        # Feature walkthroughs & change verification
-    ├── scratch/              # Project maintenance & data scripts
-    └── archive/              # Historical session logs & database backups
-```
-
-## Centralized Workspace Hub (`.gemini/`)
-
-All architecture plans, agent roles, domain skills, MCP servers, plugins, and deployment guides are centralized strictly in [`.gemini/`](file:///e:/ReFactory/BSofts-School/.gemini):
-- **Domain Subagents Matrix**: [`.gemini/subagents/SUBAGENTS.md`](file:///e:/ReFactory/BSofts-School/.gemini/subagents/SUBAGENTS.md)
-- **Agent Roles & Routing**: [`.gemini/AGENTS.md`](file:///e:/ReFactory/BSofts-School/.gemini/AGENTS.md)
-- **Design System & Palette**: [`.gemini/DESIGN_SYSTEM.md`](file:///e:/ReFactory/BSofts-School/.gemini/DESIGN_SYSTEM.md)
-- **Production Deployment**: [`.gemini/DEPLOYMENT.md`](file:///e:/ReFactory/BSofts-School/.gemini/DEPLOYMENT.md)
-- **Active Master Plan**: [`.gemini/implementation_plan.md`](file:///e:/ReFactory/BSofts-School/.gemini/implementation_plan.md)
-- **Verification Walkthrough**: [`.gemini/walkthrough.md`](file:///e:/ReFactory/BSofts-School/.gemini/walkthrough.md)
-
-## Getting Started
-
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 17
-- npm or yarn
-
-### Backend Setup
-
 ```bash
-# Navigate to backend
 cd backend
-
-# Install dependencies
 npm install
-
-# Setup database
-npx prisma migrate dev
-
-# Seed database
+npx prisma generate
 npm run seed
-
-# Start development server
 npm run start:dev
 ```
+Backend runs at `http://localhost:3025/api` (Swagger docs at `/api/docs`).
 
-Backend runs on `http://localhost:3001/api`
-
-### Frontend Setup
-
+### Frontend
 ```bash
-# Navigate to frontend
 cd frontend
-
-# Install dependencies
 npm install
-
-# Copy environment file
-cp .env.example .env.local
-
-# Start development server
 npm run dev
 ```
+Frontend runs at `http://localhost:3000`.
 
-Frontend runs on `http://localhost:3000`
+---
 
-## API Endpoints
-
-### Authentication
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/auth/login | User login |
-| POST | /api/auth/register | User registration |
-| GET | /api/auth/profile | Get current user |
-| POST | /api/auth/refresh | Refresh token |
-
-### Users
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/users | List users |
-| GET | /api/users/:id | Get user |
-| POST | /api/users | Create user |
-| PATCH | /api/users/:id | Update user |
-| DELETE | /api/users/:id | Delete user |
-
-### Students
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/students | List students |
-| GET | /api/students/:id | Get student |
-| POST | /api/students | Create student |
-| PATCH | /api/students/:id | Update student |
-| DELETE | /api/students/:id | Delete student |
-
-### Teachers
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/teachers | List teachers |
-| GET | /api/teachers/:id | Get teacher |
-| POST | /api/teachers | Create teacher |
-| PATCH | /api/teachers/:id | Update teacher |
-| DELETE | /api/teachers/:id | Delete teacher |
-
-### Classes
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/classes | List classes |
-| GET | /api/classes/:id | Get class |
-| POST | /api/classes | Create class |
-| PATCH | /api/classes/:id | Update class |
-| DELETE | /api/classes/:id | Delete class |
-
-### Attendance
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/student-attendance | List attendance |
-| POST | /api/student-attendance | Mark attendance |
-| GET | /api/student-attendance/stats | Get statistics |
-
-### Exams
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/exams | List exams |
-| GET | /api/exams/:id | Get exam |
-| POST | /api/exams | Create exam |
-| PATCH | /api/exams/:id | Update exam |
-| DELETE | /api/exams/:id | Delete exam |
-
-### Payments
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | /api/student-payments | List payments |
-| POST | /api/student-payments | Record payment |
-| GET | /api/student-payments/:id | Get payment |
-
-### Reports
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | /api/reports/generate | Generate report |
-| GET | /api/audit-logs | List audit logs |
-
-## Default Credentials
-
-### Super Admin
-- **Email**: admin@bsofts.com
-- **Password**: Admin@123
-
-## Database Schema
-
-The system uses 45+ models including:
-- Users, Roles, Permissions
-- Students, Teachers, Parents, Employees
-- Classes, Academic Years, Periods
-- Attendance, Exams, Notes
-- Payments, Transactions
-- Messages, Notifications
-
-## Testing
+## 🧪 Testing
 
 ```bash
-# Run backend tests
 cd backend
-npm run test
-
-# Run with coverage
-npm run test:cov
+npm test
 ```
+Runs 14 test suites with 97 unit tests via Vitest.
 
-## Build for Production
+---
 
-```bash
-# Backend
-cd backend
-npm run build
-npm run start:prod
-
-# Frontend
-cd frontend
-npm run build
-npm run start
-```
-
-## License
-
-UNLICENSED - Private Software
-
-## Support
-
-For support, contact: support@bsofts.com
+## 📄 License
+UNLICENSED — Private Software © BSofts School
