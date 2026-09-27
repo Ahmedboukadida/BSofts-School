@@ -16,6 +16,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
 import { useToast } from '@/components/ui/toast';
+import { useDynamicEnums } from '@/hooks/use-dynamic-enums';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
@@ -31,6 +32,18 @@ export default function TeachersPage() {
   const [isTrashMode, setIsTrashMode] = useState(false);
   const [specFilter, setSpecFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  const { options: specializationOptions } = useDynamicEnums('TEACHER_SPECIALIZATION', [
+    { code: 'Mathématiques', label: 'Mathématiques' },
+    { code: 'Sciences Physiques & Chimie', label: 'Sciences Physiques & Chimie' },
+    { code: 'Sciences de la Vie et de la Terre', label: 'Sciences de la Vie et de la Terre' },
+    { code: 'Informatique & Algorithmique', label: 'Informatique & Algorithmique' },
+    { code: 'Langue & Littérature Françaises', label: 'Français' },
+    { code: 'Langue & Littérature Arabes', label: 'Arabe' },
+    { code: 'Langue Anglaise', label: 'Anglais' },
+    { code: 'Histoire & Géographie', label: 'Histoire & Géographie' },
+    { code: 'Philosophie', label: 'Philosophie' },
+  ]);
 
   // Create / Edit Modal State (Extra Large Size 6xl)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -472,11 +485,11 @@ export default function TeachersPage() {
               className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
             >
               <option value="">Toutes les Disciplines</option>
-              <option value="Mathématiques">Mathématiques</option>
-              <option value="Sciences Physiques & Chimie">Sciences Physiques & Chimie</option>
-              <option value="Informatique & Algorithmique">Informatique & Algorithmique</option>
-              <option value="Langue & Littérature Françaises">Français</option>
-              <option value="Langue Arabe">Arabe</option>
+              {specializationOptions.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
 
             <select
@@ -574,15 +587,11 @@ export default function TeachersPage() {
                     className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
                     required
                   >
-                    <option value="Mathématiques">Mathématiques</option>
-                    <option value="Sciences Physiques & Chimie">Sciences Physiques & Chimie</option>
-                    <option value="Sciences de la Vie et de la Terre">Sciences de la Vie et de la Terre</option>
-                    <option value="Informatique & Algorithmique">Informatique & Algorithmique</option>
-                    <option value="Langue & Littérature Françaises">Français</option>
-                    <option value="Langue & Littérature Arabes">Arabe</option>
-                    <option value="Langue Anglaise">Anglais</option>
-                    <option value="Histoire & Géographie">Histoire & Géographie</option>
-                    <option value="Philosophie">Philosophie</option>
+                    {specializationOptions.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

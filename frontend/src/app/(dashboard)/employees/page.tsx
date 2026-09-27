@@ -18,6 +18,7 @@ import { Modal } from '@/components/ui/modal';
 import { Input } from '@/components/ui/input';
 import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/components/ui/data-table';
 import { useToast } from '@/components/ui/toast';
+import { useDynamicEnums } from '@/hooks/use-dynamic-enums';
 import api from '@/lib/api';
 import type { EmployeeItem } from '@/types';
 
@@ -28,6 +29,21 @@ export default function EmployeesPage() {
   const [isTrashMode, setIsTrashMode] = useState(false);
   const [departmentFilter, setDepartmentFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  const { options: departmentOptions } = useDynamicEnums('EMPLOYEE_DEPARTMENT', [
+    { code: 'Direction & Administration', label: 'Direction & Administration' },
+    { code: 'Comptabilité & Caisses', label: 'Comptabilité & Caisses' },
+    { code: 'Vie Scolaire & Discipline', label: 'Vie Scolaire & Discipline' },
+    { code: 'Service Médical & Santé', label: 'Service Médical & Santé' },
+    { code: 'Maintenance & Logistique', label: 'Maintenance & Logistique' },
+  ]);
+
+  const { options: contractTypeOptions } = useDynamicEnums('CONTRACT_TYPE', [
+    { code: 'CDI', label: 'CDI (Contrat Durée Indéterminée)' },
+    { code: 'CDD', label: 'CDD (Contrat Durée Déterminée)' },
+    { code: 'STAGE', label: 'Stage Professionnel' },
+    { code: 'VACATAIRE', label: 'Vacataire / Prestataire' },
+  ]);
 
   // Create / Edit Modal State (Extra Large Size 6xl)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
@@ -426,10 +442,11 @@ export default function EmployeesPage() {
               className="px-3 py-1.5 text-xs rounded-xl bg-surface border border-border text-text-primary outline-none focus:border-brand"
             >
               <option value="">Tous les Départements</option>
-              <option value="Direction & Administration">Direction & Administration</option>
-              <option value="Comptabilité & Caisses">Comptabilité & Caisses</option>
-              <option value="Vie Scolaire & Discipline">Vie Scolaire & Discipline</option>
-              <option value="Service Médical & Santé">Service Médical & Santé</option>
+              {departmentOptions.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.label}
+                </option>
+              ))}
             </select>
 
             <select
@@ -532,11 +549,11 @@ export default function EmployeesPage() {
                     className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
                     required
                   >
-                    <option value="Direction & Administration">Direction & Administration</option>
-                    <option value="Comptabilité & Caisses">Comptabilité & Caisses</option>
-                    <option value="Vie Scolaire & Discipline">Vie Scolaire & Discipline</option>
-                    <option value="Service Médical & Santé">Service Médical & Santé</option>
-                    <option value="Maintenance & Logistique">Maintenance & Logistique</option>
+                    {departmentOptions.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -561,10 +578,11 @@ export default function EmployeesPage() {
                     className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand"
                     required
                   >
-                    <option value="CDI">CDI (Contrat Durée Indéterminée)</option>
-                    <option value="CDD">CDD (Contrat Durée Déterminée)</option>
-                    <option value="STAGE">Stage Professionnel</option>
-                    <option value="VACATAIRE">Vacataire / Prestataire</option>
+                    {contractTypeOptions.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
