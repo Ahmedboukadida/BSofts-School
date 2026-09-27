@@ -81,3 +81,32 @@ Per explicit user instruction, the project folder `E:\ReFactory\BSofts-School\.g
    - `current_session.md`: Detailed session log and error remediation steps.
 
 5. **Master Markdown Files**: Synchronized `task.md`, `walkthrough.md`, and `issues_report.md`.
+
+---
+
+## 4. Multi-Platform Deployment Status Audit (Render, Vercel, GitHub)
+
+### Screenshot Analysis & Findings
+1. **Render (Backend API: `https://bsofts-school.onrender.com`)**:
+   - Current status: **LIVE** (Green checkmark).
+   - Active deploy: `feat: complete silent catch elimination, form defaults cleanup and updated docs` (`3cc9eda`).
+   - Historical record: 28 consecutive successful deployments. Zero active or recent failures.
+2. **Vercel (Frontend Next.js: `https://bsofts-school-*.vercel.app`)**:
+   - Current status: **READY (Production)** with blue active pill on commit `c80668f` (`commit again`, built in 25s).
+   - Latest 5 deployments:
+     - `c80668f`: Ready (25s) — Active Production
+     - `fcc3e7c`: Ready (26s) — Production
+     - `0f7b8d7`: Ready (24s) — Production
+     - `3cc9eda`: Ready (29s) — Production
+     - `3d0396e`: Ready (28s) — Production
+   - **Historical Failed Deployments Analysis**:
+     - `ce840f3` (1 day ago, 37s): Failed with `ENOENT: no such file or directory, open 'next-server.js.nft.json'`.
+     - `f4a4bd7` (2 days ago, 31s): Failed with same `ENOENT` error.
+     - **Cause**: `output: 'standalone'` was set unconditionally in `frontend/next.config.ts`, crashing Vercel's serverless builder hook.
+     - **Resolution**: Fixed in commit `3d0396e` by conditioning standalone output (`process.env.BUILD_STANDALONE === 'true' && !process.env.VERCEL`). All 5 subsequent builds have succeeded cleanly.
+3. **GitHub Environments ("Deployment Fields")**:
+   - Three environment categories exist:
+     - `Production`: Default production deployment environment where Vercel reports active deployments.
+     - `Production - b-softs-school`: Environment created by Vercel's GitHub app integration.
+     - `Production - bsoft-school-back`: Environment created by Render's GitHub app integration.
+   - Latest deployment `c80668f` is **Active** with a green checkmark.
