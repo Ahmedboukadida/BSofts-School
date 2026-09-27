@@ -22,6 +22,10 @@ jobs:
       run:
         working-directory: ./backend
 
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/bsofts_school
+      JWT_SECRET: ci-test-jwt-secret-for-bsofts-school
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -34,7 +38,7 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install Dependencies
-        run: npm ci || npm install --no-audit
+        run: npm install --prefer-offline --no-audit
 
       - name: Validate Prisma Schema
         run: npx prisma validate
@@ -71,7 +75,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
 
       - name: Install Dependencies
-        run: npm ci || npm install --no-audit
+        run: npm install --prefer-offline --no-audit
 
       - name: Static Type Check (tsc)
         run: npx tsc --noEmit

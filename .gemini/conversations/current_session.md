@@ -110,3 +110,38 @@ Per explicit user instruction, the project folder `E:\ReFactory\BSofts-School\.g
      - `Production - b-softs-school`: Environment created by Vercel's GitHub app integration.
      - `Production - bsoft-school-back`: Environment created by Render's GitHub app integration.
    - Latest deployment `c80668f` is **Active** with a green checkmark.
+
+---
+
+## 5. Backend CI Desynchronization & PrismaConfigEnvError Resolution
+
+### Incident Report
+- Git commit on GitHub: `81f49ee`
+- Vercel frontend commit: `81f49ee` (Deployed)
+- Render backend remained on: `3cc9eda`
+- Error in GitHub Actions pipeline:
+  ```
+  > backend@0.0.1 postinstall
+  > prisma generate && nest build
+  Failed to load config file ".../backend" as a TypeScript/JavaScript module. Error: PrismaConfigEnvError: Cannot resolve environment variable: DATABASE_URL.
+  npm error code 1
+  npm error command sh -c prisma generate && nest build
+  ```
+
+### Root Cause Analysis
+1. In `backend/prisma.config.ts`, `datasource.url` used `env('DATABASE_URL')`. In Prisma v7, `env('DATABASE_URL')` strictly throws `PrismaConfigEnvError` if `DATABASE_URL` is undefined.
+2. In local development, `backend/.env` is present, so `dotenv` loads `DATABASE_URL`. However, in GitHub Actions CI (and during isolated build environments), `.env` is omitted because it is gitignored.
+3. When `npm install` ran in CI, npm triggered the `postinstall` script (`prisma generate && nest build`), which invoked Prisma, loaded `prisma.config.ts`, threw `PrismaConfigEnvError`, and failed the entire build job with exit code 1.
+4. Because the CI pipeline failed on commit `81f49ee`, Render did not proceed with the backend deployment, leaving Render at commit `3cc9eda`.
+
+### Permanent Resolution
+1. **`backend/prisma.config.ts`**:
+   - Replaced strict `env('DATABASE_URL')` with `process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/bsofts_school'`.
+   - Now, `prisma generate` can execute safely in all build and CI environments without requiring a real database connection.
+2. **`.github/workflows/ci.yml`**:
+   - Declared `DATABASE_URL` and `JWT_SECRET` at the `backend-ci` job environment level.
+   - Standardized dependency installations to `npm install --prefer-offline --no-audit` in both backend and frontend CI jobs.
+3. **Verification**:
+   - Ran `npx prisma validate ; npm run build` locally (Clean exit code 0).
+   - Ran `npm test` across all 14 test suites in `backend` (97/97 tests passed).
+
