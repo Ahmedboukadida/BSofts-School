@@ -118,7 +118,9 @@ export default function SchedulePage() {
       if (selectedTeacherId) params.teacherId = selectedTeacherId;
 
       const response = await api.get('/sessions', { params });
-      setSessions(response.data.data || []);
+      const body = response.data !== undefined ? response.data : response;
+      const list = Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []);
+      setSessions(list);
     } catch (error) {
       console.error('Failed to fetch sessions:', error);
       toast.showToast(t('common.error') || 'Erreur lors du chargement', 'error');
@@ -134,9 +136,12 @@ export default function SchedulePage() {
         api.get('/teachers', { params: { limit: 100, ...contextParams } }),
         api.get('/rooms', { params: { limit: 100, ...contextParams } }),
       ]);
-      setClasses(classesRes.data.data || []);
-      setTeachers(teachersRes.data.data || []);
-      setRooms(roomsRes.data.data || []);
+      const cBody = classesRes.data !== undefined ? classesRes.data : classesRes;
+      setClasses(Array.isArray(cBody) ? cBody : (Array.isArray(cBody?.data) ? cBody.data : []));
+      const tBody = teachersRes.data !== undefined ? teachersRes.data : teachersRes;
+      setTeachers(Array.isArray(tBody) ? tBody : (Array.isArray(tBody?.data) ? tBody.data : []));
+      const rBody = roomsRes.data !== undefined ? roomsRes.data : roomsRes;
+      setRooms(Array.isArray(rBody) ? rBody : (Array.isArray(rBody?.data) ? rBody.data : []));
     } catch (error) {
       console.error('Failed to fetch dropdowns:', error);
     }

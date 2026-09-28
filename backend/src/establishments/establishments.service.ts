@@ -20,8 +20,12 @@ export class EstablishmentsService {
 
     if (isActive !== undefined) {
       where.isActive = typeof isActive === 'string' ? isActive === 'true' : Boolean(isActive);
-    } else if (includeDeleted) {
-      where.isActive = false;
+    }
+
+    if (includeDeleted) {
+      where.OR = [{ isDeleted: true }, { isActive: false }];
+    } else {
+      where.isDeleted = false;
     }
 
     if (search) {
@@ -170,7 +174,7 @@ export class EstablishmentsService {
     // Soft delete / deactivation
     await this.prisma.establishment.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, isDeleted: true, deletedAt: new Date() },
     });
 
     return { message: 'Establishment deactivated successfully' };
@@ -184,7 +188,7 @@ export class EstablishmentsService {
 
     return this.prisma.establishment.update({
       where: { id },
-      data: { isActive: true },
+      data: { isActive: true, isDeleted: false, deletedAt: null },
       include: {
         tenant: { select: { id: true, user: { select: { firstName: true, lastName: true } } } },
       },

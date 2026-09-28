@@ -7,7 +7,15 @@ import { Request, Response, NextFunction } from 'express';
 @Injectable()
 export class EstablishmentContextMiddleware implements NestMiddleware {
   use(req: Request, res: Response, next: NextFunction) {
-    const isAll = (val?: string) => !val || val === 'ALL' || val === 'all';
+    const isAll = (val?: string) =>
+      !val ||
+      val === 'ALL' ||
+      val === 'all' ||
+      val === 'null' ||
+      val === 'undefined' ||
+      val === 'none' ||
+      val === 'placeholder' ||
+      (typeof val === 'string' && val.startsWith('year-'));
 
     const establishmentId = isAll(req.headers['x-establishment-id'] as string)
       ? null

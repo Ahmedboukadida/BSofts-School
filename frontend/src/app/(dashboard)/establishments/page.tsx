@@ -17,12 +17,14 @@ import { DataTable, ColumnDef, DetailSection, TableRowActions } from '@/componen
 import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
+import { useActiveContext } from '@/hooks/use-active-context';
 import api from '@/lib/api';
 import type { EstablishmentItem } from '@/types';
 
 export default function EstablishmentsPage() {
   const { user } = useAuthStore();
   const { currentTenantId, tenants, setTenants } = useEstablishmentStore();
+  const { activeTenantId } = useActiveContext();
 
   const [establishments, setEstablishments] = useState<EstablishmentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -63,25 +65,46 @@ export default function EstablishmentsPage() {
   const fetchEstablishments = useCallback(async () => {
     setIsLoading(true);
     try {
-      const activeTenant = (currentTenantId && currentTenantId !== 'ALL' && currentTenantId !== 'all')
-        ? currentTenantId
-        : undefined;
+      const activeTenant = user?.isRoot ? activeTenantId : undefined;
 
       const res = await api.get('/establishments', {
         params: {
-          includeDeleted: isTrashMode,
           limit: 100,
+          ...(isTrashMode ? { includeDeleted: true } : {}),
           ...(activeTenant ? { tenantId: activeTenant } : {}),
         },
       });
 
-      const rawData = res.data?.data || res.data || [];
-      const list = Array.isArray(rawData) ? rawData : [];
-      const mapped: EstablishmentItem[] = list.map((item: any) => ({
-        ...item,
+      const body = res.data !== undefined ? res.data : res;
+      const rawList = Array.isArray(body)
+        ? body
+        : Array.isArray(body?.data)
+        ? body.data
+        : Array.isArray(body?.data?.data)
+        ? body.data.data
+        : [];
+
+      const mapped: EstablishmentItem[] = rawList.map((item: any) => ({
+        id: String(item.id || ''),
+        name: item.name || 'Établissement sans nom',
+        code: item.code || item.slug || '',
+        category: (item.category === 'SCHOOL' ? 'PRIMARY' : item.category) || 'PRIMARY',
+        address: item.address || '',
+        phone: item.phone || '',
+        email: item.email || '',
+        directorName: item.directorName || '',
+        capacity: Number(item.capacity || 200),
+        studentsCount: Number(item.studentsCount ?? item._count?.students ?? 0),
+        teachersCount: Number(item.teachersCount ?? item._count?.teachers ?? 0),
+        roomsCount: Number(item.roomsCount ?? item._count?.rooms ?? 0),
+        isActive: item.isActive !== false,
+        tenantId: String(item.tenantId || ''),
         tenantName: item.tenant?.user
           ? `${item.tenant.user.firstName || ''} ${item.tenant.user.lastName || ''}`.trim()
           : item.tenantName || item.tenantId || 'Tenant Principal',
+        createdAt: item.createdAt || new Date().toISOString(),
+        updatedAt: item.updatedAt || new Date().toISOString(),
+        isDeleted: Boolean(item.isDeleted),
       }));
       setEstablishments(mapped);
     } catch {
@@ -89,7 +112,7 @@ export default function EstablishmentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, currentTenantId]);
+  }, [isTrashMode, activeTenantId, user?.isRoot]);
 
   useEffect(() => {
     fetchEstablishments();
@@ -208,7 +231,8 @@ export default function EstablishmentsPage() {
   };
 
   // Category labels helper (5-color palette compliant)
-  const getCategoryBadge = (cat: EstablishmentItem['category']) => {
+  const getCategoryBadge = (cat: string) => {
+    const normalized = cat === 'SCHOOL' ? 'PRIMARY' : cat;
     const map: Record<string, { label: string; color: string }> = {
       DAYCARE: { label: 'Crèche / Jardin d’enfants', color: 'bg-[#242F40]/10 text-[#242F40] dark:text-[#E5E5E5] border-[#242F40]/20' },
       PRIMARY: { label: 'École Primaire', color: 'bg-[#CCA43B]/10 text-[#CCA43B] border-[#CCA43B]/30' },
@@ -216,15 +240,18 @@ export default function EstablishmentsPage() {
       HIGH_SCHOOL: { label: 'Lycée', color: 'bg-[#242F40] text-[#CCA43B] border-[#363636]' },
       UNIVERSITY: { label: 'Enseignement Supérieur', color: 'bg-[#CCA43B] text-[#242F40] border-[#CCA43B]' },
     };
-    const c = map[cat] || { label: cat, color: 'bg-surface-hover text-text-secondary border-border' };
+    const c = map[normalized] || { label: cat, color: 'bg-surface-hover text-text-secondary border-border' };
     return <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${c.color}`}>{c.label}</span>;
   };
-
 
   // Filtered dataset
   const filteredEstablishments = establishments.filter((item) => {
     if (statusFilter && (statusFilter === 'active' ? !item.isActive : item.isActive)) return false;
-    if (categoryFilter && item.category !== categoryFilter) return false;
+    if (categoryFilter) {
+      const itemCat = (item.category as string) === 'SCHOOL' ? 'PRIMARY' : item.category;
+      const filterCat = categoryFilter === 'SCHOOL' ? 'PRIMARY' : categoryFilter;
+      if (itemCat !== filterCat) return false;
+    }
     return true;
   });
 
@@ -257,7 +284,7 @@ export default function EstablishmentsPage() {
                   {row.tenantName || 'Tenant Principal'}
                 </span>
                 <span className="text-[10px] font-mono text-text-tertiary">
-                  {row.tenantId ? `ID: ${row.tenantId.slice(0, 8)}...` : '—'}
+                  {row.tenantId ? `ID: ${String(row.tenantId).slice(0, 8)}...` : '—'}
                 </span>
               </div>
             ),

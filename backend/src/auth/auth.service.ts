@@ -43,9 +43,11 @@ export class AuthService {
         ],
       },
       include: {
+        tenant: { select: { id: true } },
         userRoles: {
           include: {
             role: true,
+            establishment: { select: { id: true, tenantId: true } },
           },
         },
         student: { select: { id: true, establishmentId: true, registrationNumber: true } },
@@ -90,6 +92,11 @@ export class AuthService {
       user.parent?.establishmentId ||
       null;
 
+    const tenantId =
+      user.tenant?.id ||
+      user.userRoles?.find((r: any) => r.establishment?.tenantId)?.establishment?.tenantId ||
+      null;
+
     // Generate tokens
     const tokens = await this.generateTokens(user.id, user.email, user.username, establishmentId);
 
@@ -103,6 +110,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         isRoot: user.isRoot,
+        tenantId,
         mustChangePassword: Boolean(user.mustChangePassword),
         userRoles: user.userRoles,
         student: user.student,
@@ -353,6 +361,7 @@ export class AuthService {
         isRoot: true,
         isActive: true,
         createdAt: true,
+        tenant: { select: { id: true } },
         userRoles: {
           select: {
             id: true,
@@ -364,6 +373,7 @@ export class AuthService {
               },
             },
             establishmentId: true,
+            establishment: { select: { id: true, tenantId: true } },
           },
         },
         student: { select: { id: true, establishmentId: true, registrationNumber: true } },
@@ -373,7 +383,17 @@ export class AuthService {
       },
     });
 
-    return user;
+    if (!user) return null;
+
+    const tenantId =
+      user.tenant?.id ||
+      user.userRoles?.find((r: any) => r.establishment?.tenantId)?.establishment?.tenantId ||
+      null;
+
+    return {
+      ...user,
+      tenantId,
+    };
   }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {

@@ -92,13 +92,19 @@ export default function TeachersPage() {
       const res = await api.get('/teachers', {
         params: {
           limit: 100,
-          includeDeleted: isTrashMode,
+          ...(isTrashMode ? { includeDeleted: true } : {}),
           ...contextParams,
         },
       });
 
-      const rawData = res.data?.data || res.data || [];
-      const list = Array.isArray(rawData) ? rawData : [];
+      const body = res.data !== undefined ? res.data : res;
+      const list = Array.isArray(body)
+        ? body
+        : Array.isArray(body?.data)
+        ? body.data
+        : Array.isArray(body?.data?.data)
+        ? body.data.data
+        : [];
       const mapped: TeacherItem[] = list.map((t: any) => {
         const matName = t.matieres?.[0]?.matiere?.name || t.matieres?.[0]?.name;
         const classes = Array.isArray(t.assignedClasses)

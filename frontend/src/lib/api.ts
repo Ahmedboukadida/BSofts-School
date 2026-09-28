@@ -35,17 +35,21 @@ api.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${token}`;
     }
     const { user } = useAuthStore.getState();
+    const isValidId = (val: string | null | undefined) =>
+      Boolean(val && val !== 'ALL' && val !== 'all' && val !== 'null' && val !== 'undefined' && !val.startsWith('year-'));
+
     const storedEstId = localStorage.getItem('x-establishment-id');
     const storedTenantId = localStorage.getItem('x-tenant-id');
     const storedYearId = localStorage.getItem('x-academic-year-id');
     const establishmentId = storedEstId || user?.establishmentId || user?.userRoles?.[0]?.establishmentId;
-    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+
+    if (isValidId(establishmentId)) {
       config.headers['x-establishment-id'] = establishmentId;
     }
-    if (storedTenantId && storedTenantId !== 'ALL' && storedTenantId !== 'all') {
+    if (isValidId(storedTenantId)) {
       config.headers['x-tenant-id'] = storedTenantId;
     }
-    if (storedYearId && storedYearId !== 'ALL' && storedYearId !== 'all') {
+    if (isValidId(storedYearId)) {
       config.headers['x-academic-year-id'] = storedYearId;
     }
   }

@@ -150,7 +150,7 @@ describe('AuthService', () => {
 
       const result = await service.getProfile('1');
 
-      expect(result).toEqual(user);
+      expect(result).toEqual({ ...user, tenantId: null });
     });
   });
 

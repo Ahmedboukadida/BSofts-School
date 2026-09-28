@@ -28,6 +28,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         lastName: true,
         isRoot: true,
         isActive: true,
+        tenant: { select: { id: true } },
         userRoles: {
           select: {
             role: {
@@ -38,6 +39,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
               },
             },
             establishmentId: true,
+            establishment: { select: { id: true, tenantId: true } },
           },
         },
       },
@@ -47,6 +49,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('User not found or inactive');
     }
 
+    const resolvedTenantId =
+      user.tenant?.id ||
+      user.userRoles?.find((r) => r.establishment?.tenantId)?.establishment?.tenantId ||
+      null;
+
     return {
       id: user.id,
       email: user.email,
@@ -54,6 +61,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       firstName: user.firstName,
       lastName: user.lastName,
       isRoot: user.isRoot,
+      tenantId: resolvedTenantId,
       roles: user.userRoles,
     };
   }

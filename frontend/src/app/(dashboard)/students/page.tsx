@@ -86,13 +86,19 @@ export default function StudentsPage() {
       const res = await api.get('/students', {
         params: {
           limit: 100,
-          includeDeleted: isTrashMode,
+          ...(isTrashMode ? { includeDeleted: true } : {}),
           ...contextParams,
         },
       });
 
-      const rawData = res.data?.data || res.data || [];
-      const list = Array.isArray(rawData) ? rawData : [];
+      const body = res.data !== undefined ? res.data : res;
+      const list = Array.isArray(body)
+        ? body
+        : Array.isArray(body?.data)
+        ? body.data
+        : Array.isArray(body?.data?.data)
+        ? body.data.data
+        : [];
       const formatted: StudentItem[] = list.map((item: any) => ({
         ...item,
         matricule: item.matricule || item.registrationNumber || 'N/A',

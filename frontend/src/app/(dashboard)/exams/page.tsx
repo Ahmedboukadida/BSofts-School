@@ -139,10 +139,11 @@ export default function ExamsAndBulletinsPage() {
         api.get('/matieres', { params: { limit: 100, ...contextParams } }),
         api.get('/academic-periods', { params: { limit: 50, ...contextParams } }).catch(() => ({ data: { data: [] } })),
       ]);
-      const classList = classesRes.data?.data || [];
+      const classList = Array.isArray(classesRes.data) ? classesRes.data : (classesRes.data?.data || []);
+      const matList = Array.isArray(matieresRes.data) ? matieresRes.data : (matieresRes.data?.data || []);
+      const periodList = Array.isArray(periodsRes.data) ? periodsRes.data : (periodsRes.data?.data || []);
       setClasses(classList);
-      setMatieres(matieresRes.data?.data || []);
-      const periodList = periodsRes.data?.data || [];
+      setMatieres(matList);
       setPeriods(periodList);
 
       if (classList.length > 0 && !selectedClassId) {
@@ -165,7 +166,9 @@ export default function ExamsAndBulletinsPage() {
     try {
       setIsLoading(true);
       const res = await api.get('/exams', { params: { limit: 100, ...contextParams } });
-      setExams(res.data?.data || []);
+      const body = res.data !== undefined ? res.data : res;
+      const list = Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []);
+      setExams(list);
     } catch (error: any) {
       showApiErrorToast(error, 'Erreur lors du chargement des examens');
     } finally {
@@ -181,7 +184,9 @@ export default function ExamsAndBulletinsPage() {
       const params: Record<string, string> = { classId: selectedClassId, limit: '100', ...contextParams };
       if (selectedPeriodId) params.periodId = selectedPeriodId;
       const res = await api.get('/bulletins', { params });
-      setBulletins(res.data?.data || []);
+      const body = res.data !== undefined ? res.data : res;
+      const list = Array.isArray(body) ? body : (Array.isArray(body?.data) ? body.data : []);
+      setBulletins(list);
     } catch (error: any) {
       showApiErrorToast(error, 'Erreur lors du chargement des bulletins');
     } finally {

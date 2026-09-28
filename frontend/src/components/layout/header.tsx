@@ -144,13 +144,14 @@ export function Header({ onMenuClick }: HeaderProps) {
       );
 
       if (uniqueYears.length === 0) {
-        const fallback: AcademicYearOption = {
-          id: 'year-2025-2026',
-          name: '2025 - 2026',
-          isCurrent: true,
-          establishmentId: estId || '',
-        };
-        setAcademicYears([fallback]);
+        setAcademicYears([]);
+        const currentSelected = useEstablishmentStore.getState().currentAcademicYearId;
+        if (currentSelected && currentSelected !== 'ALL') {
+          setCurrentAcademicYearId(null);
+        }
+      } else if (uniqueYears.length === 1) {
+        setAcademicYears(uniqueYears);
+        setCurrentAcademicYearId(uniqueYears[0].id);
       } else {
         setAcademicYears(uniqueYears);
         const currentSelected = useEstablishmentStore.getState().currentAcademicYearId;
@@ -226,18 +227,17 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center gap-2 flex-wrap">
             {user?.isRoot ? (
               <>
-                {/* Step 1: Root Tenant Selector */}
-                <div className="relative">
-                  <select
-                    value={currentTenantId || ''}
-                    onChange={(e) => {
-                      const tId = e.target.value || null;
-                      setCurrentTenantId(tId);
-                      if (!tId) {
-                        setCurrentEstablishmentId('ALL');
-                        setCurrentAcademicYearId('ALL');
-                      } else {
-                        const matching = establishments.filter((est) => est.tenantId === tId);
+                {/* Step 1: Root Tenant Selector ('ALL' only if multiple tenants) */}
+                {tenants.length > 1 ? (
+                  <div className="relative">
+                    <select
+                      value={currentTenantId || 'ALL'}
+                      onChange={(e) => {
+                        const tId = e.target.value;
+                        setCurrentTenantId(tId === 'ALL' ? 'ALL' : tId || null);
+                        const matching = tId && tId !== 'ALL'
+                          ? establishments.filter((est) => est.tenantId === tId)
+                          : establishments;
                         if (matching.length > 1) {
                           setCurrentEstablishmentId('ALL');
                         } else if (matching.length === 1) {
@@ -245,21 +245,29 @@ export function Header({ onMenuClick }: HeaderProps) {
                         } else {
                           setCurrentEstablishmentId(null);
                         }
-                      }
-                    }}
-                    className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
-                  >
-                    <option value="">🏢 Tous les Tenants (All)</option>
-                    {tenants.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        🏢 {t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                      }}
+                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
+                    >
+                      <option value="ALL">🏢 Tous les Tenants (All)</option>
+                      {tenants.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          🏢 {t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : tenants.length === 1 ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
+                    <span>🏢 {tenants[0].name}</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
+                    <span>🏢 Aucun tenant</span>
+                  </div>
+                )}
 
-                {/* Step 2: Establishment Selector (Always available with 'ALL' option) */}
-                {visibleEstablishments.length > 0 && (
+                {/* Step 2: Establishment Selector under Selected Tenant ('ALL' only if multiple establishments) */}
+                {visibleEstablishments.length > 1 ? (
                   <div className="relative animate-in fade-in duration-200">
                     <select
                       value={currentEstablishmentId || 'ALL'}
@@ -277,10 +285,20 @@ export function Header({ onMenuClick }: HeaderProps) {
                       ))}
                     </select>
                   </div>
+                ) : visibleEstablishments.length === 1 ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
+                    <School className="w-3.5 h-3.5 text-[#CCA43B]" />
+                    <span>{visibleEstablishments[0].name}</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
+                    <School className="w-3.5 h-3.5 text-[#64748B]" />
+                    <span>Aucun établissement</span>
+                  </div>
                 )}
 
-                {/* Step 3: Academic Year Selector (Always available with 'ALL' option) */}
-                {academicYears.length > 0 && (
+                {/* Step 3: Academic Year Selector ('ALL' only if multiple years) */}
+                {academicYears.length > 1 ? (
                   <div className="relative animate-in fade-in duration-200">
                     <select
                       value={currentAcademicYearId || 'ALL'}
@@ -298,11 +316,20 @@ export function Header({ onMenuClick }: HeaderProps) {
                       ))}
                     </select>
                   </div>
+                ) : academicYears.length === 1 ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
+                    <span>📅 {academicYears[0].name}</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
+                    <span>📅 Aucune année</span>
+                  </div>
                 )}
               </>
             ) : (
               /* Non-Root User: Only their establishment & academic year */
               <>
+                {/* Non-Root Establishment Selector ('ALL' only if multiple establishments under user's tenant) */}
                 {establishments.length > 1 ? (
                   <div className="relative">
                     <select
@@ -326,10 +353,15 @@ export function Header({ onMenuClick }: HeaderProps) {
                     <School className="w-3.5 h-3.5 text-[#CCA43B]" />
                     <span>{establishments[0].name}</span>
                   </div>
-                ) : null}
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
+                    <School className="w-3.5 h-3.5 text-[#64748B]" />
+                    <span>Aucun établissement</span>
+                  </div>
+                )}
 
-                {/* Academic Year Selector for Non-Root with 'ALL' option */}
-                {academicYears.length > 0 && (
+                {/* Non-Root Academic Year Selector ('ALL' only if multiple years) */}
+                {academicYears.length > 1 ? (
                   <div className="relative">
                     <select
                       value={currentAcademicYearId || 'ALL'}
@@ -346,6 +378,14 @@ export function Header({ onMenuClick }: HeaderProps) {
                         </option>
                       ))}
                     </select>
+                  </div>
+                ) : academicYears.length === 1 ? (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
+                    <span>📅 {academicYears[0].name}</span>
+                  </div>
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
+                    <span>📅 Aucune année</span>
                   </div>
                 )}
               </>

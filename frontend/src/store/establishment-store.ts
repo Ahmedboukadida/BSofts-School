@@ -155,17 +155,50 @@ export const useEstablishmentStore = create<EstablishmentState>((set, get) => ({
     }
   },
 
-  initializeFromUser: (user) => {
-    if (typeof window === 'undefined') return;
-    const stored = localStorage.getItem('x-establishment-id');
-    if (stored) {
-      set({ currentEstablishmentId: stored });
-      return;
+  initializeFromUser: (user: any) => {
+    if (typeof window === 'undefined' || !user) return;
+
+    const sanitize = (val: string | null) =>
+      val && val !== 'null' && val !== 'undefined' ? val : null;
+
+    // Load persisted user preferences if available
+    let userPref: any = null;
+    try {
+      const rawPref = localStorage.getItem(`bsofts_pref_${user.id}`);
+      if (rawPref) userPref = JSON.parse(rawPref);
+    } catch {}
+
+    const storedTenant = sanitize(localStorage.getItem('x-tenant-id')) || sanitize(userPref?.tenantId);
+    const storedEst = sanitize(localStorage.getItem('x-establishment-id')) || sanitize(userPref?.establishmentId);
+    const storedYear = sanitize(localStorage.getItem('x-academic-year-id')) || sanitize(userPref?.academicYearId);
+
+    // Tenant initialization
+    if (user.isRoot) {
+      if (storedTenant) {
+        set({ currentTenantId: storedTenant });
+      }
+    } else {
+      const nonRootTenant = user.tenantId || storedTenant || null;
+      if (nonRootTenant) {
+        localStorage.setItem('x-tenant-id', nonRootTenant);
+        set({ currentTenantId: nonRootTenant });
+      }
     }
-    const defaultEstId = user.establishmentId || user.userRoles?.[0]?.establishmentId || null;
-    if (defaultEstId) {
-      localStorage.setItem('x-establishment-id', defaultEstId);
-      set({ currentEstablishmentId: defaultEstId });
+
+    // Establishment initialization
+    if (storedEst) {
+      set({ currentEstablishmentId: storedEst });
+    } else {
+      const defaultEstId = user.establishmentId || user.userRoles?.[0]?.establishmentId || null;
+      if (defaultEstId) {
+        localStorage.setItem('x-establishment-id', defaultEstId);
+        set({ currentEstablishmentId: defaultEstId });
+      }
+    }
+
+    // Academic Year initialization
+    if (storedYear) {
+      set({ currentAcademicYearId: storedYear });
     }
   },
 }));

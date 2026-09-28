@@ -186,4 +186,33 @@ Ensure every dashboard view strictly and reactively follows the selected Tenant,
    - Backend: `npm test` passed 14/14 suites (97/97 tests).
    - Frontend: `npx tsc --noEmit` clean exit code 0.
 
+---
+
+## 7. Cascading Hierarchy Logic Refinement & Universal Data Rendering Fixes
+
+### User Requirements Addressed
+1. **Strict Context Hierarchy in Top Navbar (`header.tsx`)**:
+   - **Root (`isRoot`)**:
+     - Tenant dropdown: `'ALL'` exists **ONLY IF `tenants.length > 1`**. If `1`, auto-selects and hides `'ALL'`.
+     - Establishment dropdown: `'ALL'` exists **ONLY IF `establishments.length > 1`**. If `1`, auto-selects and hides `'ALL'`.
+     - Academic Year dropdown: `'ALL'` exists **ONLY IF `academicYears.length > 1`**. If `1`, auto-selects and hides `'ALL'`.
+   - **Non-Root (Regular Admin / Staff)**:
+     - Tenant dropdown is completely hidden (locked to their assigned tenant).
+     - Establishment dropdown: `'ALL'` exists **ONLY IF `establishments.length > 1`**. If `1`, auto-selects and hides `'ALL'`.
+     - Academic Year dropdown: `'ALL'` exists **ONLY IF `academicYears.length > 1`**. If `1`, auto-selects and hides `'ALL'`.
+   - Per-user selection persistence stored under `bsofts_pref_${user.id}`.
+
+2. **Universal Data Rendering Bug Resolution**:
+   - **Elimination of Fake Academic Year ID**: Previous logic injected `'year-2025-2026'` placeholder when no academic years were found. This non-UUID value was passed in request headers and query parameters, causing PostgreSQL UUID relation filters to return empty sets across all academic tables. Replaced with clean `null` and sanitized guards (`isValidId`).
+   - **Backend User Tenant Resolution**: `User` entity has a relation `tenant` rather than a scalar column. `JwtStrategy.validate` and `auth.service.ts` (`login` & `getProfile`) were updated to explicitly select the `tenant` relation and return `tenantId`.
+   - **Establishment Filtering & Soft-Delete**: Fixed `establishments.service.ts` so `where.isDeleted = false` by default and soft delete/restore updates both `isDeleted` and `isActive`.
+   - **Multi-Shape Response Unwrapping**: All frontend views (`establishments`, `students`, `classes`, `teachers`, `exams`, `rooms`, `schedule`, `homework`, `payments`, `attendance`) now robustly unwrap `res.data?.data ?? res.data` ensuring no data is dropped due to response nesting.
+   - **Category Normalization**: Handled bidirectional mapping between backend enum (`SCHOOL`) and frontend categories (`PRIMARY`).
+
+3. **Complete System Verification**:
+   - Backend: `vitest run` — 14/14 test suites passed (97 tests total, 100% pass rate).
+   - Frontend: `npx tsc --noEmit` — 0 errors.
+   - Frontend: `next build` (Turbopack) — all 41 routes successfully generated in production mode.
+
+
 

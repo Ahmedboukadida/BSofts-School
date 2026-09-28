@@ -9,20 +9,12 @@ export function useActiveContext() {
   const tenants = useEstablishmentStore((s) => s.tenants);
   const academicYears = useEstablishmentStore((s) => s.academicYears);
 
-  const activeEstablishmentId =
-    currentEstablishmentId && currentEstablishmentId !== 'ALL' && currentEstablishmentId !== 'all'
-      ? currentEstablishmentId
-      : undefined;
+  const isValidId = (val: string | null | undefined) =>
+    Boolean(val && val !== 'ALL' && val !== 'all' && val !== 'null' && val !== 'undefined' && !val.startsWith('year-'));
 
-  const activeTenantId =
-    currentTenantId && currentTenantId !== 'ALL' && currentTenantId !== 'all'
-      ? currentTenantId
-      : undefined;
-
-  const activeAcademicYearId =
-    currentAcademicYearId && currentAcademicYearId !== 'ALL' && currentAcademicYearId !== 'all'
-      ? currentAcademicYearId
-      : undefined;
+  const activeEstablishmentId = isValidId(currentEstablishmentId) ? currentEstablishmentId! : undefined;
+  const activeTenantId = isValidId(currentTenantId) ? currentTenantId! : undefined;
+  const activeAcademicYearId = isValidId(currentAcademicYearId) ? currentAcademicYearId! : undefined;
 
   const contextParams = useMemo(() => {
     const params: Record<string, string> = {};
@@ -39,6 +31,9 @@ export function useActiveContext() {
     activeEstablishmentId,
     activeTenantId,
     activeAcademicYearId,
+    isAllEstablishments: !activeEstablishmentId,
+    isAllTenants: !activeTenantId,
+    isAllAcademicYears: !activeAcademicYearId,
     contextParams,
     establishments,
     tenants,
