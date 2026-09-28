@@ -17,17 +17,21 @@ export class EstablishmentContextMiddleware implements NestMiddleware {
       val === 'placeholder' ||
       (typeof val === 'string' && val.startsWith('year-'));
 
-    const establishmentId = isAll(req.headers['x-establishment-id'] as string)
-      ? null
-      : (req.headers['x-establishment-id'] as string);
+    const establishmentHeader = req && (req.headers as any) ? (req.headers as any)['x-establishment-id'] : undefined;
+    const tenantHeader = req && (req.headers as any) ? (req.headers as any)['x-tenant-id'] : undefined;
+    const academicYearHeader = req && (req.headers as any) ? (req.headers as any)['x-academic-year-id'] : undefined;
 
-    const tenantId = isAll(req.headers['x-tenant-id'] as string)
-      ? null
-      : (req.headers['x-tenant-id'] as string);
+    const establishmentId = establishmentHeader && !isAll(establishmentHeader as string)
+      ? (establishmentHeader as string)
+      : null;
 
-    const academicYearId = isAll(req.headers['x-academic-year-id'] as string)
-      ? null
-      : (req.headers['x-academic-year-id'] as string);
+    const tenantId = tenantHeader && !isAll(tenantHeader as string)
+      ? (tenantHeader as string)
+      : null;
+
+    const academicYearId = academicYearHeader && !isAll(academicYearHeader as string)
+      ? (academicYearHeader as string)
+      : null;
 
     const query = req.query as Record<string, unknown>;
 

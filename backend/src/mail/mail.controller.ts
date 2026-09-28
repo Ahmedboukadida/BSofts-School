@@ -78,8 +78,8 @@ export class MailController {
   @ApiOperation({ summary: 'Configure or update SMTP settings for establishment or platform' })
   @Roles('ROOT', 'SUPER_ADMIN', 'ADMIN')
   async saveConfig(@Body() dto: CreateSmtpConfigDto, @Req() req: any): Promise<SmtpConfigEntity> {
-    const isRoot = req.user?.isRoot || req.user?.role === 'ROOT' || req.user?.roles?.includes('ROOT');
-    const establishmentId = isRoot ? undefined : ((req.headers['x-establishment-id'] as string) || req.user?.establishmentId);
+    const isRoot = req?.user?.isRoot || req?.user?.role === 'ROOT' || req?.user?.roles?.includes('ROOT');
+    const establishmentId = isRoot ? undefined : ((req?.headers?.['x-establishment-id'] as string) || req?.user?.establishmentId);
     return this.mailService.saveConfig(establishmentId, dto, req.user);
   }
 }

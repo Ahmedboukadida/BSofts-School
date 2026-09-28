@@ -15,7 +15,6 @@ import { LanguageSelector } from '@/components/language-selector';
 import { Hero3DScene } from '@/components/ui/hero-3d-scene';
 import api from '@/lib/api';
 
-
 const features = [
   {
     icon: GraduationCap,
