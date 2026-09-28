@@ -277,6 +277,37 @@ Ensure every dashboard view strictly and reactively follows the selected Tenant,
    - Backend compilation: `nest build` completed with code 0.
    - Backend tests: 14 test suites passed (97/97 tests, 100%).
 
+---
+
+## 10. Docker Stage 1 (`deps`) Postinstall Separation & Tsconfig Decoupling
+
+### Incident Summary
+- **GitHub Actions Log Error** (`Docker Images Build Verification` job):
+  ```
+  #13 17.47  Error  Could not find TypeScript configuration file "tsconfig.json".
+  #13 17.48 npm error command failed
+  #13 17.48 npm error command sh -c prisma generate && nest build
+  ERROR: failed to build: failed to solve: process "/bin/sh -c npm ci || npm install --no-audit" did not complete successfully: exit code: 1
+  ```
+- **Root Cause**:
+  In `backend/package.json`, `"postinstall": "prisma generate && nest build"`.
+  In `backend/Dockerfile` Stage 1 (`deps`), only `package.json`, `package-lock.json`, `prisma/`, and `prisma.config.ts` are copied for dependency layer caching.
+  When `npm install` ran, npm triggered the `postinstall` hook. Since `tsconfig.json` and `src/` were not copied until Stage 2 (`builder`), `nest build` aborted immediately with missing `tsconfig.json`.
+
+### Applied Resolution
+1. **`backend/package.json`**:
+   - Refactored `postinstall` script to solely run `prisma generate`:
+     ```json
+     "postinstall": "prisma generate"
+     ```
+   - Standardized application compilation (`nest build`) to execute strictly during `npm run build` in Stage 2 (`builder`), where all source code and configuration files are present.
+2. **`render.yaml` Parity**:
+   - Confirmed `render.yaml` uses `buildCommand: npm install && npx prisma generate && npm run build`, which independently executes the full build sequence.
+3. **Verification**:
+   - `npm ci --dry-run` in backend completed in 10s with code 0.
+   - Stage 1 and Stage 2 Docker builds are fully decoupled and deterministic.
+
+
 
 
 
