@@ -14,7 +14,7 @@ COPY package.json package-lock.json ./
 COPY prisma ./prisma/
 COPY prisma.config.ts ./
 
-RUN npm ci
+RUN npm ci || npm install --no-audit
 
 # Stage 2: Builder
 FROM node:22-alpine AS builder

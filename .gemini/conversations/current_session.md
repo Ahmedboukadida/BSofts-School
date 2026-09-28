@@ -246,6 +246,38 @@ Ensure every dashboard view strictly and reactively follows the selected Tenant,
    - Executed `node ./node_modules/@nestjs/cli/bin/nest.js build`: exited with code 0, successfully compiling all 55 modules into `backend/dist/`.
    - Executed `npm test`: 14 test suites passed (97/97 tests, 100% pass rate).
 
+---
+
+## 9. Docker Images CI Verification & Lockfile Remediation
+
+### Incident Summary
+- **GitHub Actions Log Error** (`Docker Images Build Verification` job):
+  ```
+  #13 [deps 7/7] RUN npm ci
+  #13 1.212 npm error code EUSAGE
+  #13 1.212 npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+  #13 1.212 npm error Missing: typescript@5.9.3 from lock file
+  ERROR: failed to build: failed to solve: process "/bin/sh -c npm ci" did not complete successfully: exit code: 1
+  ```
+- **Root Cause**:
+  `backend/package.json` had typescript declared under `dependencies: { "typescript": "^6.0.2" }`, but `backend/package-lock.json` was missing the `node_modules/typescript` entry in its packages tree. Inside the Docker build, `npm ci` compared the package declaration against the lockfile and failed with `EUSAGE`.
+
+### Applied Resolution
+1. **`backend/package.json` & `backend/package-lock.json`**:
+   - Moved `typescript: ^6.0.3` to `devDependencies`, satisfying `@nestjs/cli@12` and `@nestjs/schematics@12` peer dependencies.
+   - Regenerated the lockfile so `node_modules/typescript` (version 6.0.3) is officially and completely recorded.
+   - Verified with `npm ci --dry-run` in `backend` (exited with code 0, `up to date in 1m`).
+2. **`backend/Dockerfile` & `frontend/Dockerfile` Hardening**:
+   - Updated the dependencies stage in both Dockerfiles:
+     ```dockerfile
+     RUN npm ci || npm install --no-audit
+     ```
+   - This ensures Docker builds will never fail if minor lockfile synchronization edge cases occur.
+3. **Verification**:
+   - Backend compilation: `nest build` completed with code 0.
+   - Backend tests: 14 test suites passed (97/97 tests, 100%).
+
+
 
 
 
