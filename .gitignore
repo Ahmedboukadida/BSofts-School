@@ -41,12 +41,7 @@ coverage/
 .nyc_output/
 
 # IDE and Editor files
-.gemini/.system_generated/
-.gemini/.user_uploaded/
-.gemini/mcp/
-.gemini/plugins/
-.gemini/scratch/
-.gemini/skills/bailian*
+.gemini/
 .vscode/
 .idea/
 *.swp
