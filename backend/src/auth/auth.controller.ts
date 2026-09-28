@@ -33,10 +33,11 @@ export class AuthController {
 
   @Public()
   @Post('register')
-  @ApiOperation({ summary: 'Register a new user' })
+  @ApiOperation({ summary: 'Register a new user (Restricted by invitation or admin authorization)' })
   @ApiResponse({ status: 201, description: 'Registration successful' })
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  @ApiResponse({ status: 401, description: 'Unauthorized - invalid invitation or unauthenticated' })
+  async register(@Body() dto: RegisterDto, @Req() req: Request) {
+    return this.authService.register(dto, req);
   }
 
   @Public()

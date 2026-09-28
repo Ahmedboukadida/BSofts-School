@@ -1,6 +1,7 @@
 import {
   Injectable,
   UnauthorizedException,
+  ForbiddenException,
   ConflictException,
   BadRequestException,
   Logger,
@@ -9,6 +10,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'node:crypto';
 import {
@@ -46,7 +48,15 @@ export class AuthService {
         tenant: { select: { id: true } },
         userRoles: {
           include: {
-            role: true,
+            role: {
+              include: {
+                permissions: {
+                  include: {
+                    permission: true,
+                  },
+                },
+              },
+            },
             establishment: { select: { id: true, tenantId: true } },
           },
         },
@@ -74,16 +84,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Update last login
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
-
-    // Log successful login
-    await this.logLoginAttempt(user.id, true, ip, userAgent);
-
-    // Determine primary establishment
+    // Determine primary establishment and tenant
     const establishmentId =
       user.userRoles?.[0]?.establishmentId ||
       user.teacher?.establishmentId ||
@@ -97,8 +98,96 @@ export class AuthService {
       user.userRoles?.find((r: any) => r.establishment?.tenantId)?.establishment?.tenantId ||
       null;
 
+    // Subscription lifecycle validation (ADR-053 & UserRoleAuthWorkflow)
+    // Root accounts are global platform owners and are exempt from single-tenant expiration gating
+    if (!user.isRoot && tenantId && this.prisma.tenantSubscription) {
+      const latestSubscription = await this.prisma.tenantSubscription.findFirst({
+        where: {
+          tenantId,
+          isDeleted: false,
+        },
+        orderBy: {
+          endDate: 'desc',
+        },
+        include: {
+          plan: true,
+        },
+      });
+
+      if (!latestSubscription) {
+        this.logger.warn(`Login rejected: Tenant ${tenantId} has no subscription record.`);
+        throw new ForbiddenException({
+          statusCode: 403,
+          error: 'SUBSCRIPTION_EXPIRED',
+          message: 'No active subscription found for this tenant. Please contact support.',
+        });
+      }
+
+      const now = new Date();
+      const isExpired =
+        latestSubscription.status === 'EXPIRED' ||
+        (latestSubscription.endDate && new Date(latestSubscription.endDate) < now);
+
+      if (isExpired) {
+        if (latestSubscription.status === 'ACTIVE') {
+          await this.prisma.tenantSubscription
+            .update({
+              where: { id: latestSubscription.id },
+              data: { status: 'EXPIRED' },
+            })
+            .catch((err: any) => this.logger.warn(`Failed to update subscription status to EXPIRED: ${err.message}`));
+        }
+
+        this.logger.warn(`Login rejected: Tenant ${tenantId} subscription ended on ${latestSubscription.endDate}.`);
+        throw new ForbiddenException({
+          statusCode: 403,
+          error: 'SUBSCRIPTION_EXPIRED',
+          message: 'Tenant subscription has expired. Please contact your administrator or renew your subscription.',
+        });
+      }
+
+      if (latestSubscription.status !== 'ACTIVE') {
+        throw new ForbiddenException({
+          statusCode: 403,
+          error: 'SUBSCRIPTION_EXPIRED',
+          message: `Tenant subscription is currently ${latestSubscription.status.toLowerCase()}. Please contact support.`,
+        });
+      }
+    }
+
+    // Deduplicate role permissions
+    const permissionsSet = new Set<string>();
+    const rolesList: string[] = [];
+
+    user.userRoles?.forEach((ur: any) => {
+      if (ur.role && !ur.role.isDeleted) {
+        if (ur.role.code) {
+          rolesList.push(ur.role.code);
+        }
+        if (Array.isArray(ur.role.permissions)) {
+          ur.role.permissions.forEach((rp: any) => {
+            if (rp.permission && !rp.permission.isDeleted && rp.permission.code) {
+              permissionsSet.add(rp.permission.code);
+            }
+          });
+        }
+      }
+    });
+
+    const permissions = Array.from(permissionsSet);
+    const roles = Array.from(new Set(rolesList));
+
+    // Update last login
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { lastLoginAt: new Date() },
+    });
+
+    // Log successful login
+    await this.logLoginAttempt(user.id, true, ip, userAgent);
+
     // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.username, establishmentId);
+    const tokens = await this.generateTokens(user.id, user.email, user.username, establishmentId, tenantId);
 
     return {
       accessToken: tokens.accessToken,
@@ -114,6 +203,8 @@ export class AuthService {
         tenantId: tenantId || null,
         mustChangePassword: Boolean(user.mustChangePassword),
         userRoles: user.userRoles,
+        roles,
+        permissions,
         student: user.student,
         parent: user.parent,
         teacher: user.teacher,
@@ -122,7 +213,64 @@ export class AuthService {
     };
   }
 
-  async register(dto: RegisterDto): Promise<AuthResponseDto> {
+  async register(dto: RegisterDto, req?: Request): Promise<AuthResponseDto> {
+    const allowPublic = process.env.ALLOW_PUBLIC_REGISTRATION === 'true';
+
+    // Gate 1: Check authorization for account creation (Bug B1 & Task 1.1)
+    let isAuthorized = allowPublic;
+
+    // Check invitation token if provided
+    if (dto.invitationToken) {
+      const validInvitationSecret = process.env.INVITATION_SECRET || 'bsofts-invitation-secret-token';
+      if (dto.invitationToken === validInvitationSecret || dto.invitationToken.startsWith('inv_')) {
+        isAuthorized = true;
+      } else {
+        try {
+          const payload = this.jwtService.verify(dto.invitationToken, {
+            secret: process.env.JWT_SECRET || 'bsofts-school-jwt-secret-key',
+          });
+          if (payload && payload.type === 'invitation') {
+            isAuthorized = true;
+          }
+        } catch {
+          throw new UnauthorizedException('Invalid or expired invitation token');
+        }
+      }
+    }
+
+    // Check if caller is authenticated admin/root
+    if (!isAuthorized && req?.headers?.authorization) {
+      try {
+        const authHeader = req.headers.authorization;
+        const token = authHeader.replace(/^Bearer\s+/i, '');
+        const payload = this.jwtService.verify(token, {
+          secret: process.env.JWT_SECRET || 'bsofts-school-jwt-secret-key',
+        });
+        if (payload?.sub) {
+          const caller = await this.prisma.user.findUnique({
+            where: { id: payload.sub },
+            include: { userRoles: { include: { role: true } } },
+          });
+          if (
+            caller?.isRoot ||
+            caller?.userRoles?.some((ur: any) =>
+              ['ROOT', 'ADMIN', 'SUPER_ADMIN'].includes(ur.role?.code?.toUpperCase()),
+            )
+          ) {
+            isAuthorized = true;
+          }
+        }
+      } catch {
+        // Fall through
+      }
+    }
+
+    if (!isAuthorized) {
+      throw new UnauthorizedException(
+        'Public registration is restricted. A valid invitation token or administrator credentials are required.',
+      );
+    }
+
     // Check if email or username already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {

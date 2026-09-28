@@ -51,6 +51,11 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   planId?: string;
+
+  @ApiProperty({ required: false, description: 'Invitation token for restricted registration' })
+  @IsOptional()
+  @IsString()
+  invitationToken?: string;
 }
 
 export class RefreshTokenDto {
@@ -77,6 +82,8 @@ export class AuthResponseDto {
     establishmentId?: string | null;
     tenantId?: string | null;
     userRoles?: unknown[];
+    roles?: string[];
+    permissions?: string[];
     student?: unknown;
     parent?: unknown;
     teacher?: unknown;
