@@ -12,6 +12,7 @@ import { RolePermissionsModule } from './role-permissions/role-permissions.modul
 import { LoginLogsModule } from './login-logs/login-logs.module';
 import { SaaSPlansModule } from './saas-plans/saas-plans.module';
 import { SaaSModulesModule } from './saas-modules/saas-modules.module';
+import { SaaSFunctionsModule } from './saas-functions/saas-functions.module';
 import { TenantSubscriptionsModule } from './tenant-subscriptions/tenant-subscriptions.module';
 import { TenantsModule } from './tenants/tenants.module';
 import { EstablishmentsModule } from './establishments/establishments.module';
@@ -89,6 +90,7 @@ import {
     LoginLogsModule,
     SaaSPlansModule,
     SaaSModulesModule,
+    SaaSFunctionsModule,
     TenantSubscriptionsModule,
     TenantsModule,
     EstablishmentsModule,

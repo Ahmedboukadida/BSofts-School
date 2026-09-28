@@ -99,6 +99,29 @@ export function Header({ onMenuClick }: HeaderProps) {
           tenantId: e.tenantId,
         }));
         setEstablishments(eList);
+
+        // Auto-select or default logic for Root
+        if (tList.length === 1) {
+          setCurrentTenantId(tList[0].id);
+          const tenantEsts = eList.filter((e) => e.tenantId === tList[0].id);
+          if (tenantEsts.length === 1) {
+            setCurrentEstablishmentId(tenantEsts[0].id);
+          } else if (tenantEsts.length > 1) {
+            const currentSelectedEst = useEstablishmentStore.getState().currentEstablishmentId;
+            if (!currentSelectedEst || !tenantEsts.some((e) => e.id === currentSelectedEst)) {
+              setCurrentEstablishmentId('ALL');
+            }
+          } else {
+            setCurrentEstablishmentId(null);
+          }
+        } else if (tList.length > 1) {
+          const currentSelectedTenant = useEstablishmentStore.getState().currentTenantId;
+          if (!currentSelectedTenant || (currentSelectedTenant !== 'ALL' && !tList.some((t) => t.id === currentSelectedTenant))) {
+            setCurrentTenantId('ALL');
+            setCurrentEstablishmentId('ALL');
+            setCurrentAcademicYearId('ALL');
+          }
+        }
       } else {
         const estsRes = await api.get('/establishments?limit=100').catch(() => ({ data: { data: [] } }));
         const rawEsts = estsRes.data?.data || estsRes.data || [];
@@ -110,11 +133,20 @@ export function Header({ onMenuClick }: HeaderProps) {
           tenantId: e.tenantId,
         }));
         setEstablishments(eList);
+
+        if (eList.length === 1) {
+          setCurrentEstablishmentId(eList[0].id);
+        } else if (eList.length > 1) {
+          const currentSelectedEst = useEstablishmentStore.getState().currentEstablishmentId;
+          if (!currentSelectedEst || (currentSelectedEst !== 'ALL' && !eList.some((e) => e.id === currentSelectedEst))) {
+            setCurrentEstablishmentId('ALL');
+          }
+        }
       }
     } catch {
       // fallback
     }
-  }, [user, setTenants, setEstablishments]);
+  }, [user, setTenants, setEstablishments, setCurrentTenantId, setCurrentEstablishmentId, setCurrentAcademicYearId]);
 
   useEffect(() => {
     fetchContextOptions();
@@ -227,26 +259,31 @@ export function Header({ onMenuClick }: HeaderProps) {
           <div className="flex items-center gap-2 flex-wrap">
             {user?.isRoot ? (
               <>
-                {/* Step 1: Root Tenant Selector ('ALL' only if multiple tenants) */}
+                {/* Step 1: Root Tenant Selector ('ALL' default only if multiple tenants; direct badge if single) */}
                 {tenants.length > 1 ? (
-                  <div className="relative">
+                  <div className="relative animate-in fade-in duration-200">
                     <select
                       value={currentTenantId || 'ALL'}
                       onChange={(e) => {
                         const tId = e.target.value;
                         setCurrentTenantId(tId === 'ALL' ? 'ALL' : tId || null);
-                        const matching = tId && tId !== 'ALL'
-                          ? establishments.filter((est) => est.tenantId === tId)
-                          : establishments;
-                        if (matching.length > 1) {
+                        if (tId === 'ALL') {
                           setCurrentEstablishmentId('ALL');
-                        } else if (matching.length === 1) {
-                          setCurrentEstablishmentId(matching[0].id);
+                          setCurrentAcademicYearId('ALL');
                         } else {
-                          setCurrentEstablishmentId(null);
+                          const matching = establishments.filter((est) => est.tenantId === tId);
+                          if (matching.length === 1) {
+                            setCurrentEstablishmentId(matching[0].id);
+                          } else if (matching.length > 1) {
+                            setCurrentEstablishmentId('ALL');
+                            setCurrentAcademicYearId('ALL');
+                          } else {
+                            setCurrentEstablishmentId(null);
+                            setCurrentAcademicYearId(null);
+                          }
                         }
                       }}
-                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
+                      className="h-[38px] px-3 bg-white border border-[#E5E5E5] rounded-xl text-xs font-semibold text-[#242F40] shadow-sm focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all hover:border-[#CCA43B]/60"
                     >
                       <option value="ALL">🏢 Tous les Tenants (All)</option>
                       {tenants.map((t) => (
@@ -257,88 +294,102 @@ export function Header({ onMenuClick }: HeaderProps) {
                     </select>
                   </div>
                 ) : tenants.length === 1 ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
+                  <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-bold text-[#242F40] shadow-sm">
                     <span>🏢 {tenants[0].name}</span>
                   </div>
                 ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
+                  <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-medium text-[#64748B] shadow-sm">
                     <span>🏢 Aucun tenant</span>
                   </div>
                 )}
 
-                {/* Step 2: Establishment Selector under Selected Tenant ('ALL' only if multiple establishments) */}
-                {visibleEstablishments.length > 1 ? (
-                  <div className="relative animate-in fade-in duration-200">
-                    <select
-                      value={currentEstablishmentId || 'ALL'}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCurrentEstablishmentId(val === 'ALL' ? 'ALL' : val || null);
-                      }}
-                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
-                    >
-                      <option value="ALL">🏫 Tous les Établissements (All)</option>
-                      {visibleEstablishments.map((est) => (
-                        <option key={est.id} value={est.id}>
-                          🏫 {est.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : visibleEstablishments.length === 1 ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
-                    <School className="w-3.5 h-3.5 text-[#CCA43B]" />
-                    <span>{visibleEstablishments[0].name}</span>
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
-                    <School className="w-3.5 h-3.5 text-[#64748B]" />
-                    <span>Aucun établissement</span>
-                  </div>
-                )}
+                {/* Step 2: Establishment Selector under Selected Tenant (displayed ONLY when a specific tenant is active) */}
+                {currentTenantId && currentTenantId !== 'ALL' && (
+                  <>
+                    {visibleEstablishments.length > 1 ? (
+                      <div className="relative animate-in fade-in duration-200">
+                        <select
+                          value={currentEstablishmentId || 'ALL'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCurrentEstablishmentId(val === 'ALL' ? 'ALL' : val || null);
+                            if (val === 'ALL') {
+                              setCurrentAcademicYearId('ALL');
+                            }
+                          }}
+                          className="h-[38px] px-3 bg-white border border-[#E5E5E5] rounded-xl text-xs font-semibold text-[#242F40] shadow-sm focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all hover:border-[#CCA43B]/60"
+                        >
+                          <option value="ALL">🏫 Tous les Établissements (All)</option>
+                          {visibleEstablishments.map((est) => (
+                            <option key={est.id} value={est.id}>
+                              🏫 {est.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : visibleEstablishments.length === 1 ? (
+                      <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-bold text-[#242F40] shadow-sm">
+                        <School className="w-3.5 h-3.5 text-[#CCA43B]" />
+                        <span>{visibleEstablishments[0].name}</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-medium text-[#64748B] shadow-sm">
+                        <School className="w-3.5 h-3.5 text-[#64748B]" />
+                        <span>Aucun établissement</span>
+                      </div>
+                    )}
 
-                {/* Step 3: Academic Year Selector ('ALL' only if multiple years) */}
-                {academicYears.length > 1 ? (
-                  <div className="relative animate-in fade-in duration-200">
-                    <select
-                      value={currentAcademicYearId || 'ALL'}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCurrentAcademicYearId(val === 'ALL' ? 'ALL' : val || null);
-                      }}
-                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
-                    >
-                      <option value="ALL">📅 Toutes les Années (All)</option>
-                      {academicYears.map((year) => (
-                        <option key={year.id} value={year.id}>
-                          📅 {year.name} {year.isCurrent ? '(Actuelle)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : academicYears.length === 1 ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
-                    <span>📅 {academicYears[0].name}</span>
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
-                    <span>📅 Aucune année</span>
-                  </div>
+                    {/* Step 3: Academic Year Selector (displayed ONLY when a specific establishment is active) */}
+                    {currentEstablishmentId && currentEstablishmentId !== 'ALL' && (
+                      <>
+                        {academicYears.length > 1 ? (
+                          <div className="relative animate-in fade-in duration-200">
+                            <select
+                              value={currentAcademicYearId || 'ALL'}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setCurrentAcademicYearId(val === 'ALL' ? 'ALL' : val || null);
+                              }}
+                              className="h-[38px] px-3 bg-white border border-[#E5E5E5] rounded-xl text-xs font-semibold text-[#242F40] shadow-sm focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all hover:border-[#CCA43B]/60"
+                            >
+                              <option value="ALL">📅 Toutes les Années (All)</option>
+                              {academicYears.map((year) => (
+                                <option key={year.id} value={year.id}>
+                                  📅 {year.name} {year.isCurrent ? '(Actuelle)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        ) : academicYears.length === 1 ? (
+                          <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-bold text-[#242F40] shadow-sm">
+                            <span>📅 {academicYears[0].name}</span>
+                          </div>
+                        ) : (
+                          <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-medium text-[#64748B] shadow-sm">
+                            <span>📅 Aucune année</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </>
                 )}
               </>
             ) : (
               /* Non-Root User: Only their establishment & academic year */
               <>
-                {/* Non-Root Establishment Selector ('ALL' only if multiple establishments under user's tenant) */}
+                {/* Non-Root Establishment Selector */}
                 {establishments.length > 1 ? (
-                  <div className="relative">
+                  <div className="relative animate-in fade-in duration-200">
                     <select
                       value={currentEstablishmentId || 'ALL'}
                       onChange={(e) => {
                         const val = e.target.value;
                         setCurrentEstablishmentId(val === 'ALL' ? 'ALL' : val || null);
+                        if (val === 'ALL') {
+                          setCurrentAcademicYearId('ALL');
+                        }
                       }}
-                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
+                      className="h-[38px] px-3 bg-white border border-[#E5E5E5] rounded-xl text-xs font-semibold text-[#242F40] shadow-sm focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all hover:border-[#CCA43B]/60"
                     >
                       <option value="ALL">🏫 Tous les Établissements (All)</option>
                       {establishments.map((est) => (
@@ -349,44 +400,48 @@ export function Header({ onMenuClick }: HeaderProps) {
                     </select>
                   </div>
                 ) : establishments.length === 1 ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
+                  <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-bold text-[#242F40] shadow-sm">
                     <School className="w-3.5 h-3.5 text-[#CCA43B]" />
                     <span>{establishments[0].name}</span>
                   </div>
                 ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
+                  <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-medium text-[#64748B] shadow-sm">
                     <School className="w-3.5 h-3.5 text-[#64748B]" />
                     <span>Aucun établissement</span>
                   </div>
                 )}
 
-                {/* Non-Root Academic Year Selector ('ALL' only if multiple years) */}
-                {academicYears.length > 1 ? (
-                  <div className="relative">
-                    <select
-                      value={currentAcademicYearId || 'ALL'}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCurrentAcademicYearId(val === 'ALL' ? 'ALL' : val || null);
-                      }}
-                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
-                    >
-                      <option value="ALL">📅 Toutes les Années (All)</option>
-                      {academicYears.map((year) => (
-                        <option key={year.id} value={year.id}>
-                          📅 {year.name} {year.isCurrent ? '(Actuelle)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : academicYears.length === 1 ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
-                    <span>📅 {academicYears[0].name}</span>
-                  </div>
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-medium text-[#64748B]">
-                    <span>📅 Aucune année</span>
-                  </div>
+                {/* Non-Root Academic Year Selector (displayed ONLY when a specific establishment is active) */}
+                {currentEstablishmentId && currentEstablishmentId !== 'ALL' && (
+                  <>
+                    {academicYears.length > 1 ? (
+                      <div className="relative animate-in fade-in duration-200">
+                        <select
+                          value={currentAcademicYearId || 'ALL'}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setCurrentAcademicYearId(val === 'ALL' ? 'ALL' : val || null);
+                          }}
+                          className="h-[38px] px-3 bg-white border border-[#E5E5E5] rounded-xl text-xs font-semibold text-[#242F40] shadow-sm focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all hover:border-[#CCA43B]/60"
+                        >
+                          <option value="ALL">📅 Toutes les Années (All)</option>
+                          {academicYears.map((year) => (
+                            <option key={year.id} value={year.id}>
+                              📅 {year.name} {year.isCurrent ? '(Actuelle)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    ) : academicYears.length === 1 ? (
+                      <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-bold text-[#242F40] shadow-sm">
+                        <span>📅 {academicYears[0].name}</span>
+                      </div>
+                    ) : (
+                      <div className="inline-flex items-center gap-1.5 h-[38px] px-3.5 bg-white border border-[#E5E5E5] rounded-xl text-xs font-medium text-[#64748B] shadow-sm">
+                        <span>📅 Aucune année</span>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}

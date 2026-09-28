@@ -517,9 +517,16 @@ async function main() {
   console.log(`   ✅ ${createdClassLevels.length} class levels ready.`);
 
   // 6. Create Super Admin Root User
-  const rootEmail = process.env.SEED_ROOT_EMAIL || 'bsofts.contact@gmail.com';
-  const rootRawPassword = process.env.SEED_ROOT_PASSWORD || 'Ahmed123*';
-  const commonRawPassword = process.env.SEED_COMMON_PASSWORD || 'Admin@123';
+  const rootEmail = process.env.SEED_ROOT_EMAIL;
+  const rootRawPassword = process.env.SEED_ROOT_PASSWORD;
+  const commonRawPassword = process.env.SEED_COMMON_PASSWORD;
+
+  if (!rootEmail || !rootRawPassword || !commonRawPassword) {
+    throw new Error(
+      '❌ Missing required seed environment variables: SEED_ROOT_EMAIL, SEED_ROOT_PASSWORD, and SEED_COMMON_PASSWORD must all be defined in your environment or .env file before running seed.'
+    );
+  }
+
   console.log(`👤 6. Creating Super Admin User (${rootEmail})...`);
   const rootPassword = await bcrypt.hash(rootRawPassword, 10);
   const commonPassword = await bcrypt.hash(commonRawPassword, 10);
@@ -1384,15 +1391,15 @@ async function main() {
   console.log(`   - Student Payments: ${totalPaymentsCreated} in TND`);
   console.log(`   - Exams: ${totalExamsCreated} with student grades`);
   console.log('\n🔑 ACCESS CREDENTIALS FOR TESTING:');
-  console.log('   👑 Root Admin:          bsofts.contact@gmail.com   / Ahmed123* (Assigned to all 8 establishments)');
-  console.log('   🏢 Tenant 1 (Hannibal):  tenant1@bsofts.com         / Admin@123');
-  console.log('   🏢 Tenant 2 (Al-Amel):   tenant2@bsofts.com         / Admin@123');
-  console.log('   🏢 Tenant 3 (Khaldoun):  tenant3@bsofts.com         / Admin@123');
-  console.log('   🏢 Tenant 4 (Étoile):    tenant4@bsofts.com         / Admin@123');
-  console.log('   🏫 School Admins:        admin_<slug>@school.tn     / Admin@123');
-  console.log('   👩‍🏫 Teachers:             prof1_<slug>@school.tn     / Admin@123');
-  console.log('   🎓 Students:             eleve1_<slug>@school.tn    / Admin@123');
-  console.log('   👨‍👩‍👧 Parents:              parent1_<slug>@parent.tn   / Admin@123');
+  console.log(`   👑 Root Admin:          ${rootEmail}   / [CONFIGURED IN SEED_ROOT_PASSWORD] (Assigned to all 8 establishments)`);
+  console.log('   🏢 Tenant 1 (Hannibal):  tenant1@bsofts.com         / [CONFIGURED IN SEED_COMMON_PASSWORD]');
+  console.log('   🏢 Tenant 2 (Al-Amel):   tenant2@bsofts.com         / [CONFIGURED IN SEED_COMMON_PASSWORD]');
+  console.log('   🏢 Tenant 3 (Khaldoun):  tenant3@bsofts.com         / [CONFIGURED IN SEED_COMMON_PASSWORD]');
+  console.log('   🏢 Tenant 4 (Étoile):    tenant4@bsofts.com         / [CONFIGURED IN SEED_COMMON_PASSWORD]');
+  console.log('   🏫 School Admins:        admin_<slug>@school.tn     / [CONFIGURED IN SEED_COMMON_PASSWORD]');
+  console.log('   👩‍🏫 Teachers:             prof1_<slug>@school.tn     / [CONFIGURED IN SEED_COMMON_PASSWORD]');
+  console.log('   🎓 Students:             eleve1_<slug>@school.tn    / [CONFIGURED IN SEED_COMMON_PASSWORD]');
+  console.log('   👨‍👩‍👧 Parents:              parent1_<slug>@parent.tn   / [CONFIGURED IN SEED_COMMON_PASSWORD]');
   console.log('======================================================\n');
 }
 
