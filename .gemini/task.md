@@ -103,4 +103,33 @@
   - `multi-tenant-data-isolation`
 - `[x]` Establish `docs/agents/README.md` and `docs/skills/README.md` catalogs in codebase
 
+## Phase 14: Context Hierarchy & Universal Data Rendering
+- `[x]` Implement strict Root vs Non-Root cascading top navbar hierarchy (`header.tsx`)
+- `[x]` Conditional `'ALL'` visibility: present ONLY when count > 1 across Tenant, Establishment, and Academic Year
+- `[x]` Universal data rendering fix across all dashboard views (`res.data?.data ?? res.data`)
+- `[x]` Elimination of placeholder year UUIDs and inclusion of `tenantId` in JWT profile
+- `[x]` Local user preference persistence (`bsofts_pref_${user.id}`)
+
+## Phase 15: CI/CD & Production Containerization Hardening
+- `[x]` Fix TS2322 nullability error in `AuthResponseDto` (`tenantId?: string | null`)
+- `[x]` Move `typescript` to `devDependencies` (`^6.0.3`) and sync `backend/package-lock.json`
+- `[x]` Decouple `nest build` from `postinstall` script in `backend/package.json` to preserve Docker cache layers
+- `[x]` Add resilient `npm ci || npm install --no-audit` fallback in backend and frontend Dockerfiles
+- `[x]` 100% backend test pass (14/14 suites, 97 tests) and 100% frontend static generation (41/41 routes)
+
+## Phase 16: Immediate Feature Execution Roadmap (Undone)
+- `[ ]` **Milestone 1 — LiveKit WebRTC Interactive Classroom**:
+  - Implement full-screen video room UI with responsive tile grid, media controls, screen share, and participant list
+  - Connect room creation and join flow to backend token generator with role-based permissions (host teacher vs participant student)
+- `[ ]` **Milestone 2 — Dual-Gateway Payments (ClicToPay & Stripe)**:
+  - Wire Tunisian domestic card processing via ClicToPay webhook verification and checkout redirect
+  - Wire international card processing via Stripe Elements and webhook verification
+  - Connect student tuition fees and SaaS plan renewals to payment modals
+- `[ ]` **Milestone 3 — Academic Year Promotions & PDF Report Cards**:
+  - Implement bulk student class promotion between academic years with grade-level advancement rules
+  - Generate PDF school term report cards/bulletins with grades, attendance stats, and school header stamps
+- `[ ]` **Milestone 4 — Real-Time WebSocket Push Notifications**:
+  - Implement Socket.IO client connection for real-time absence alerts, homework deadlines, and administrative announcements
+
+
 
