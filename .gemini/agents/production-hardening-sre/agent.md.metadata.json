@@ -1,5 +1,0 @@
-{
-  "summary":  "Agent definition for Production Hardening SRE, covering JWT secrets, rate limiting, security headers, and OWASP compliance.",
-  "updatedAt":  "2026-09-24T15:04:39.276668400Z",
-  "userFacing":  true
-}

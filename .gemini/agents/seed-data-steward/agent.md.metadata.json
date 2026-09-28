@@ -1,5 +1,0 @@
-{
-  "summary":  "Agent definition for Seed Data Steward, handling clean, deterministic, idempotent database seeding without hardcoded credentials.",
-  "updatedAt":  "2026-09-24T15:05:11.477106100Z",
-  "userFacing":  true
-}
