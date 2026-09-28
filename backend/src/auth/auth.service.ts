@@ -110,7 +110,8 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         isRoot: user.isRoot,
-        tenantId,
+        establishmentId: establishmentId || null,
+        tenantId: tenantId || null,
         mustChangePassword: Boolean(user.mustChangePassword),
         userRoles: user.userRoles,
         student: user.student,
@@ -307,7 +308,14 @@ export class AuthService {
       const user = await this.prisma.user.findUnique({
         where: { id: payload.sub },
         include: {
-          userRoles: { select: { establishmentId: true, role: true } },
+          tenant: { select: { id: true } },
+          userRoles: {
+            select: {
+              establishmentId: true,
+              role: true,
+              establishment: { select: { id: true, tenantId: true } },
+            },
+          },
           student: { select: { establishmentId: true } },
           teacher: { select: { establishmentId: true } },
           employee: { select: { establishmentId: true } },
@@ -327,6 +335,11 @@ export class AuthService {
         user.parent?.establishmentId ||
         null;
 
+      const tenantId =
+        user.tenant?.id ||
+        user.userRoles?.find((r: any) => r.establishment?.tenantId)?.establishment?.tenantId ||
+        null;
+
       const tokens = await this.generateTokens(user.id, user.email, user.username, establishmentId);
 
       return {
@@ -339,7 +352,8 @@ export class AuthService {
           firstName: user.firstName,
           lastName: user.lastName,
           isRoot: user.isRoot,
-          establishmentId: establishmentId || undefined,
+          establishmentId: establishmentId || null,
+          tenantId: tenantId || null,
         },
       };
     } catch {

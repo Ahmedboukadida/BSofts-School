@@ -214,5 +214,38 @@ Ensure every dashboard view strictly and reactively follows the selected Tenant,
    - Frontend: `npx tsc --noEmit` — 0 errors.
    - Frontend: `next build` (Turbopack) — all 41 routes successfully generated in production mode.
 
+---
+
+## 8. CI Pipeline & Render Deploy TS2322 Build Failure Remediation
+
+### Incident Summary
+- **GitHub Actions & Render Build Log Error**:
+  ```
+  src/auth/auth.service.ts:113:9 - error TS2322: Type 'string | null' is not assignable to type 'string | undefined'.
+    Type 'null' is not assignable to type 'string | undefined'.
+  113         tenantId,
+              ~~~~~~~~
+    src/auth/auth.dto.ts:78:5
+      78     tenantId?: string;
+             ~~~~~~~~
+  ```
+- **Root Cause**:
+  `AuthResponseDto.user` had `tenantId?: string;` and `establishmentId?: string;` typed without `| null`. During NestJS production build (`nest build`, which executes full strict TypeScript checks), assigning `tenantId: null` failed with TS2322.
+
+### Applied Resolution
+1. **`backend/src/auth/auth.dto.ts`**:
+   - Updated `AuthResponseDto.user` to accept nullable values:
+     ```typescript
+     establishmentId?: string | null;
+     tenantId?: string | null;
+     ```
+2. **`backend/src/auth/auth.service.ts`**:
+   - In `login()`: explicitly assigned `establishmentId: establishmentId || null` and `tenantId: tenantId || null`.
+   - In `refreshToken()`: added tenant relation selection and returned `establishmentId: establishmentId || null` and `tenantId: tenantId || null`.
+3. **Verification**:
+   - Executed `node ./node_modules/@nestjs/cli/bin/nest.js build`: exited with code 0, successfully compiling all 55 modules into `backend/dist/`.
+   - Executed `npm test`: 14 test suites passed (97/97 tests, 100% pass rate).
+
+
 
 
