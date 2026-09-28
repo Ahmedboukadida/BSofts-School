@@ -23,13 +23,24 @@ import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table'
 import { useToast } from '@/components/ui/toast';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
+import { useActiveContext } from '@/hooks/use-active-context';
 import api from '@/lib/api';
 import type { StudentItem } from '@/types';
 
 export default function StudentsPage() {
   const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
-  const { currentEstablishmentId, establishments, academicYears, currentAcademicYearId } = useEstablishmentStore();
+  const {
+    currentEstablishmentId,
+    currentTenantId,
+    currentAcademicYearId,
+    activeEstablishmentId,
+    activeTenantId,
+    activeAcademicYearId,
+    contextParams,
+    establishments,
+    academicYears,
+  } = useActiveContext();
   const [students, setStudents] = useState<StudentItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrashMode, setIsTrashMode] = useState(false);
@@ -76,7 +87,7 @@ export default function StudentsPage() {
         params: {
           limit: 100,
           includeDeleted: isTrashMode,
-          establishmentId: activeEst,
+          ...contextParams,
         },
       });
 
@@ -124,7 +135,7 @@ export default function StudentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, currentEstablishmentId]);
+  }, [isTrashMode, contextParams]);
 
   useEffect(() => {
     fetchStudents();

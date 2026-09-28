@@ -18,11 +18,13 @@ import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { LoadingCard } from '@/components/ui/spinner';
+import { useActiveContext } from '@/hooks/use-active-context';
 import type { Exam, BulletinSummary, DetailedBulletinData } from '@/types';
 
 export default function ExamsAndBulletinsPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { contextParams } = useActiveContext();
 
   const [activeTab, setActiveTab] = useState<'exams' | 'bulletins'>('exams');
   const [exams, setExams] = useState<Exam[]>([]);
@@ -133,9 +135,9 @@ export default function ExamsAndBulletinsPage() {
   const fetchDropdowns = useCallback(async () => {
     try {
       const [classesRes, matieresRes, periodsRes] = await Promise.all([
-        api.get('/classes?limit=100'),
-        api.get('/matieres?limit=100'),
-        api.get('/academic-periods?limit=50').catch(() => ({ data: { data: [] } })),
+        api.get('/classes', { params: { limit: 100, ...contextParams } }),
+        api.get('/matieres', { params: { limit: 100, ...contextParams } }),
+        api.get('/academic-periods', { params: { limit: 50, ...contextParams } }).catch(() => ({ data: { data: [] } })),
       ]);
       const classList = classesRes.data?.data || [];
       setClasses(classList);
@@ -152,7 +154,7 @@ export default function ExamsAndBulletinsPage() {
     } catch (err: any) {
       showApiErrorToast(err, 'Erreur lors du chargement des classes et matières');
     }
-  }, [selectedClassId, selectedPeriodId]);
+  }, [selectedClassId, selectedPeriodId, contextParams, showApiErrorToast]);
 
   useEffect(() => {
     fetchDropdowns();
@@ -162,21 +164,21 @@ export default function ExamsAndBulletinsPage() {
   const fetchExams = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await api.get('/exams?limit=100');
+      const res = await api.get('/exams', { params: { limit: 100, ...contextParams } });
       setExams(res.data?.data || []);
     } catch (error: any) {
       showApiErrorToast(error, 'Erreur lors du chargement des examens');
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [contextParams, showApiErrorToast]);
 
   // Load Bulletins for selected class and period
   const fetchBulletins = useCallback(async () => {
     if (!selectedClassId) return;
     try {
       setIsLoading(true);
-      const params: Record<string, string> = { classId: selectedClassId, limit: '100' };
+      const params: Record<string, string> = { classId: selectedClassId, limit: '100', ...contextParams };
       if (selectedPeriodId) params.periodId = selectedPeriodId;
       const res = await api.get('/bulletins', { params });
       setBulletins(res.data?.data || []);
@@ -185,7 +187,7 @@ export default function ExamsAndBulletinsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedClassId, selectedPeriodId]);
+  }, [selectedClassId, selectedPeriodId, contextParams, showApiErrorToast]);
 
   useEffect(() => {
     if (activeTab === 'exams') {

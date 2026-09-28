@@ -12,9 +12,14 @@ export class SessionsService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
+    if (query.establishmentId && query.establishmentId !== 'ALL' && query.establishmentId !== 'all') {
+      where.class = { ...(where.class || {}), establishmentId: query.establishmentId };
+    } else if (query.tenantId && query.tenantId !== 'ALL' && query.tenantId !== 'all') {
+      where.class = { ...(where.class || {}), establishment: { tenantId: query.tenantId } };
+    }
     if (classId) where.classId = classId;
     if (teacherId) where.teacherId = teacherId;
-    if (academicYearId) where.academicYearId = academicYearId;
+    if (academicYearId && academicYearId !== 'ALL' && academicYearId !== 'all') where.academicYearId = academicYearId;
     if (startDate || endDate) {
       where.date = {};
       if (startDate) where.date.gte = new Date(startDate);

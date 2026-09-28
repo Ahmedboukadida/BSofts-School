@@ -13,7 +13,14 @@ export class ExamsService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (establishmentId) where.establishmentId = establishmentId;
+    if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
+      where.establishmentId = establishmentId;
+    } else if (query.tenantId && query.tenantId !== 'ALL' && query.tenantId !== 'all') {
+      where.establishment = { tenantId: query.tenantId };
+    }
+    if (query.academicYearId && query.academicYearId !== 'ALL' && query.academicYearId !== 'all') {
+      where.academicYearId = query.academicYearId;
+    }
     if (classId) where.classId = classId;
     if (periodId) where.periodId = periodId;
     if (type) where.type = type;

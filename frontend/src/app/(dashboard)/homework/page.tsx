@@ -21,9 +21,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table';
 import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
+import { useActiveContext } from '@/hooks/use-active-context';
 import type { HomeworkItem } from '@/types';
 
 export default function HomeworkPage() {
+  const { contextParams } = useActiveContext();
   const [homeworkList, setHomeworkList] = useState<HomeworkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrashMode, setIsTrashMode] = useState(false);
@@ -48,7 +50,7 @@ export default function HomeworkPage() {
   const fetchHomework = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/homework', { params: { limit: 100, includeDeleted: isTrashMode } });
+      const res = await api.get('/homework', { params: { limit: 100, includeDeleted: isTrashMode, ...contextParams } });
       const rawData = res.data?.data || res.data || [];
       const list = Array.isArray(rawData) ? rawData : [];
       const mapped: HomeworkItem[] = list.map((h: any) => ({
@@ -73,7 +75,7 @@ export default function HomeworkPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode]);
+  }, [isTrashMode, contextParams]);
 
   useEffect(() => {
     fetchHomework();

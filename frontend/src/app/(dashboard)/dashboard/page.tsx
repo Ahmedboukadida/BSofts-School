@@ -23,6 +23,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { useAuthStore } from '@/store/auth-store';
 import { Card } from '@/components/ui/card';
 import { useEstablishmentStore } from '@/store/establishment-store';
+import { useActiveContext } from '@/hooks/use-active-context';
 import type { Student, DashboardStats } from '@/types';
 
 function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string }) {
@@ -62,7 +63,17 @@ function AnimatedNumber({ value, suffix = '' }: { value: number; suffix?: string
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { user } = useAuthStore();
-  const { currentEstablishmentId, establishments, currentAcademicYearId, academicYears } = useEstablishmentStore();
+  const {
+    currentEstablishmentId,
+    currentTenantId,
+    currentAcademicYearId,
+    activeEstablishmentId,
+    activeTenantId,
+    activeAcademicYearId,
+    contextParams,
+    establishments,
+    academicYears,
+  } = useActiveContext();
 
   const currentEst = establishments.find((e) => e.id === currentEstablishmentId);
   const currentYear = academicYears.find((y) => y.id === currentAcademicYearId) || academicYears.find((y) => y.isCurrent);
@@ -84,10 +95,7 @@ export default function DashboardPage() {
 
     const loadData = async () => {
       try {
-        const params: Record<string, string> = {};
-        if (currentEstablishmentId && currentEstablishmentId !== 'ALL' && currentEstablishmentId !== 'all') {
-          params.establishmentId = currentEstablishmentId;
-        }
+        const params: Record<string, string> = { ...contextParams };
 
         const statsRes = await api.get('/dashboard/stats', { params })
           .catch(() => api.get('/reports/stats', { params }))
@@ -147,7 +155,7 @@ export default function DashboardPage() {
     return () => {
       isMounted = false;
     };
-  }, [currentEstablishmentId]);
+  }, [activeEstablishmentId, activeTenantId, activeAcademicYearId, contextParams]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '-';

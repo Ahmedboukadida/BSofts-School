@@ -16,7 +16,14 @@ export class StudentsService {
     const where: any = {};
     if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
       where.establishmentId = establishmentId;
+    } else if (query.tenantId && query.tenantId !== 'ALL' && query.tenantId !== 'all') {
+      where.establishment = { tenantId: query.tenantId };
     }
+
+    if (query.academicYearId && query.academicYearId !== 'ALL' && query.academicYearId !== 'all') {
+      where.classAssignments = { some: { academicYearId: query.academicYearId } };
+    }
+
     if (isActive !== undefined) {
       where.isActive = isActive;
     }

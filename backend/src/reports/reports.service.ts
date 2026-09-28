@@ -259,13 +259,43 @@ export class ReportsService {
     };
   }
 
-  async getDashboardStats(establishmentId?: string) {
-    const cacheKey = this.cacheService.buildKey(null, establishmentId, 'reports:stats', { establishmentId });
+  async getDashboardStats(establishmentId?: string, tenantId?: string, academicYearId?: string) {
+    const isAll = (v?: string) => !v || v === 'ALL' || v === 'all';
+    const effectiveEstId = isAll(establishmentId) ? undefined : establishmentId;
+    const effectiveTenantId = isAll(tenantId) ? undefined : tenantId;
+    const effectiveYearId = isAll(academicYearId) ? undefined : academicYearId;
+
+    const cacheKey = this.cacheService.buildKey(effectiveTenantId || null, effectiveEstId || null, 'reports:stats', {
+      establishmentId: effectiveEstId,
+      tenantId: effectiveTenantId,
+      academicYearId: effectiveYearId,
+    });
     const cached = await this.cacheService.get<any>(cacheKey);
     if (cached) return cached;
 
-    const estFilter: any = establishmentId ? { establishmentId } : {};
-    const studentEstFilter: any = establishmentId ? { student: { establishmentId } } : {};
+    // Filters for models
+    let estFilter: any = {};
+    let studentEstFilter: any = {};
+
+    if (effectiveEstId) {
+      estFilter = { establishmentId: effectiveEstId };
+      studentEstFilter = { student: { establishmentId: effectiveEstId } };
+    } else if (effectiveTenantId) {
+      estFilter = { establishment: { tenantId: effectiveTenantId } };
+      studentEstFilter = { student: { establishment: { tenantId: effectiveTenantId } } };
+    }
+
+    const studentWhere: any = { ...estFilter, isDeleted: false };
+    const classWhere: any = { ...estFilter, isActive: true };
+    const teacherWhere: any = { ...estFilter, isActive: true, isDeleted: false };
+    const paymentBase: any = { ...studentEstFilter };
+    const attendanceWhere: any = { ...studentEstFilter };
+
+    if (effectiveYearId) {
+      studentWhere.classAssignments = { some: { academicYearId: effectiveYearId } };
+      classWhere.academicYearId = effectiveYearId;
+      attendanceWhere.session = { class: { academicYearId: effectiveYearId } };
+    }
 
     const [
       studentCount,
@@ -278,36 +308,36 @@ export class ReportsService {
       recentStudents,
     ] = await Promise.all([
       this.prisma.student.count({
-        where: { ...estFilter, isDeleted: false },
+        where: studentWhere,
       }),
       this.prisma.teacher.count({
-        where: { ...estFilter, isActive: true, isDeleted: false },
+        where: teacherWhere,
       }),
       this.prisma.class.count({
-        where: { ...estFilter, isActive: true },
+        where: classWhere,
       }),
       this.prisma.studentPayment.aggregate({
-        where: { ...studentEstFilter, status: 'PAID' },
+        where: { ...paymentBase, status: 'PAID' },
         _sum: { amount: true },
         _count: true,
       }),
       this.prisma.studentPayment.aggregate({
-        where: { ...studentEstFilter, status: 'PENDING' },
+        where: { ...paymentBase, status: 'PENDING' },
         _sum: { amount: true },
         _count: true,
       }),
       this.prisma.studentPayment.aggregate({
-        where: { ...studentEstFilter, status: 'OVERDUE' },
+        where: { ...paymentBase, status: 'OVERDUE' },
         _sum: { amount: true },
         _count: true,
       }),
       this.prisma.studentAttendance.groupBy({
         by: ['status'],
-        where: { ...studentEstFilter },
+        where: attendanceWhere,
         _count: { status: true },
       }),
       this.prisma.student.findMany({
-        where: { ...estFilter, isDeleted: false },
+        where: studentWhere,
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {

@@ -20,11 +20,22 @@ export class ReportsController {
   @Permissions('reports:list')
   @ApiOperation({ summary: 'Get aggregated dashboard and reporting statistics' })
   @ApiResponse({ status: 200, description: 'Stats retrieved successfully' })
-  getStats(@Query('establishmentId') establishmentId?: string, @CurrentUser() user?: any) {
+  getStats(
+    @Query('establishmentId') establishmentId?: string,
+    @Query('tenantId') tenantId?: string,
+    @Query('academicYearId') academicYearId?: string,
+    @CurrentUser() user?: any,
+  ) {
     const targetEstId = (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all')
       ? establishmentId
       : (!user?.isRoot ? user?.establishmentId : undefined);
-    return this.service.getDashboardStats(targetEstId);
+    const targetTenantId = (tenantId && tenantId !== 'ALL' && tenantId !== 'all')
+      ? tenantId
+      : undefined;
+    const targetYearId = (academicYearId && academicYearId !== 'ALL' && academicYearId !== 'all')
+      ? academicYearId
+      : undefined;
+    return this.service.getDashboardStats(targetEstId, targetTenantId, targetYearId);
   }
 
   @Post('generate')

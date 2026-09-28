@@ -16,6 +16,8 @@ export class TeachersService {
     const where: any = {};
     if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
       where.establishmentId = establishmentId;
+    } else if (query.tenantId && query.tenantId !== 'ALL' && query.tenantId !== 'all') {
+      where.establishment = { tenantId: query.tenantId };
     }
     if (!query.includeDeleted) {
       where.isActive = true;

@@ -19,12 +19,23 @@ import { useToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
+import { useActiveContext } from '@/hooks/use-active-context';
 import type { RoomItem } from '@/types';
 
 export default function RoomsPage() {
   const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
-  const { currentEstablishmentId, establishments, fetchEstablishments } = useEstablishmentStore();
+  const {
+    currentEstablishmentId,
+    currentTenantId,
+    currentAcademicYearId,
+    activeEstablishmentId,
+    activeTenantId,
+    activeAcademicYearId,
+    contextParams,
+    establishments,
+    fetchEstablishments,
+  } = useActiveContext() as any;
 
   const [rooms, setRooms] = useState<RoomItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -67,7 +78,7 @@ export default function RoomsPage() {
         params: {
           limit: 100,
           includeDeleted: isTrashMode,
-          ...(activeEstId ? { establishmentId: activeEstId } : {}),
+          ...contextParams,
         },
       });
 
@@ -86,7 +97,7 @@ export default function RoomsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, currentEstablishmentId, showApiErrorToast]);
+  }, [isTrashMode, contextParams, showApiErrorToast]);
 
   useEffect(() => {
     fetchRooms();
@@ -576,7 +587,7 @@ export default function RoomsPage() {
                     className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand font-medium"
                   >
                     <option value="">Sélectionner un établissement</option>
-                    {establishments.map((est) => (
+                    {establishments.map((est: any) => (
                       <option key={est.id} value={est.id}>
                         {est.name} ({est.city || est.code})
                       </option>

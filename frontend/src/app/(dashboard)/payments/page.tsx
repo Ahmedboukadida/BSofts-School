@@ -18,12 +18,14 @@ import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { LoadingCard } from '@/components/ui/spinner';
+import { useActiveContext } from '@/hooks/use-active-context';
 import { CURRENCY } from '@/lib/constants';
 import type { StudentPaymentItem, CaisseItem, TransactionItem, TeacherPaymentItem } from '@/types';
 
 export default function PaymentsPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { contextParams } = useActiveContext();
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<'STUDENT' | 'CAISSE' | 'TEACHER'>('STUDENT');
@@ -91,7 +93,7 @@ export default function PaymentsPage() {
   const fetchStudentPayments = useCallback(async () => {
     try {
       setIsStudentLoading(true);
-      const res = await api.get('/student-payments?limit=100');
+      const res = await api.get('/student-payments', { params: { limit: 100, ...contextParams } });
       const list = res.data?.data || res.data || [];
       setStudentPayments(Array.isArray(list) ? list : []);
     } catch (err: any) {
@@ -99,15 +101,15 @@ export default function PaymentsPage() {
     } finally {
       setIsStudentLoading(false);
     }
-  }, []);
+  }, [contextParams]);
 
   // 2. Fetch Caisses & Transactions
   const fetchCaisseData = useCallback(async () => {
     try {
       setIsCaisseLoading(true);
       const [caisseRes, txRes] = await Promise.all([
-        api.get('/caisses?limit=100'),
-        api.get('/financial-transactions?limit=100'),
+        api.get('/caisses', { params: { limit: 100, ...contextParams } }),
+        api.get('/financial-transactions', { params: { limit: 100, ...contextParams } }),
       ]);
       const cList = caisseRes.data?.data || caisseRes.data || [];
       const txList = txRes.data?.data || txRes.data || [];
@@ -118,13 +120,13 @@ export default function PaymentsPage() {
     } finally {
       setIsCaisseLoading(false);
     }
-  }, []);
+  }, [contextParams]);
 
   // 3. Fetch Teacher Payroll
   const fetchTeacherPayments = useCallback(async () => {
     try {
       setIsTeacherLoading(true);
-      const res = await api.get(`/teacher-payments?period=${payrollPeriod}&limit=100`);
+      const res = await api.get('/teacher-payments', { params: { period: payrollPeriod, limit: 100, ...contextParams } });
       const list = res.data?.data || res.data || [];
       setTeacherPayments(Array.isArray(list) ? list : []);
     } catch (err: any) {
@@ -132,7 +134,7 @@ export default function PaymentsPage() {
     } finally {
       setIsTeacherLoading(false);
     }
-  }, [payrollPeriod]);
+  }, [payrollPeriod, contextParams]);
 
   useEffect(() => {
     fetchStudentPayments();
@@ -150,7 +152,7 @@ export default function PaymentsPage() {
         window.history.replaceState({}, '', window.location.pathname);
       }
     }
-  }, [fetchStudentPayments, fetchCaisseData, fetchTeacherPayments]);
+  }, [fetchStudentPayments, fetchCaisseData, fetchTeacherPayments, toast]);
 
   // Handle Student Payment Form Submit
   const handleStudentFormSubmit = async () => {

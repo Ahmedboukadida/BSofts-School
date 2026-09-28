@@ -9,6 +9,7 @@ import { AttendanceChart, PaymentChart, EnrollmentChart } from '@/components/cha
 import { useTranslation } from '@/components/providers/i18n-provider';
 import { useToast } from '@/components/ui/toast';
 import api from '@/lib/api';
+import { useActiveContext } from '@/hooks/use-active-context';
 import { CURRENCY } from '@/lib/constants';
 import type {
   AttendanceStat,
@@ -21,6 +22,7 @@ import type {
 export default function ReportsPage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { contextParams } = useActiveContext();
   const [reportType, setReportType] = useState('overview');
   const [dateRange, setDateRange] = useState('month');
   const [stats, setStats] = useState<{
@@ -46,8 +48,8 @@ export default function ReportsPage() {
     let isMounted = true;
     const loadReportData = async () => {
       try {
-        const statsRes = await api.get('/reports/stats')
-          .catch(() => api.get('/dashboard/stats'))
+        const statsRes = await api.get('/reports/stats', { params: contextParams })
+          .catch(() => api.get('/dashboard/stats', { params: contextParams }))
           .catch(() => null);
         if (statsRes?.data && isMounted) {
           const d = statsRes.data;
@@ -104,11 +106,11 @@ export default function ReportsPage() {
         }
 
         const [studentsRes, teachersRes, classesRes, paymentsRes, attendanceRes] = await Promise.all([
-          api.get('/students?limit=1'),
-          api.get('/teachers?limit=1'),
-          api.get('/classes?limit=1'),
-          api.get('/student-payments?limit=200'),
-          api.get('/student-attendance?limit=200'),
+          api.get('/students', { params: { limit: 1, ...contextParams } }),
+          api.get('/teachers', { params: { limit: 1, ...contextParams } }),
+          api.get('/classes', { params: { limit: 1, ...contextParams } }),
+          api.get('/student-payments', { params: { limit: 200, ...contextParams } }),
+          api.get('/student-attendance', { params: { limit: 200, ...contextParams } }),
         ]);
 
         if (!isMounted) return;
@@ -180,7 +182,7 @@ export default function ReportsPage() {
     return () => {
       isMounted = false;
     };
-  }, [reportType, dateRange, t, toast]);
+  }, [reportType, dateRange, contextParams, t, toast]);
 
   const handleExport = () => {
     const csvRows = [

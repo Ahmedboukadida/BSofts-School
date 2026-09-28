@@ -17,11 +17,13 @@ import { Pagination } from '@/components/ui/pagination';
 import { useTranslation } from '@/components/providers/i18n-provider';
 import api from '@/lib/api';
 import { LoadingCard } from '@/components/ui/spinner';
+import { useActiveContext } from '@/hooks/use-active-context';
 import type { StudentRosterItem, AttendanceRecord, ClassOption, SessionOption } from '@/types';
 
 export default function AttendancePage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { contextParams } = useActiveContext();
 
   const [viewMode, setViewMode] = useState<'roster' | 'history'>('roster');
   const [selectedDate, setSelectedDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -81,22 +83,27 @@ export default function AttendancePage() {
     }
   };
 
-  // Load Classes on mount
+  // Load Classes on mount / context change
   useEffect(() => {
     async function loadClasses() {
       try {
-        const res = await api.get('/classes?limit=100').catch(() => ({ data: { data: [] } }));
+        const res = await api.get('/classes', { params: { limit: 100, ...contextParams } }).catch(() => ({ data: { data: [] } }));
         const list = res.data?.data || res.data || [];
         setClasses(Array.isArray(list) ? list : []);
-        if (Array.isArray(list) && list.length > 0 && !selectedClassId) {
-          setSelectedClassId(list[0].id);
+        if (Array.isArray(list) && list.length > 0) {
+          const stillExists = list.some((c: any) => c.id === selectedClassId);
+          if (!stillExists) {
+            setSelectedClassId(list[0].id);
+          }
+        } else {
+          setSelectedClassId('');
         }
       } catch (err) {
         console.error('Failed to load classes:', err);
       }
     }
     loadClasses();
-  }, [selectedClassId]);
+  }, [contextParams]);
 
   // Fetch or find Sessions for selected class and date
   const fetchClassSessions = useCallback(async () => {
@@ -182,7 +189,7 @@ export default function AttendancePage() {
   const fetchHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     try {
-      const params: Record<string, string> = { limit: '100' };
+      const params: Record<string, string> = { limit: '100', ...contextParams };
       if (selectedDate) {
         params.startDate = selectedDate;
         params.endDate = selectedDate;
@@ -197,7 +204,7 @@ export default function AttendancePage() {
     } finally {
       setIsLoadingHistory(false);
     }
-  }, [selectedDate, selectedClassId]);
+  }, [selectedDate, selectedClassId, contextParams]);
 
   useEffect(() => {
     if (viewMode === 'history') {

@@ -120,39 +120,48 @@ export function Header({ onMenuClick }: HeaderProps) {
     fetchContextOptions();
   }, [fetchContextOptions]);
 
-  // Fetch Academic Years when establishment changes
+  // Fetch Academic Years when establishment changes (supporting specific ID or 'ALL')
   const fetchAcademicYears = useCallback(async (estId: string | null) => {
-    if (!estId) {
-      setAcademicYears([]);
-      return;
-    }
     try {
-      const res = await api.get('/academic-years', { params: { establishmentId: estId, limit: 50 } }).catch(() => ({ data: { data: [] } }));
+      const activeEst = (estId && estId !== 'ALL' && estId !== 'all') ? estId : undefined;
+      const res = await api.get('/academic-years', {
+        params: {
+          ...(activeEst ? { establishmentId: activeEst } : {}),
+          limit: 100,
+        },
+      }).catch(() => ({ data: { data: [] } }));
       const rawYears = res.data?.data || res.data || [];
-      const list: AcademicYearOption[] = (Array.isArray(rawYears) ? rawYears : []).map((y: { id: string; name: string; isCurrent: boolean; establishmentId: string }) => ({
+      const list: AcademicYearOption[] = (Array.isArray(rawYears) ? rawYears : []).map((y: any) => ({
         id: y.id,
         name: y.name,
-        isCurrent: y.isCurrent,
-        establishmentId: y.establishmentId,
+        isCurrent: Boolean(y.isCurrent),
+        establishmentId: y.establishmentId || '',
       }));
 
-      if (list.length === 0) {
-        // Fallback default academic year for pristine/demo instances
+      // Deduplicate academic years by name if viewing multiple establishments
+      const uniqueYears = list.filter((y, idx, self) =>
+        idx === self.findIndex((item) => item.name === y.name)
+      );
+
+      if (uniqueYears.length === 0) {
         const fallback: AcademicYearOption = {
           id: 'year-2025-2026',
           name: '2025 - 2026',
           isCurrent: true,
-          establishmentId: estId,
+          establishmentId: estId || '',
         };
         setAcademicYears([fallback]);
-        setCurrentAcademicYearId(fallback.id);
       } else {
-        setAcademicYears(list);
+        setAcademicYears(uniqueYears);
         const currentSelected = useEstablishmentStore.getState().currentAcademicYearId;
-        const exists = list.some((y) => y.id === currentSelected);
-        if (!exists) {
-          const activeYear = list.find((y) => y.isCurrent) || list[0];
-          setCurrentAcademicYearId(activeYear.id);
+        if (currentSelected && currentSelected !== 'ALL') {
+          const exists = uniqueYears.some((y) => y.id === currentSelected);
+          if (!exists) {
+            const activeYear = uniqueYears.find((y) => y.isCurrent) || uniqueYears[0];
+            if (activeYear) {
+              setCurrentAcademicYearId(activeYear.id);
+            }
+          }
         }
       }
     } catch {
@@ -225,20 +234,22 @@ export function Header({ onMenuClick }: HeaderProps) {
                       const tId = e.target.value || null;
                       setCurrentTenantId(tId);
                       if (!tId) {
-                        setCurrentEstablishmentId(null);
-                        setCurrentAcademicYearId(null);
+                        setCurrentEstablishmentId('ALL');
+                        setCurrentAcademicYearId('ALL');
                       } else {
                         const matching = establishments.filter((est) => est.tenantId === tId);
-                        if (matching.length > 0) {
+                        if (matching.length > 1) {
+                          setCurrentEstablishmentId('ALL');
+                        } else if (matching.length === 1) {
                           setCurrentEstablishmentId(matching[0].id);
                         } else {
                           setCurrentEstablishmentId(null);
                         }
                       }
                     }}
-                    className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-brand cursor-pointer transition-all"
+                    className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
                   >
-                    <option value="">🏢 Tous les Tenants</option>
+                    <option value="">🏢 Tous les Tenants (All)</option>
                     {tenants.map((t) => (
                       <option key={t.id} value={t.id}>
                         🏢 {t.name}
@@ -247,14 +258,18 @@ export function Header({ onMenuClick }: HeaderProps) {
                   </select>
                 </div>
 
-                {/* Step 2: Establishment Selector (ONLY visible once a specific tenant is selected) */}
-                {currentTenantId && visibleEstablishments.length > 0 && (
+                {/* Step 2: Establishment Selector (Always available with 'ALL' option) */}
+                {visibleEstablishments.length > 0 && (
                   <div className="relative animate-in fade-in duration-200">
                     <select
-                      value={currentEstablishmentId || ''}
-                      onChange={(e) => setCurrentEstablishmentId(e.target.value || null)}
-                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-brand focus:outline-none focus:border-brand cursor-pointer transition-all"
+                      value={currentEstablishmentId || 'ALL'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCurrentEstablishmentId(val === 'ALL' ? 'ALL' : val || null);
+                      }}
+                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
                     >
+                      <option value="ALL">🏫 Tous les Établissements (All)</option>
                       {visibleEstablishments.map((est) => (
                         <option key={est.id} value={est.id}>
                           🏫 {est.name}
@@ -264,14 +279,18 @@ export function Header({ onMenuClick }: HeaderProps) {
                   </div>
                 )}
 
-                {/* Step 3: Academic Year Selector (Visible once establishment is selected) */}
-                {currentTenantId && currentEstablishmentId && academicYears.length > 0 && (
+                {/* Step 3: Academic Year Selector (Always available with 'ALL' option) */}
+                {academicYears.length > 0 && (
                   <div className="relative animate-in fade-in duration-200">
                     <select
-                      value={currentAcademicYearId || ''}
-                      onChange={(e) => setCurrentAcademicYearId(e.target.value || null)}
-                      className="h-[38px] px-3 bg-[#ECFDF5] border border-[#A7F3D0] rounded-lg text-xs font-semibold text-emerald-800 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
+                      value={currentAcademicYearId || 'ALL'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCurrentAcademicYearId(val === 'ALL' ? 'ALL' : val || null);
+                      }}
+                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
                     >
+                      <option value="ALL">📅 Toutes les Années (All)</option>
                       {academicYears.map((year) => (
                         <option key={year.id} value={year.id}>
                           📅 {year.name} {year.isCurrent ? '(Actuelle)' : ''}
@@ -287,10 +306,14 @@ export function Header({ onMenuClick }: HeaderProps) {
                 {establishments.length > 1 ? (
                   <div className="relative">
                     <select
-                      value={currentEstablishmentId || ''}
-                      onChange={(e) => setCurrentEstablishmentId(e.target.value || null)}
-                      className="h-[38px] px-3 bg-[#F6F7F9] border border-[#ECF0FF] rounded-lg text-xs font-semibold text-brand focus:outline-none focus:border-brand cursor-pointer transition-all"
+                      value={currentEstablishmentId || 'ALL'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCurrentEstablishmentId(val === 'ALL' ? 'ALL' : val || null);
+                      }}
+                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
                     >
+                      <option value="ALL">🏫 Tous les Établissements (All)</option>
                       {establishments.map((est) => (
                         <option key={est.id} value={est.id}>
                           🏫 {est.name}
@@ -299,20 +322,24 @@ export function Header({ onMenuClick }: HeaderProps) {
                     </select>
                   </div>
                 ) : establishments.length === 1 ? (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand/5 border border-brand/20 rounded-lg text-xs font-bold text-brand">
-                    <School className="w-3.5 h-3.5" />
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-bold text-[#242F40]">
+                    <School className="w-3.5 h-3.5 text-[#CCA43B]" />
                     <span>{establishments[0].name}</span>
                   </div>
                 ) : null}
 
-                {/* Academic Year Selector for Non-Root */}
-                {currentEstablishmentId && academicYears.length > 0 && (
+                {/* Academic Year Selector for Non-Root with 'ALL' option */}
+                {academicYears.length > 0 && (
                   <div className="relative">
                     <select
-                      value={currentAcademicYearId || ''}
-                      onChange={(e) => setCurrentAcademicYearId(e.target.value || null)}
-                      className="h-[38px] px-3 bg-[#ECFDF5] border border-[#A7F3D0] rounded-lg text-xs font-semibold text-emerald-800 focus:outline-none focus:border-emerald-500 cursor-pointer transition-all"
+                      value={currentAcademicYearId || 'ALL'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCurrentAcademicYearId(val === 'ALL' ? 'ALL' : val || null);
+                      }}
+                      className="h-[38px] px-3 bg-[#E5E5E5]/40 border border-[#E5E5E5] rounded-lg text-xs font-semibold text-[#242F40] focus:outline-none focus:border-[#CCA43B] cursor-pointer transition-all"
                     >
+                      <option value="ALL">📅 Toutes les Années (All)</option>
                       {academicYears.map((year) => (
                         <option key={year.id} value={year.id}>
                           📅 {year.name} {year.isCurrent ? '(Actuelle)' : ''}

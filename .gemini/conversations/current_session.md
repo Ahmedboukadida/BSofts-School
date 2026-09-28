@@ -145,3 +145,45 @@ Per explicit user instruction, the project folder `E:\ReFactory\BSofts-School\.g
    - Ran `npx prisma validate ; npm run build` locally (Clean exit code 0).
    - Ran `npm test` across all 14 test suites in `backend` (97/97 tests passed).
 
+---
+
+## 6. Multi-Tenant / Multi-Establishment / Academic Year Universal Hierarchy & 'ALL' Propagation
+
+### Objective
+Ensure every dashboard view strictly and reactively follows the selected Tenant, Establishment, and School/Academic Year, while always guaranteeing:
+1. `'ALL'` is available as an option in the Establishment selector for tenants with multiple establishments (and for root).
+2. `'ALL'` is available as an option in the Academic Year selector for establishments with multiple years.
+3. Every dashboard view dynamically updates and passes these filters to backend API endpoints.
+4. Strict enforcement of the 5-solid-color palette (`#242F40`, `#363636`, `#CCA43B`, `#E5E5E5`, `#FFFFFF`).
+
+### Implementation Details
+1. **Context Middleware & DTOs (`backend`)**:
+   - `EstablishmentContextMiddleware`: Extracts `x-establishment-id`, `x-tenant-id`, and `x-academic-year-id` headers and query params. If the value is `'ALL'`, `'all'`, or missing, it strips them from `req.query` and leaves context variables null (preventing erroneous strict equality queries).
+   - `PaginationQueryDto`: Added optional `isDeleted?: boolean`, `academicYearId?: string`, and `tenantId?: string` so all paginated queries accept these parameters without throwing 400 validation errors.
+   - `ReportsService` & `DashboardController`: Updated `getDashboardStats` to accept `establishmentId`, `tenantId`, and `academicYearId`.
+   - Core Services (`Students`, `Classes`, `Teachers`, `Exams`, `StudentAttendance`, `Sessions`, `StudentPayments`): Updated query filters to properly filter by `establishmentId`, `tenantId` (via `establishment: { tenantId }`), and `academicYearId` (ignoring `'ALL'`).
+
+2. **Frontend Reactivity Architecture (`frontend`)**:
+   - `useActiveContext` Hook: Created `frontend/src/hooks/use-active-context.ts` providing memoized `contextParams` (`establishmentId`, `tenantId`, `academicYearId`), active IDs, and reactive state.
+   - `Header` Selectors (`frontend/src/components/layout/header.tsx`):
+     - Added `<option value="ALL">🏫 Tous les Établissements (All)</option>` to root and non-root establishment dropdowns.
+     - Added `<option value="ALL">📅 Toutes les Années (All)</option>` to root and non-root academic year dropdowns.
+     - Styled all selectors with the strict 5 solid colors (`#242F40`, `#E5E5E5`, `#CCA43B`).
+   - Views Updated to Use `useActiveContext` and Dynamically Re-Fetch:
+     - `dashboard/page.tsx`
+     - `students/page.tsx`
+     - `classes/page.tsx`
+     - `teachers/page.tsx`
+     - `exams/page.tsx`
+     - `attendance/page.tsx`
+     - `homework/page.tsx`
+     - `payments/page.tsx`
+     - `rooms/page.tsx`
+     - `schedule/page.tsx`
+     - `reports/page.tsx`
+
+3. **Verification**:
+   - Backend: `npm test` passed 14/14 suites (97/97 tests).
+   - Frontend: `npx tsc --noEmit` clean exit code 0.
+
+

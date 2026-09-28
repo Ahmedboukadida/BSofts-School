@@ -59,6 +59,19 @@ export class PaginationQueryDto {
   includeDeleted?: boolean;
 
   @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  isDeleted?: boolean;
+
+  @IsOptional()
   @IsString()
   establishmentId?: string;
+
+  @IsOptional()
+  @IsString()
+  academicYearId?: string;
+
+  @IsOptional()
+  @IsString()
+  tenantId?: string;
 }

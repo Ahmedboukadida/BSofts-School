@@ -40,6 +40,7 @@ interface EstablishmentState {
   setAcademicYears: (years: AcademicYearOption[]) => void;
   setMenuOrientation: (orientation: 'vertical' | 'horizontal') => void;
   fetchEstablishments: () => Promise<void>;
+  getFilterParams: () => Record<string, string>;
   initializeFromUser: (user: {
     isRoot?: boolean;
     establishmentId?: string;
@@ -47,7 +48,7 @@ interface EstablishmentState {
   }) => void;
 }
 
-export const useEstablishmentStore = create<EstablishmentState>((set) => ({
+export const useEstablishmentStore = create<EstablishmentState>((set, get) => ({
   currentEstablishmentId: typeof window !== 'undefined' ? localStorage.getItem('x-establishment-id') : null,
   currentTenantId: typeof window !== 'undefined' ? localStorage.getItem('x-tenant-id') : null,
   currentAcademicYearId: typeof window !== 'undefined' ? localStorage.getItem('x-academic-year-id') : null,
@@ -55,6 +56,21 @@ export const useEstablishmentStore = create<EstablishmentState>((set) => ({
   tenants: [],
   academicYears: [],
   menuOrientation: (typeof window !== 'undefined' && (localStorage.getItem('menu-orientation') as 'vertical' | 'horizontal')) || 'vertical',
+
+  getFilterParams: () => {
+    const { currentEstablishmentId, currentTenantId, currentAcademicYearId } = get();
+    const params: Record<string, string> = {};
+    if (currentEstablishmentId && currentEstablishmentId !== 'ALL' && currentEstablishmentId !== 'all') {
+      params.establishmentId = currentEstablishmentId;
+    }
+    if (currentTenantId && currentTenantId !== 'ALL' && currentTenantId !== 'all') {
+      params.tenantId = currentTenantId;
+    }
+    if (currentAcademicYearId && currentAcademicYearId !== 'ALL' && currentAcademicYearId !== 'all') {
+      params.academicYearId = currentAcademicYearId;
+    }
+    return params;
+  },
 
   setCurrentEstablishmentId: (id: string | null) => {
     if (typeof window !== 'undefined') {

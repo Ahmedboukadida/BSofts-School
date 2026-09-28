@@ -17,6 +17,11 @@ export class StudentAttendanceService {
     const where: any = {};
     if (establishmentId && establishmentId !== 'ALL' && establishmentId !== 'all') {
       where.student = { ...(where.student || {}), establishmentId };
+    } else if (query.tenantId && query.tenantId !== 'ALL' && query.tenantId !== 'all') {
+      where.student = { ...(where.student || {}), establishment: { tenantId: query.tenantId } };
+    }
+    if (query.academicYearId && query.academicYearId !== 'ALL' && query.academicYearId !== 'all') {
+      where.session = { ...(where.session || {}), class: { academicYearId: query.academicYearId } };
     }
     if (studentId) where.studentId = studentId;
     if (sessionId) where.sessionId = sessionId;

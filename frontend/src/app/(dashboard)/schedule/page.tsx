@@ -17,6 +17,7 @@ import { useToast } from '@/components/ui/toast';
 import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
+import { useActiveContext } from '@/hooks/use-active-context';
 import { LoadingCard } from '@/components/ui/spinner';
 import type { ScheduleSessionItem as Session } from '@/types';
 
@@ -55,6 +56,7 @@ function formatTimeString(isoOrTime: string): string {
 export default function SchedulePage() {
   const { t } = useTranslation();
   const toast = useToast();
+  const { contextParams } = useActiveContext();
   
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentWeekMonday, setCurrentWeekMonday] = useState<Date>(() => getMonday(new Date()));
@@ -109,7 +111,7 @@ export default function SchedulePage() {
       setIsLoading(true);
       const startDate = weekDates[0]?.isoDate;
       const endDate = weekDates[weekDates.length - 1]?.isoDate;
-      const params: Record<string, string> = { limit: '200' };
+      const params: Record<string, string> = { limit: '200', ...contextParams };
       if (startDate) params.startDate = startDate;
       if (endDate) params.endDate = endDate;
       if (selectedClassId) params.classId = selectedClassId;
@@ -123,14 +125,14 @@ export default function SchedulePage() {
     } finally {
       setIsLoading(false);
     }
-  }, [weekDates, selectedClassId, selectedTeacherId, t, toast]);
+  }, [weekDates, selectedClassId, selectedTeacherId, contextParams, t, toast]);
 
   const fetchDropdowns = useCallback(async () => {
     try {
       const [classesRes, teachersRes, roomsRes] = await Promise.all([
-        api.get('/classes?limit=100'),
-        api.get('/teachers?limit=100'),
-        api.get('/rooms?limit=100'),
+        api.get('/classes', { params: { limit: 100, ...contextParams } }),
+        api.get('/teachers', { params: { limit: 100, ...contextParams } }),
+        api.get('/rooms', { params: { limit: 100, ...contextParams } }),
       ]);
       setClasses(classesRes.data.data || []);
       setTeachers(teachersRes.data.data || []);
@@ -138,7 +140,7 @@ export default function SchedulePage() {
     } catch (error) {
       console.error('Failed to fetch dropdowns:', error);
     }
-  }, []);
+  }, [contextParams]);
 
   useEffect(() => {
     fetchDropdowns();

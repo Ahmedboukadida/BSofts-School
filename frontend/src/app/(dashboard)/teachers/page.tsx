@@ -20,12 +20,23 @@ import { useDynamicEnums } from '@/hooks/use-dynamic-enums';
 import api from '@/lib/api';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore } from '@/store/establishment-store';
+import { useActiveContext } from '@/hooks/use-active-context';
 import type { TeacherItem } from '@/types';
 
 export default function TeachersPage() {
   const { showToast, showApiErrorToast } = useToast();
   const { user } = useAuthStore();
-  const { currentEstablishmentId, establishments, fetchEstablishments } = useEstablishmentStore();
+  const {
+    currentEstablishmentId,
+    currentTenantId,
+    currentAcademicYearId,
+    activeEstablishmentId,
+    activeTenantId,
+    activeAcademicYearId,
+    contextParams,
+    establishments,
+    fetchEstablishments,
+  } = useActiveContext() as any;
 
   const [teachers, setTeachers] = useState<TeacherItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -82,7 +93,7 @@ export default function TeachersPage() {
         params: {
           limit: 100,
           includeDeleted: isTrashMode,
-          ...(activeEstId ? { establishmentId: activeEstId } : {}),
+          ...contextParams,
         },
       });
 
@@ -122,7 +133,7 @@ export default function TeachersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, currentEstablishmentId, showApiErrorToast]);
+  }, [isTrashMode, contextParams, showApiErrorToast]);
 
   useEffect(() => {
     fetchTeachers();
@@ -533,7 +544,7 @@ export default function TeachersPage() {
                     className="w-full px-3 py-2 text-sm rounded-xl bg-background border border-border text-text-primary outline-none focus:border-brand font-medium"
                   >
                     <option value="">Sélectionner un établissement</option>
-                    {establishments.map((est) => (
+                    {establishments.map((est: any) => (
                       <option key={est.id} value={est.id}>
                         {est.name} ({est.city || est.code})
                       </option>

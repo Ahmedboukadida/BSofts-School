@@ -17,6 +17,10 @@ export class EstablishmentContextMiddleware implements NestMiddleware {
       ? null
       : (req.headers['x-tenant-id'] as string);
 
+    const academicYearId = isAll(req.headers['x-academic-year-id'] as string)
+      ? null
+      : (req.headers['x-academic-year-id'] as string);
+
     const query = req.query as Record<string, unknown>;
 
     if (query) {
@@ -25,6 +29,9 @@ export class EstablishmentContextMiddleware implements NestMiddleware {
       }
       if (isAll(query.tenantId as string | undefined)) {
         delete query.tenantId;
+      }
+      if (isAll(query.academicYearId as string | undefined)) {
+        delete query.academicYearId;
       }
     }
 
@@ -39,6 +46,13 @@ export class EstablishmentContextMiddleware implements NestMiddleware {
       req.tenantId = tenantId;
       if (query && !query.tenantId) {
         query.tenantId = tenantId;
+      }
+    }
+
+    if (academicYearId) {
+      (req as any).academicYearId = academicYearId;
+      if (query && !query.academicYearId) {
+        query.academicYearId = academicYearId;
       }
     }
 
