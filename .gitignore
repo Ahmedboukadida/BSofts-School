@@ -55,3 +55,8 @@ Desktop.ini
 
 # TypeScript cache
 *.tsbuildinfo
+.gemini.rar
+*.rar
+
+# Docs and non-code assets
+docs/

@@ -11,10 +11,10 @@
     "build": "prisma generate && nest build",
     "deploy": "nest deploy",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
-    "start": "node dist/main",
+    "start": "node -e \"if(!require('fs').existsSync('dist/main.js')){console.log('dist/main.js not found, compiling...');require('child_process').execSync('npm run build',{stdio:'inherit'})}\" && node dist/main",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
-    "start:prod": "node dist/main",
+    "start:prod": "node -e \"if(!require('fs').existsSync('dist/main.js')){console.log('dist/main.js not found, compiling...');require('child_process').execSync('npm run build',{stdio:'inherit'})}\" && node dist/main",
     "lint": "oxlint src/ test/",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -33,7 +33,7 @@
     "db:seed:neon": "npx tsx scripts/sync-neon.ts --seed",
     "db:seed:neon:prod": "npx tsx scripts/seed-production.ts",
     "db:pull:neon:data": "npx tsx scripts/sync-neon.ts --pull-data",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && node -e \"if(require('fs').existsSync('tsconfig.json')&&require('fs').existsSync('src/main.ts')){console.log('Compiling NestJS application...');require('child_process').execSync('npx nest build',{stdio:'inherit'})}\""
   },
   "prisma": {
     "seed": "ts-node --esm prisma/seed.ts"
