@@ -37,6 +37,14 @@ export class ClassesController {
     return this.service.promoteClass(body.fromClassId, body.targetClassId, body.targetAcademicYearId, user);
   }
 
+  @Get(':id/roster')
+  @Permissions('classes:read')
+  @ApiOperation({ summary: 'Get lightweight student roster for a class' })
+  @ApiResponse({ status: 200, description: 'Class roster retrieved successfully' })
+  getRoster(@Param('id', ParseUUIDPipe) id: string) {
+    return this.service.getRoster(id);
+  }
+
   @Get(':id')
   @Permissions('classes:read')
   @ApiOperation({ summary: 'Get a class by ID' })

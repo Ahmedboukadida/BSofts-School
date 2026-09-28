@@ -82,6 +82,71 @@ export class ClassesService {
     return cls;
   }
 
+  async getRoster(id: string) {
+    const cls = await this.prisma.class.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        establishmentId: true,
+        academicYearId: true,
+        maxStudents: true,
+      },
+    });
+    if (!cls) throw new NotFoundException(`Class with ID ${id} not found`);
+
+    const assignments = await this.prisma.studentClassAssignment.findMany({
+      where: { classId: id },
+      select: {
+        id: true,
+        assignedAt: true,
+        isPromoted: true,
+        student: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            registrationNumber: true,
+            gender: true,
+            photo: true,
+            dateOfBirth: true,
+            isActive: true,
+          },
+        },
+      },
+      orderBy: [
+        { student: { lastName: 'asc' } },
+        { student: { firstName: 'asc' } },
+      ],
+    });
+
+    const activeStudents = assignments
+      .filter((a) => a.student && a.student.isActive)
+      .map((a) => ({
+        id: a.student.id,
+        assignmentId: a.id,
+        firstName: a.student.firstName,
+        lastName: a.student.lastName,
+        registrationNumber: a.student.registrationNumber,
+        gender: a.student.gender,
+        photo: a.student.photo,
+        dateOfBirth: a.student.dateOfBirth,
+        isActive: a.student.isActive,
+      }));
+
+    return {
+      classId: cls.id,
+      className: cls.name,
+      classCode: cls.code,
+      establishmentId: cls.establishmentId,
+      academicYearId: cls.academicYearId,
+      totalStudents: activeStudents.length,
+      students: activeStudents,
+      studentClassAssignments: assignments,
+    };
+  }
+
   async create(dto: CreateClassDto, user?: any) {
     const establishmentId = dto.establishmentId || user?.establishmentId;
     if (!establishmentId) {

@@ -67,22 +67,21 @@ export default function TeacherPortalPage() {
   const loadClassStudents = useCallback(async (classId: string) => {
     if (!classId) return;
     try {
-      const res = await api.get(`/classes/${classId}`).catch(() => ({ data: {} }));
-      const assignments = res.data?.studentClassAssignments || res.data?.data?.studentClassAssignments || [];
-      const list = Array.isArray(assignments) ? assignments : [];
+      // Consume dedicated lightweight roster endpoint (C2 optimization)
+      const res = await api.get(`/classes/${classId}/roster`).catch(() => ({ data: {} }));
+      const studentsList = res.data?.students || res.data?.data?.students || [];
+      const list = Array.isArray(studentsList) ? studentsList : [];
       if (list.length > 0) {
-        const rows: StudentGradeRow[] = list
-          .filter((a: any) => a?.student || a?.studentId)
-          .map(
-            (a: any, idx: number) => ({
-              studentId: a.student?.id || a.studentId || `stu-${idx}`,
-              name: `${a.student?.firstName || 'Élève'} ${a.student?.lastName || `#${idx + 1}`}`,
-              registrationNumber: a.student?.registrationNumber || '-',
-              continuousScore: Number(a.continuousScore ?? 0),
-              examScore: Number(a.examScore ?? 0),
-              appreciation: a.appreciation || '',
-            })
-          );
+        const rows: StudentGradeRow[] = list.map(
+          (s: any, idx: number) => ({
+            studentId: s.id || `stu-${idx}`,
+            name: `${s.firstName || 'Élève'} ${s.lastName || `#${idx + 1}`}`,
+            registrationNumber: s.registrationNumber || '-',
+            continuousScore: Number(s.continuousScore ?? 0),
+            examScore: Number(s.examScore ?? 0),
+            appreciation: s.appreciation || '',
+          })
+        );
         setStudents(rows);
       } else {
         setStudents([]);

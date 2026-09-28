@@ -27,6 +27,9 @@ describe('ClassesService', () => {
         delete: vi.fn(),
         count: vi.fn(),
       },
+      studentClassAssignment: {
+        findMany: vi.fn(),
+      },
       auditLog: {
         create: vi.fn().mockResolvedValue({ id: 'aud-1' }),
       },
@@ -68,6 +71,67 @@ describe('ClassesService', () => {
       prisma.class.findUnique.mockResolvedValue(null);
 
       await expect(service.findOne('1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getRoster', () => {
+    it('should return class roster with active students', async () => {
+      prisma.class.findUnique.mockResolvedValue({
+        id: 'cls-1',
+        name: '6ème A',
+        code: '6A',
+        establishmentId: 'est-1',
+        academicYearId: 'ay-1',
+        maxStudents: 30,
+      });
+      prisma.studentClassAssignment.findMany.mockResolvedValue([
+        {
+          id: 'asgn-1',
+          assignedAt: new Date(),
+          isPromoted: false,
+          student: {
+            id: 'stu-1',
+            firstName: 'Yassine',
+            lastName: 'Ben Salem',
+            registrationNumber: 'STU-0001',
+            gender: 'MALE',
+            photo: null,
+            dateOfBirth: new Date('2014-05-10'),
+            isActive: true,
+          },
+        },
+        {
+          id: 'asgn-2',
+          assignedAt: new Date(),
+          isPromoted: false,
+          student: {
+            id: 'stu-2',
+            firstName: 'Ines',
+            lastName: 'Trabelsi',
+            registrationNumber: 'STU-0002',
+            gender: 'FEMALE',
+            photo: null,
+            dateOfBirth: new Date('2014-08-20'),
+            isActive: false,
+          },
+        },
+      ]);
+
+      const result = await service.getRoster('cls-1');
+
+      expect(result).toBeDefined();
+      expect(result.classId).toBe('cls-1');
+      expect(result.className).toBe('6ème A');
+      expect(result.totalStudents).toBe(1);
+      expect(result.students).toHaveLength(1);
+      expect(result.students[0].firstName).toBe('Yassine');
+      expect(result.students[0].registrationNumber).toBe('STU-0001');
+    });
+
+    it('should throw NotFoundException for non-existent class', async () => {
+      prisma.class.findUnique.mockResolvedValue(null);
+
+      await expect(service.getRoster('non-existent')).rejects.toThrow(NotFoundException);
     });
   });
 

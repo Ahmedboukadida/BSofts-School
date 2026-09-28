@@ -139,12 +139,9 @@ export default function AttendancePage() {
     if (!selectedClassId) return;
     setIsLoadingRoster(true);
     try {
-      // 1. Fetch class students
-      const classRes = await api.get(`/classes/${selectedClassId}`).catch(() => ({ data: null }));
-      const assignments = classRes.data?.studentClassAssignments || [];
-      const students = (Array.isArray(assignments) ? assignments : [])
-        .filter((a: any) => a?.student)
-        .map((a: any) => a.student);
+      // 1. Fetch class students via dedicated lightweight roster endpoint (C3 optimization)
+      const rosterRes = await api.get(`/classes/${selectedClassId}/roster`).catch(() => ({ data: null }));
+      const students = rosterRes.data?.students || rosterRes.data?.data?.students || [];
 
       // 2. Fetch any existing attendance for this class/session on this date
       const existingAttendanceMap: Record<string, { status: 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED'; reason?: string }> = {};
