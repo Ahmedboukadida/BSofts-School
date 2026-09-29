@@ -19,32 +19,52 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // CORS with dynamic multi-environment support
-  const allowedOrigins = [
-    'http://localhost:3025',
+  // Strict CORS allowlist with explicit domain bindings (Task 1.6 / Issues B5/B6)
+  const configuredCors = [
+    ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : []),
+    ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : []),
+  ];
+
+  const rawOrigins = [
+    'https://bsofts-school.vercel.app',
     'http://localhost:3026',
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://bsofts-school.vercel.app',
-    'https://bsofts-school.vercel.app',
     process.env.FRONTEND_URL,
-    ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()) : []),
-  ].filter(Boolean) as string[];
+    ...configuredCors,
+    ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:3025'] : []),
+  ];
+
+  const allowedOrigins = Array.from(
+    new Set(
+      rawOrigins
+        .map((origin) => (typeof origin === 'string' ? origin.trim().replace(/\/+$/, '') : ''))
+        .filter(Boolean),
+    ),
+  );
+
+  logger.log(`CORS initialized with allowed origins: ${allowedOrigins.join(', ')}`);
 
   app.enableCors({
     origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      // Allow non-browser agents, CLI tools, server-to-server health checks without Origin header
       if (!origin) return callback(null, true);
-      if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      const sanitizedOrigin = origin.trim().replace(/\/+$/, '');
+      if (allowedOrigins.includes(sanitizedOrigin) || allowedOrigins.includes('*')) {
         return callback(null, true);
       }
-      // Match specific bsofts-school preview branches on vercel or exact origin
-      const isOfficialVercelPreview = /^https:\/\/bsofts-school(-[a-z0-9-]+)?\.vercel\.app$/.test(origin);
-      if (isOfficialVercelPreview) {
-        return callback(null, true);
-      }
+      logger.warn(`CORS blocked unauthorized origin attempt: ${origin}`);
       return callback(null, false);
     },
     credentials: true,
+    methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'x-establishment-id',
+      'x-tenant-id',
+      'x-academic-year-id',
+      'Idempotency-Key',
+    ],
   });
 
   // Global pipes
