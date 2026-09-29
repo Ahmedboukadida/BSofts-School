@@ -50,20 +50,34 @@ export class AllExceptionsFilter implements ExceptionFilter {
       stack = exception.stack;
     }
 
-    // Persist critical system errors (5xx) to SystemLog table
-    if (status >= 500 && this.prisma) {
+    // Persist all client errors (4xx) and system errors (5xx) to SystemLog table (Task 1.7 / Issues A3/B10)
+    if (status >= 400 && this.prisma) {
       try {
+        const level = status >= 500 ? 'ERROR' : 'WARN';
+        const clientIp =
+          (request.headers && typeof request.headers['x-forwarded-for'] === 'string'
+            ? request.headers['x-forwarded-for'].split(',')[0].trim()
+            : null) ||
+          request.ip ||
+          request.socket?.remoteAddress ||
+          null;
+
+        const userId =
+          (request.user as { id?: string } | undefined)?.id ||
+          (request as any)?.user?.id ||
+          null;
+
         await this.prisma.systemLog.create({
           data: {
-            level: 'ERROR',
+            level,
             message: Array.isArray(message) ? message.join('; ') : String(message),
             stack: stack || null,
             context: 'HttpExceptionFilter',
             path: request.url,
             method: request.method,
             statusCode: status,
-            userId: (request.user as { id?: string } | undefined)?.id || null,
-            ipAddress: request.ip || null,
+            userId,
+            ipAddress: clientIp,
           },
         });
       } catch (logErr: any) {

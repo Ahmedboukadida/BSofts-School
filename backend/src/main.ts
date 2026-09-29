@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/filters';
+import { AuditInterceptor } from './common/interceptors';
 import { AppValidationPipe } from './common/pipes';
 import { PrismaService } from './prisma/prisma.service';
 import { Logger } from '@nestjs/common';
@@ -70,9 +71,12 @@ async function bootstrap() {
   // Global pipes
   app.useGlobalPipes(AppValidationPipe);
 
-  // Global filters with Prisma for system error logging
+  // Global filters with Prisma for system error logging (4xx client and 5xx server errors)
   const prismaService = app.get(PrismaService);
   app.useGlobalFilters(new AllExceptionsFilter(prismaService));
+
+  // Global interceptor for forensic audit logging (2xx mutations & auth lifecycle)
+  app.useGlobalInterceptors(new AuditInterceptor(prismaService));
 
   // Trust proxy for rate limiting
   app.getHttpAdapter().getInstance().set('trust proxy', 1);

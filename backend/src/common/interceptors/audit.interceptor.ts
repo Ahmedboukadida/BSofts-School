@@ -16,7 +16,7 @@ export class AuditInterceptor implements NestInterceptor {
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
-    const { method, url, body, user } = request;
+    const { method, url, user } = request;
     const startTime = Date.now();
 
     return next.handle().pipe(
@@ -27,7 +27,13 @@ export class AuditInterceptor implements NestInterceptor {
             `${method} ${url} ${duration}ms - User: ${user?.id || 'anonymous'}`,
           );
 
-          // Log mutation operations
+          // Directive: LoginLog is reserved strictly for login attempts.
+          // Skip recording /auth/login in AuditLog.
+          if (url.includes('/auth/login')) {
+            return;
+          }
+
+          // Log successfully executed mutations (2xx status)
           if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
             try {
               let actorSnapshot: string | null = null;
@@ -38,21 +44,47 @@ export class AuditInterceptor implements NestInterceptor {
                 actorSnapshot = `${name} (${handle}) [${role}]`.replace(/\s+/g, ' ').trim();
               }
 
+              // Determine resolved user ID
+              const resolvedUserId =
+                user?.id ||
+                response?.user?.id ||
+                response?.data?.user?.id ||
+                response?.data?.id ||
+                (typeof response?.id === 'string' ? response.id : null) ||
+                null;
+
+              const clientIp =
+                (request.headers && typeof request.headers['x-forwarded-for'] === 'string'
+                  ? request.headers['x-forwarded-for'].split(',')[0].trim()
+                  : null) ||
+                request.ip ||
+                request.socket?.remoteAddress ||
+                null;
+
+              const userAgent = (request.headers && request.headers['user-agent']) || null;
+
+              const action = this.resolveAction(method, url);
+              const entity = this.extractEntity(url);
+              const entityId = this.extractEntityId(url) || (response?.id ? String(response.id) : undefined);
+
+              // Redact sensitive credentials in audit newValues
+              const sanitizedValues = method !== 'DELETE' ? this.sanitizePayload(response) : undefined;
+
               await this.prisma.auditLog.create({
                 data: {
-                  userId: user?.id,
+                  userId: resolvedUserId,
                   actorSnapshot,
-                  action: this.getMethodAction(method),
-                  entity: this.extractEntity(url),
-                  entityId: this.extractEntityId(url),
+                  action,
+                  entity,
+                  entityId,
                   status: 'SUCCESS',
-                  newValues: method !== 'DELETE' ? response : undefined,
-                  ipAddress: request.ip,
-                  userAgent: request.headers['user-agent'],
+                  newValues: sanitizedValues,
+                  ipAddress: clientIp,
+                  userAgent,
                 },
               });
-            } catch (error) {
-              this.logger.error('Failed to create audit log', error);
+            } catch (error: any) {
+              this.logger.error(`Failed to create audit log for ${method} ${url}: ${error.message}`);
             }
           }
         },
@@ -66,23 +98,37 @@ export class AuditInterceptor implements NestInterceptor {
     );
   }
 
-  private getMethodAction(method: string): string {
+  private resolveAction(method: string, url: string): string {
+    const cleanUrl = url.toLowerCase();
+    if (cleanUrl.includes('/auth/register')) return 'AUTH_REGISTER';
+    if (cleanUrl.includes('/auth/refresh')) return 'AUTH_TOKEN_REFRESH';
+    if (cleanUrl.includes('/auth/change-password')) return 'AUTH_PASSWORD_CHANGE';
+    if (cleanUrl.includes('/auth/forgot-password')) return 'AUTH_FORGOT_PASSWORD';
+    if (cleanUrl.includes('/auth/reset-password')) return 'AUTH_PASSWORD_RESET';
+    if (cleanUrl.includes('/auth/verify-email')) return 'AUTH_EMAIL_VERIFIED';
+    if (cleanUrl.includes('/auth/totp/enable')) return 'AUTH_2FA_SETUP';
+    if (cleanUrl.includes('/auth/totp/verify')) return 'AUTH_2FA_ACTIVATED';
+    if (cleanUrl.includes('/auth/profile')) return 'AUTH_PROFILE_UPDATE';
+
     const actionMap: Record<string, string> = {
       POST: 'CREATE',
       PUT: 'UPDATE',
       PATCH: 'UPDATE',
       DELETE: 'DELETE',
     };
-    return actionMap[method] || 'READ';
+    return actionMap[method] || 'EXECUTE';
   }
 
   private extractEntity(url: string): string {
-    const parts = url.split('/').filter(Boolean);
-    return parts[1] || 'unknown';
+    const parts = url.split('?')[0].split('/').filter(Boolean);
+    if (parts[0] === 'api') {
+      return parts[1] || 'general';
+    }
+    return parts[0] || 'general';
   }
 
   private extractEntityId(url: string): string | undefined {
-    const parts = url.split('/').filter(Boolean);
+    const parts = url.split('?')[0].split('/').filter(Boolean);
     const uuidRegex =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     for (const part of parts) {
@@ -92,4 +138,38 @@ export class AuditInterceptor implements NestInterceptor {
     }
     return undefined;
   }
+
+  private sanitizePayload(data: any): any {
+    if (!data || typeof data !== 'object') return data;
+    if (Array.isArray(data)) {
+      return data.map((item) => this.sanitizePayload(item));
+    }
+
+    const SENSITIVE_KEYS = new Set([
+      'password',
+      'currentpassword',
+      'newpassword',
+      'token',
+      'accesstoken',
+      'refreshtoken',
+      'twofactorsecret',
+      'stripesecret',
+      'resetpasswordtoken',
+      'emailverificationtoken',
+      'secret',
+    ]);
+
+    const sanitized: Record<string, any> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (SENSITIVE_KEYS.has(key.toLowerCase())) {
+        sanitized[key] = '[REDACTED]';
+      } else if (typeof value === 'object' && value !== null) {
+        sanitized[key] = this.sanitizePayload(value);
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  }
 }
+
