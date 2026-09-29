@@ -6,12 +6,15 @@ import {
   Body,
   UseGuards,
   Req,
+  Headers,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
 import {
   UpdatePlatformPaymentConfigDto,
   CreateSubscriptionCheckoutDto,
+  ClicToPayCallbackDto,
 } from './billing.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -95,4 +98,33 @@ export class BillingController {
   getAllInvoices(@CurrentUser() user: any) {
     return this.billingService.getAllInvoices(user);
   }
+
+  @Post('webhook/stripe')
+  @Public()
+  @ApiOperation({ summary: 'Stripe Webhook handler with signature verification' })
+  @ApiResponse({ status: 200, description: 'Stripe event processed successfully' })
+  async handleStripeWebhook(
+    @Headers('stripe-signature') signature: string,
+    @Req() req: any,
+  ) {
+    const rawBody = req.rawBody || req.body;
+    return this.billingService.handleStripeWebhook(rawBody, signature);
+  }
+
+  @Post('webhook/clictopay')
+  @Public()
+  @ApiOperation({ summary: 'ClicToPay Webhook / IPN handler with checksum verification' })
+  @ApiResponse({ status: 200, description: 'ClicToPay event processed successfully' })
+  async handleClicToPayWebhook(@Body() dto: ClicToPayCallbackDto) {
+    return this.billingService.handleClicToPayWebhook(dto);
+  }
+
+  @Get('callback/clictopay')
+  @Public()
+  @ApiOperation({ summary: 'ClicToPay Browser Callback handler' })
+  @ApiResponse({ status: 200, description: 'ClicToPay browser callback handled' })
+  async handleClicToPayCallback(@Query() query: ClicToPayCallbackDto) {
+    return this.billingService.handleClicToPayWebhook(query);
+  }
 }
+

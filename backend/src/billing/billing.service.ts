@@ -419,4 +419,160 @@ export class BillingService {
       take: 100,
     });
   }
+
+  async handleStripeWebhook(rawBody: Buffer | string | undefined, signature: string | undefined) {
+    if (!signature) {
+      throw new BadRequestException('En-tête stripe-signature manquant');
+    }
+
+    const config = await this.prisma.platformPaymentConfig.findFirst({
+      where: { isDefault: true },
+    });
+
+    const webhookSecret = config?.stripeWebhookSecret || process.env.STRIPE_WEBHOOK_SECRET;
+    if (!webhookSecret) {
+      this.logger.error('Stripe webhook secret is not configured in platform settings or environment.');
+      throw new BadRequestException('Clé secrète webhook Stripe non configurée');
+    }
+
+    const stripeKey = config?.stripeSecretKey || process.env.STRIPE_SECRET_KEY;
+    if (!stripeKey) {
+      throw new BadRequestException('Clé secrète Stripe non configurée');
+    }
+
+    const stripe = new Stripe(stripeKey);
+    let event: Stripe.Event;
+
+    try {
+      const payload = Buffer.isBuffer(rawBody)
+        ? rawBody
+        : typeof rawBody === 'string'
+        ? rawBody
+        : JSON.stringify(rawBody || {});
+      event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    } catch (err: any) {
+      this.logger.error(`Stripe webhook signature verification failed: ${err.message}`);
+      throw new BadRequestException(`Signature de webhook Stripe invalide: ${err.message}`);
+    }
+
+    this.logger.log(`Processing verified Stripe webhook event: ${event.type} (${event.id})`);
+
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const invoiceId = session.metadata?.invoiceId || session.client_reference_id;
+        const transactionRef = session.payment_intent ? String(session.payment_intent) : session.id;
+
+        if (invoiceId) {
+          await this.confirmSubscriptionPayment(invoiceId, 'STRIPE', transactionRef);
+        } else {
+          this.logger.warn(`Stripe session ${session.id} completed without invoiceId metadata`);
+        }
+        break;
+      }
+
+      case 'invoice.payment_succeeded': {
+        const stripeInvoice = event.data.object as Stripe.Invoice;
+        const invoiceId = (stripeInvoice as any).metadata?.invoiceId;
+        if (invoiceId) {
+          await this.confirmSubscriptionPayment(invoiceId, 'STRIPE', stripeInvoice.id);
+        }
+        break;
+      }
+
+      case 'payment_intent.succeeded': {
+        const paymentIntent = event.data.object as Stripe.PaymentIntent;
+        const invoiceId = paymentIntent.metadata?.invoiceId;
+        if (invoiceId) {
+          await this.confirmSubscriptionPayment(invoiceId, 'STRIPE', paymentIntent.id);
+        }
+        break;
+      }
+
+      case 'checkout.session.async_payment_failed':
+      case 'payment_intent.payment_failed': {
+        const failedObj = event.data.object as any;
+        const invoiceId = failedObj.metadata?.invoiceId || failedObj.client_reference_id;
+        if (invoiceId) {
+          await this.prisma.saaSInvoice.updateMany({
+            where: { id: invoiceId, status: 'PENDING' },
+            data: { status: 'CANCELLED' },
+          });
+          this.logger.warn(`Stripe payment failed for invoice ${invoiceId}`);
+        }
+        break;
+      }
+
+      default:
+        this.logger.log(`Stripe event ${event.type} acknowledged without action.`);
+        break;
+    }
+
+    return { received: true, event: event.type };
+  }
+
+  async handleClicToPayWebhook(dto: ClicToPayCallbackDto) {
+    const config = await this.prisma.platformPaymentConfig.findFirst({
+      where: { isDefault: true },
+    });
+
+    const secretKey = config?.clicToPaySecretKey || process.env.CLICTOPAY_SECRET_KEY || 'SECRET_TEST_KEY';
+
+    // Verify Checksum if provided
+    if (dto.checksum) {
+      const dataToHash = `${dto.orderNumber || ''}${dto.orderId || ''}${dto.respCode || ''}${secretKey}`;
+      const calculatedChecksum = crypto.createHash('sha256').update(dataToHash).digest('hex');
+
+      if (dto.checksum.toLowerCase() !== calculatedChecksum.toLowerCase()) {
+        this.logger.warn(`ClicToPay checksum mismatch: received ${dto.checksum}, expected ${calculatedChecksum}`);
+        throw new BadRequestException('Checksum ClicToPay invalide: falsification de signature détectée');
+      }
+    }
+
+    const orderNumber = dto.orderNumber;
+    const invoiceId = dto.invoiceId || dto.orderId;
+
+    const invoice = await this.prisma.saaSInvoice.findFirst({
+      where: {
+        OR: [
+          ...(orderNumber ? [{ gatewayRef: orderNumber }] : []),
+          ...(invoiceId ? [{ id: invoiceId }] : []),
+        ],
+      },
+    });
+
+    if (!invoice) {
+      this.logger.warn(`ClicToPay webhook received for unknown invoice/order: orderNumber=${orderNumber}, orderId=${invoiceId}`);
+      throw new NotFoundException(`Facture introuvable pour orderNumber=${orderNumber}`);
+    }
+
+    // Success codes in ClicToPay / SMT: '00', '0', '2'
+    const isSuccess =
+      dto.respCode === '00' ||
+      dto.respCode === '0' ||
+      dto.respCode === '2' ||
+      dto.orderStatus === 'PAID' ||
+      dto.orderStatus === 'APPROVED';
+
+    if (isSuccess) {
+      await this.confirmSubscriptionPayment(invoice.id, 'CLIC_TO_PAY', dto.orderId || dto.orderNumber);
+      return {
+        success: true,
+        message: 'Paiement ClicToPay validé avec succès',
+        invoiceId: invoice.id,
+      };
+    } else {
+      await this.prisma.saaSInvoice.update({
+        where: { id: invoice.id },
+        data: { status: 'CANCELLED' },
+      });
+      this.logger.warn(`ClicToPay transaction rejected for invoice ${invoice.id}, respCode=${dto.respCode}`);
+      return {
+        success: false,
+        message: `Paiement rejeté par ClicToPay (code: ${dto.respCode})`,
+        invoiceId: invoice.id,
+      };
+    }
+  }
 }
+

@@ -127,5 +127,16 @@ export class ClicToPayCallbackDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  orderStatus?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  invoiceId?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   checksum?: string;
 }
+
