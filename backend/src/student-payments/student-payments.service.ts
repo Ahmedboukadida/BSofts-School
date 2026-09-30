@@ -3,10 +3,14 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateStudentPaymentDto, UpdatePaymentStatusDto, QueryStudentPaymentDto } from './student-payment.dto';
 import { PaginatedDto } from '../common/pagination.dto';
 import { StudentPaymentEntity } from './student-payment.entity';
+import { CryptoService } from '../common/crypto/crypto.service';
 
 @Injectable()
 export class StudentPaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly cryptoService: CryptoService,
+  ) {}
 
   async findAll(query: QueryStudentPaymentDto) {
     const { page = 1, limit = 10, search, studentId, parentId, status, method, establishmentId, sortBy, sortOrder } = query;
@@ -365,7 +369,9 @@ export class StudentPaymentsService {
     const amountNum = Number(payment.amount);
 
     if (gateway === 'STRIPE') {
-      const stripeKey = config?.stripeSecret || process.env.STRIPE_SECRET_KEY;
+      const stripeKey =
+        (config?.stripeSecret ? this.cryptoService.decrypt(config.stripeSecret) : null) ||
+        process.env.STRIPE_SECRET_KEY;
       if (!stripeKey) {
         return {
           paymentId: payment.id,
@@ -407,7 +413,11 @@ export class StudentPaymentsService {
       const orderNumber = `SCH-${payment.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
       const amountMillimes = Math.round(amountNum * 1000);
 
-      if (config?.clicToPayTestMode || !config?.clicToPayApiKey) {
+      const resolvedClicToPayApiKey = config?.clicToPayApiKey
+        ? this.cryptoService.decrypt(config.clicToPayApiKey)
+        : '';
+
+      if (config?.clicToPayTestMode || !resolvedClicToPayApiKey) {
         return {
           paymentId: payment.id,
           gateway: 'CLIC_TO_PAY',
@@ -418,7 +428,7 @@ export class StudentPaymentsService {
         };
       }
 
-      const clicToPayEndpoint = config.clicToPayTestMode
+      const clicToPayEndpoint = config?.clicToPayTestMode
         ? 'https://test.clictopay.com/payment/rest/register.do'
         : 'https://clictopay.com/payment/rest/register.do';
 
@@ -426,8 +436,8 @@ export class StudentPaymentsService {
 
       try {
         const params = new URLSearchParams({
-          userName: config.clicToPayMerchantId || '',
-          password: config.clicToPayApiKey || '',
+          userName: config?.clicToPayMerchantId || '',
+          password: resolvedClicToPayApiKey || '',
           orderNumber,
           amount: amountMillimes.toString(),
           currency: '788',

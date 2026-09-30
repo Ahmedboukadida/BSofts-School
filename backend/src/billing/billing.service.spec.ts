@@ -1,5 +1,6 @@
 import { describe, beforeEach, it, expect, vi } from 'vitest';
 import { BillingService } from './billing.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import * as crypto from 'node:crypto';
 
@@ -24,9 +25,11 @@ vi.mock('stripe', () => {
 
 describe('BillingService', () => {
   let service: BillingService;
+  let cryptoService: CryptoService;
   let mockPrisma: any;
 
   beforeEach(() => {
+    cryptoService = new CryptoService();
     mockPrisma = {
       platformPaymentConfig: {
         findFirst: vi.fn(),
@@ -50,7 +53,7 @@ describe('BillingService', () => {
       },
     };
 
-    service = new BillingService(mockPrisma);
+    service = new BillingService(mockPrisma, cryptoService);
   });
 
   describe('handleStripeWebhook', () => {
@@ -364,5 +367,35 @@ describe('BillingService', () => {
       expect(config.stripeSecretKey).toBe('sk_live_SECRET');
       expect(config.clicToPaySecretKey).toBe('SECRET_KEY_SECRET');
     });
+
+    it('should encrypt secret keys at rest when updating platform config', async () => {
+      mockPrisma.platformPaymentConfig.findFirst.mockResolvedValue({
+        id: 'cfg-platform-1',
+        stripeSecretKey: '',
+      });
+      mockPrisma.platformPaymentConfig.update.mockImplementation(async ({ data }: any) => ({
+        id: 'cfg-platform-1',
+        ...data,
+      }));
+
+      await service.updatePlatformConfig(
+        {
+          stripeSecretKey: 'sk_test_newsecret123',
+          clicToPaySecretKey: 'smt_test_newsecret456',
+        },
+        { isRoot: true },
+      );
+
+      expect(mockPrisma.platformPaymentConfig.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'cfg-platform-1' },
+          data: expect.objectContaining({
+            stripeSecretKey: expect.stringMatching(/^enc:v1:/),
+            clicToPaySecretKey: expect.stringMatching(/^enc:v1:/),
+          }),
+        }),
+      );
+    });
   });
 });
+

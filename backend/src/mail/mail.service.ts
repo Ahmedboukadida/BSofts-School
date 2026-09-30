@@ -3,13 +3,17 @@ import * as dns from 'node:dns';
 import { PrismaService } from '../prisma/prisma.service';
 import { SendEmailDto, CreateSmtpConfigDto } from './mail.dto';
 import { SmtpConfigEntity, MailSendResultEntity } from './mail.entity';
+import { CryptoService } from '../common/crypto/crypto.service';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
 
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    private readonly cryptoService: CryptoService,
+  ) {}
 
   async resolveConfig(establishmentId?: string): Promise<{
     host: string;
@@ -49,7 +53,7 @@ export class MailService {
           port = parsed.port ? parseInt(parsed.port, 10) : (host.includes('gmail') ? 465 : port);
           secure = parsed.isSecure ?? (port === 465);
           user = parsed.user || user;
-          pass = parsed.password || pass;
+          pass = (parsed.password ? this.cryptoService.decrypt(parsed.password) : null) || parsed.password || pass;
           if (parsed.fromName) fromName = parsed.fromName;
           if (parsed.fromEmail) fromEmail = parsed.fromEmail;
           if (parsed.resendApiKey) resendApiKey = parsed.resendApiKey;
@@ -62,7 +66,7 @@ export class MailService {
       port = config.port;
       secure = config.isSecure || config.port === 465;
       user = config.user;
-      pass = config.password;
+      pass = (config.password ? this.cryptoService.decrypt(config.password) : null) || config.password;
       if (config.fromName) fromName = config.fromName;
       if (config.fromEmail) fromEmail = config.fromEmail;
     }
@@ -253,7 +257,10 @@ export class MailService {
         });
 
     if (config) {
-      return new SmtpConfigEntity(config);
+      return new SmtpConfigEntity({
+        ...config,
+        password: config.password ? '••••••••' : '',
+      });
     }
 
     try {
@@ -268,7 +275,7 @@ export class MailService {
           host: parsed.host || '',
           port: parsed.port || 465,
           user: parsed.user || '',
-          password: parsed.password || '',
+          password: parsed.password ? '••••••••' : '',
           fromName: parsed.fromName || 'BSofts School',
           fromEmail: parsed.fromEmail || '',
           isSecure: parsed.isSecure ?? true,
@@ -286,16 +293,18 @@ export class MailService {
   async saveConfig(establishmentId: string | undefined, dto: CreateSmtpConfigDto, actor?: any): Promise<SmtpConfigEntity> {
     try {
       // 1. Always sync to global PlatformSetting so any establishment without custom config inherits it
+      const encryptedPassword = dto.password ? this.cryptoService.encrypt(dto.password) : dto.password;
+      const safePlatformDto = { ...dto, password: encryptedPassword };
       await this.prisma.platformSetting.upsert({
         where: { key: 'SMTP_CONFIG' },
         update: {
-          value: JSON.stringify(dto),
+          value: JSON.stringify(safePlatformDto),
           category: 'COMMUNICATION',
           isPublic: false,
         },
         create: {
           key: 'SMTP_CONFIG',
-          value: JSON.stringify(dto),
+          value: JSON.stringify(safePlatformDto),
           category: 'COMMUNICATION',
           isPublic: false,
         },
@@ -319,6 +328,11 @@ export class MailService {
             where: { establishmentId },
           });
 
+          const resolvedPassword =
+            dto.password && !dto.password.includes('••')
+              ? this.cryptoService.encrypt(dto.password)
+              : existing?.password;
+
           let saved;
           if (existing) {
             saved = await this.prisma.smtpConfig.update({
@@ -327,7 +341,7 @@ export class MailService {
                 host: dto.host,
                 port: dto.port,
                 user: dto.user,
-                password: dto.password,
+                password: resolvedPassword || existing.password,
                 fromName: dto.fromName,
                 fromEmail: dto.fromEmail,
                 isSecure: dto.isSecure ?? (dto.port === 465),
@@ -341,7 +355,7 @@ export class MailService {
                 host: dto.host,
                 port: dto.port,
                 user: dto.user,
-                password: dto.password,
+                password: resolvedPassword || '',
                 fromName: dto.fromName,
                 fromEmail: dto.fromEmail,
                 isSecure: dto.isSecure ?? (dto.port === 465),

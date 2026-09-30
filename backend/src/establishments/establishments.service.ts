@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginatedDto } from '../common/pagination.dto';
+import { CryptoService } from '../common/crypto/crypto.service';
 
 @Injectable()
 export class EstablishmentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly cryptoService: CryptoService,
+  ) {}
 
   async findAll(query: any, user?: any) {
     const { page = 1, limit = 10, search, tenantId, isActive, sortBy, sortOrder, includeDeleted } = query;
@@ -195,7 +199,7 @@ export class EstablishmentsService {
     });
   }
 
-  async getPaymentConfig(establishmentId: string) {
+  async getPaymentConfig(establishmentId: string, user?: any) {
     let config = await this.prisma.paymentConfig.findFirst({
       where: { establishmentId },
     });
@@ -212,10 +216,16 @@ export class EstablishmentsService {
       });
     }
 
+    const isRoot = user?.isRoot || user?.role === 'ROOT';
+
     return {
       ...config,
       stripePublishableKey: config.stripeKey || '',
-      stripeSecretKey: config.stripeSecret || '',
+      stripeSecretKey: isRoot ? (this.cryptoService.decrypt(config.stripeSecret) || '') : (config.stripeSecret ? '••••••••' : ''),
+      stripeSecret: isRoot ? (this.cryptoService.decrypt(config.stripeSecret) || '') : (config.stripeSecret ? '••••••••' : ''),
+      stripeWebhookSecret: isRoot ? (this.cryptoService.decrypt(config.stripeWebhookSecret) || '') : (config.stripeWebhookSecret ? '••••••••' : ''),
+      clicToPayApiKey: isRoot ? (this.cryptoService.decrypt(config.clicToPayApiKey) || '') : (config.clicToPayApiKey ? '••••••••' : ''),
+      clicToPaySecretKey: isRoot ? (this.cryptoService.decrypt(config.clicToPaySecretKey) || '') : (config.clicToPaySecretKey ? '••••••••' : ''),
     };
   }
 
@@ -224,8 +234,44 @@ export class EstablishmentsService {
       where: { establishmentId },
     });
 
+    const inputStripeSecret = dto.stripeSecret !== undefined ? dto.stripeSecret : dto.stripeSecretKey;
+    let resolvedStripeSecret = existing?.stripeSecret;
+    if (inputStripeSecret !== undefined) {
+      if (inputStripeSecret && !inputStripeSecret.includes('••')) {
+        resolvedStripeSecret = this.cryptoService.encrypt(inputStripeSecret) || null;
+      } else if (!inputStripeSecret) {
+        resolvedStripeSecret = null;
+      }
+    }
+
+    let resolvedStripeWebhookSecret = existing?.stripeWebhookSecret;
+    if (dto.stripeWebhookSecret !== undefined) {
+      if (dto.stripeWebhookSecret && !dto.stripeWebhookSecret.includes('••')) {
+        resolvedStripeWebhookSecret = this.cryptoService.encrypt(dto.stripeWebhookSecret) || null;
+      } else if (!dto.stripeWebhookSecret) {
+        resolvedStripeWebhookSecret = null;
+      }
+    }
+
+    let resolvedClicToPayApiKey = existing?.clicToPayApiKey;
+    if (dto.clicToPayApiKey !== undefined) {
+      if (dto.clicToPayApiKey && !dto.clicToPayApiKey.includes('••')) {
+        resolvedClicToPayApiKey = this.cryptoService.encrypt(dto.clicToPayApiKey) || null;
+      } else if (!dto.clicToPayApiKey) {
+        resolvedClicToPayApiKey = null;
+      }
+    }
+
+    let resolvedClicToPaySecretKey = existing?.clicToPaySecretKey;
+    if (dto.clicToPaySecretKey !== undefined) {
+      if (dto.clicToPaySecretKey && !dto.clicToPaySecretKey.includes('••')) {
+        resolvedClicToPaySecretKey = this.cryptoService.encrypt(dto.clicToPaySecretKey) || null;
+      } else if (!dto.clicToPaySecretKey) {
+        resolvedClicToPaySecretKey = null;
+      }
+    }
+
     const resolvedStripeKey = dto.stripeKey !== undefined ? dto.stripeKey : (dto.stripePublishableKey !== undefined ? dto.stripePublishableKey : existing?.stripeKey);
-    const resolvedStripeSecret = dto.stripeSecret !== undefined ? dto.stripeSecret : (dto.stripeSecretKey !== undefined ? dto.stripeSecretKey : existing?.stripeSecret);
 
     if (existing) {
       return this.prisma.paymentConfig.update({
@@ -235,13 +281,13 @@ export class EstablishmentsService {
           stripeEnabled: dto.stripeEnabled ?? existing.stripeEnabled,
           stripeKey: resolvedStripeKey,
           stripeSecret: resolvedStripeSecret,
-          stripeWebhookSecret: dto.stripeWebhookSecret !== undefined ? dto.stripeWebhookSecret : existing.stripeWebhookSecret,
+          stripeWebhookSecret: resolvedStripeWebhookSecret,
           stripeTestMode: dto.stripeTestMode !== undefined ? dto.stripeTestMode : existing.stripeTestMode,
           stripeCurrency: dto.stripeCurrency !== undefined ? dto.stripeCurrency : existing.stripeCurrency,
           clicToPayEnabled: dto.clicToPayEnabled ?? existing.clicToPayEnabled,
           clicToPayMerchantId: dto.clicToPayMerchantId !== undefined ? dto.clicToPayMerchantId : existing.clicToPayMerchantId,
-          clicToPayApiKey: dto.clicToPayApiKey !== undefined ? dto.clicToPayApiKey : existing.clicToPayApiKey,
-          clicToPaySecretKey: dto.clicToPaySecretKey !== undefined ? dto.clicToPaySecretKey : existing.clicToPaySecretKey,
+          clicToPayApiKey: resolvedClicToPayApiKey,
+          clicToPaySecretKey: resolvedClicToPaySecretKey,
           clicToPayTerminalId: dto.clicToPayTerminalId !== undefined ? dto.clicToPayTerminalId : existing.clicToPayTerminalId,
           clicToPayTestMode: dto.clicToPayTestMode !== undefined ? dto.clicToPayTestMode : existing.clicToPayTestMode,
           clicToPayCurrency: dto.clicToPayCurrency !== undefined ? dto.clicToPayCurrency : existing.clicToPayCurrency,
@@ -259,13 +305,13 @@ export class EstablishmentsService {
         stripeEnabled: dto.stripeEnabled ?? false,
         stripeKey: resolvedStripeKey || null,
         stripeSecret: resolvedStripeSecret || null,
-        stripeWebhookSecret: dto.stripeWebhookSecret || null,
+        stripeWebhookSecret: resolvedStripeWebhookSecret || null,
         stripeTestMode: dto.stripeTestMode ?? true,
         stripeCurrency: dto.stripeCurrency || 'TND',
         clicToPayEnabled: dto.clicToPayEnabled ?? false,
         clicToPayMerchantId: dto.clicToPayMerchantId || null,
-        clicToPayApiKey: dto.clicToPayApiKey || null,
-        clicToPaySecretKey: dto.clicToPaySecretKey || null,
+        clicToPayApiKey: resolvedClicToPayApiKey || null,
+        clicToPaySecretKey: resolvedClicToPaySecretKey || null,
         clicToPayTerminalId: dto.clicToPayTerminalId || null,
         clicToPayTestMode: dto.clicToPayTestMode ?? true,
         clicToPayCurrency: dto.clicToPayCurrency || 'TND',

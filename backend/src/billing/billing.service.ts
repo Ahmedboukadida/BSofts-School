@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 import {
   UpdatePlatformPaymentConfigDto,
   CreateSubscriptionCheckoutDto,
@@ -19,7 +20,10 @@ import * as crypto from 'node:crypto';
 export class BillingService {
   private readonly logger = new Logger(BillingService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cryptoService: CryptoService,
+  ) {}
 
   async getPlatformConfig(user?: any) {
     let config = await this.prisma.platformPaymentConfig.findFirst({
@@ -67,6 +71,10 @@ export class BillingService {
 
     return {
       ...config,
+      stripeSecretKey: this.cryptoService.decrypt(config.stripeSecretKey) || '',
+      stripeWebhookSecret: this.cryptoService.decrypt(config.stripeWebhookSecret) || '',
+      clicToPayApiKey: this.cryptoService.decrypt(config.clicToPayApiKey) || '',
+      clicToPaySecretKey: this.cryptoService.decrypt(config.clicToPaySecretKey) || '',
       availableGateways,
     };
   }
@@ -97,6 +105,42 @@ export class BillingService {
       where: { isDefault: true },
     });
 
+    let resolvedStripeSecretKey = existing?.stripeSecretKey;
+    if (dto.stripeSecretKey !== undefined) {
+      if (dto.stripeSecretKey && !dto.stripeSecretKey.includes('••')) {
+        resolvedStripeSecretKey = this.cryptoService.encrypt(dto.stripeSecretKey) || '';
+      } else if (!dto.stripeSecretKey) {
+        resolvedStripeSecretKey = '';
+      }
+    }
+
+    let resolvedStripeWebhookSecret = existing?.stripeWebhookSecret;
+    if (dto.stripeWebhookSecret !== undefined) {
+      if (dto.stripeWebhookSecret && !dto.stripeWebhookSecret.includes('••')) {
+        resolvedStripeWebhookSecret = this.cryptoService.encrypt(dto.stripeWebhookSecret) || '';
+      } else if (!dto.stripeWebhookSecret) {
+        resolvedStripeWebhookSecret = '';
+      }
+    }
+
+    let resolvedClicToPayApiKey = existing?.clicToPayApiKey;
+    if (dto.clicToPayApiKey !== undefined) {
+      if (dto.clicToPayApiKey && !dto.clicToPayApiKey.includes('••')) {
+        resolvedClicToPayApiKey = this.cryptoService.encrypt(dto.clicToPayApiKey) || '';
+      } else if (!dto.clicToPayApiKey) {
+        resolvedClicToPayApiKey = '';
+      }
+    }
+
+    let resolvedClicToPaySecretKey = existing?.clicToPaySecretKey;
+    if (dto.clicToPaySecretKey !== undefined) {
+      if (dto.clicToPaySecretKey && !dto.clicToPaySecretKey.includes('••')) {
+        resolvedClicToPaySecretKey = this.cryptoService.encrypt(dto.clicToPaySecretKey) || '';
+      } else if (!dto.clicToPaySecretKey) {
+        resolvedClicToPaySecretKey = '';
+      }
+    }
+
     if (existing) {
       return this.prisma.platformPaymentConfig.update({
         where: { id: existing.id },
@@ -104,14 +148,14 @@ export class BillingService {
           currency: dto.currency ?? existing.currency,
           stripeEnabled: dto.stripeEnabled ?? existing.stripeEnabled,
           stripePublicKey: dto.stripePublicKey !== undefined ? dto.stripePublicKey : existing.stripePublicKey,
-          stripeSecretKey: dto.stripeSecretKey !== undefined ? dto.stripeSecretKey : existing.stripeSecretKey,
-          stripeWebhookSecret: dto.stripeWebhookSecret !== undefined ? dto.stripeWebhookSecret : existing.stripeWebhookSecret,
+          stripeSecretKey: resolvedStripeSecretKey,
+          stripeWebhookSecret: resolvedStripeWebhookSecret,
           stripeTestMode: dto.stripeTestMode !== undefined ? dto.stripeTestMode : existing.stripeTestMode,
           stripeCurrency: dto.stripeCurrency !== undefined ? dto.stripeCurrency : existing.stripeCurrency,
           clicToPayEnabled: dto.clicToPayEnabled ?? existing.clicToPayEnabled,
           clicToPayMerchantId: dto.clicToPayMerchantId !== undefined ? dto.clicToPayMerchantId : existing.clicToPayMerchantId,
-          clicToPayApiKey: dto.clicToPayApiKey !== undefined ? dto.clicToPayApiKey : existing.clicToPayApiKey,
-          clicToPaySecretKey: dto.clicToPaySecretKey !== undefined ? dto.clicToPaySecretKey : existing.clicToPaySecretKey,
+          clicToPayApiKey: resolvedClicToPayApiKey,
+          clicToPaySecretKey: resolvedClicToPaySecretKey,
           clicToPayTerminalId: dto.clicToPayTerminalId !== undefined ? dto.clicToPayTerminalId : existing.clicToPayTerminalId,
           clicToPayTestMode: dto.clicToPayTestMode !== undefined ? dto.clicToPayTestMode : existing.clicToPayTestMode,
           clicToPayCurrency: dto.clicToPayCurrency !== undefined ? dto.clicToPayCurrency : existing.clicToPayCurrency,
@@ -125,14 +169,14 @@ export class BillingService {
         currency: dto.currency || 'TND',
         stripeEnabled: dto.stripeEnabled ?? false,
         stripePublicKey: dto.stripePublicKey || '',
-        stripeSecretKey: dto.stripeSecretKey || '',
-        stripeWebhookSecret: dto.stripeWebhookSecret || '',
+        stripeSecretKey: resolvedStripeSecretKey || '',
+        stripeWebhookSecret: resolvedStripeWebhookSecret || '',
         stripeTestMode: dto.stripeTestMode ?? true,
         stripeCurrency: dto.stripeCurrency || 'TND',
         clicToPayEnabled: dto.clicToPayEnabled ?? false,
         clicToPayMerchantId: dto.clicToPayMerchantId || '',
-        clicToPayApiKey: dto.clicToPayApiKey || '',
-        clicToPaySecretKey: dto.clicToPaySecretKey || '',
+        clicToPayApiKey: resolvedClicToPayApiKey || '',
+        clicToPaySecretKey: resolvedClicToPaySecretKey || '',
         clicToPayTerminalId: dto.clicToPayTerminalId || '',
         clicToPayTestMode: dto.clicToPayTestMode ?? true,
         clicToPayCurrency: dto.clicToPayCurrency || 'TND',
@@ -202,7 +246,11 @@ export class BillingService {
 
     // 4. Dispatch to Gateway
     if (dto.gateway === PaymentGatewayType.STRIPE) {
-      if (!config.stripeSecretKey && !process.env.STRIPE_SECRET_KEY) {
+      const stripeSecret =
+        (config.stripeSecretKey ? this.cryptoService.decrypt(config.stripeSecretKey) : null) ||
+        process.env.STRIPE_SECRET_KEY;
+
+      if (!stripeSecret) {
         // Fallback test mode session if secret not yet supplied
         return {
           invoiceId: invoice.id,
@@ -212,7 +260,7 @@ export class BillingService {
         };
       }
 
-      const stripe = new Stripe(config.stripeSecretKey || process.env.STRIPE_SECRET_KEY!);
+      const stripe = new Stripe(stripeSecret);
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
@@ -282,9 +330,14 @@ export class BillingService {
       const returnUrl = `${frontendUrl}/api/billing/callback/clictopay?invoiceId=${invoice.id}`;
 
       try {
+        const resolvedApiKey =
+          (config.clicToPayApiKey ? this.cryptoService.decrypt(config.clicToPayApiKey) : null) ||
+          config.clicToPayApiKey ||
+          '';
+
         const params = new URLSearchParams({
           userName: config.clicToPayMerchantId || '',
-          password: config.clicToPayApiKey || '',
+          password: resolvedApiKey,
           orderNumber,
           amount: amountInMillimes.toString(),
           currency: '788', // TND ISO code
@@ -429,13 +482,21 @@ export class BillingService {
       where: { isDefault: true },
     });
 
-    const webhookSecret = config?.stripeWebhookSecret || process.env.STRIPE_WEBHOOK_SECRET;
+    const rawWebhookSecret = config?.stripeWebhookSecret;
+    const webhookSecret =
+      (rawWebhookSecret ? this.cryptoService.decrypt(rawWebhookSecret) : null) ||
+      process.env.STRIPE_WEBHOOK_SECRET;
+
     if (!webhookSecret) {
       this.logger.error('Stripe webhook secret is not configured in platform settings or environment.');
       throw new BadRequestException('Clé secrète webhook Stripe non configurée');
     }
 
-    const stripeKey = config?.stripeSecretKey || process.env.STRIPE_SECRET_KEY;
+    const rawStripeKey = config?.stripeSecretKey;
+    const stripeKey =
+      (rawStripeKey ? this.cryptoService.decrypt(rawStripeKey) : null) ||
+      process.env.STRIPE_SECRET_KEY;
+
     if (!stripeKey) {
       throw new BadRequestException('Clé secrète Stripe non configurée');
     }
@@ -516,7 +577,11 @@ export class BillingService {
       where: { isDefault: true },
     });
 
-    const secretKey = config?.clicToPaySecretKey || process.env.CLICTOPAY_SECRET_KEY || 'SECRET_TEST_KEY';
+    const rawSecretKey = config?.clicToPaySecretKey;
+    const secretKey =
+      (rawSecretKey ? this.cryptoService.decrypt(rawSecretKey) : null) ||
+      process.env.CLICTOPAY_SECRET_KEY ||
+      'SECRET_TEST_KEY';
 
     // Verify Checksum if provided
     if (dto.checksum) {

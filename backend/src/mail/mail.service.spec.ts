@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MailService } from './mail.service';
+import { CryptoService } from '../common/crypto/crypto.service';
 import * as nodemailer from 'nodemailer';
 
 vi.mock('nodemailer', () => ({
@@ -8,10 +9,12 @@ vi.mock('nodemailer', () => ({
 
 describe('MailService', () => {
   let service: MailService;
+  let cryptoService: CryptoService;
   let prisma: any;
   let sendMailMock: any;
 
   beforeEach(() => {
+    cryptoService = new CryptoService();
     sendMailMock = vi.fn().mockResolvedValue({ messageId: 'msg-123' });
     (nodemailer.createTransport as any).mockReturnValue({
       sendMail: sendMailMock,
@@ -46,7 +49,7 @@ describe('MailService', () => {
         create: vi.fn().mockResolvedValue({ id: 'sys-1' }),
       },
     };
-    service = new MailService(prisma);
+    service = new MailService(prisma, cryptoService);
   });
 
   describe('sendMail', () => {
