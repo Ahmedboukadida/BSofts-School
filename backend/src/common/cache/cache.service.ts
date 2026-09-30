@@ -13,6 +13,8 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
   private redisClient: Redis | null = null;
   private isRedisConnected = false;
   private memoryCache = new Map<string, CacheEntry>();
+  private memoryRateLimit = new Map<string, { count: number; resetAt: number }>();
+  private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -49,10 +51,18 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     }
 
     // Periodic sweep for expired in-memory items every 30 seconds
-    setInterval(() => this.pruneExpiredMemoryEntries(), 30000).unref();
+    this.cleanupInterval = setInterval(() => this.pruneExpiredMemoryEntries(), 30000);
+    this.cleanupInterval.unref();
   }
 
   async onModuleDestroy() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    this.memoryCache.clear();
+    this.memoryRateLimit.clear();
+
     if (this.redisClient) {
       try {
         await this.redisClient.quit();
@@ -205,6 +215,50 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
     };
   }
 
+  /**
+   * Atomic rate limit increment with automatic expiration.
+   * Leverages Redis MULTI INCR + TTL when available; falls back to high-speed in-memory rate limiting.
+   */
+  async incrementRateLimit(key: string, windowSeconds: number): Promise<{ count: number; ttl: number }> {
+    if (this.isRedisConnected && this.redisClient) {
+      try {
+        const results = await this.redisClient
+          .multi()
+          .incr(key)
+          .ttl(key)
+          .exec();
+
+        if (results && results[0] && results[1]) {
+          const count = Number(results[0][1] || 1);
+          let ttl = Number(results[1][1] || -1);
+
+          // If the key is newly created (TTL == -1), set the expiration
+          if (ttl === -1) {
+            await this.redisClient.expire(key, windowSeconds);
+            ttl = windowSeconds;
+          }
+
+          return { count, ttl: Math.max(1, ttl) };
+        }
+      } catch (err: any) {
+        this.logger.warn(`Redis rate limit error for key ${key}: ${err.message}`);
+      }
+    }
+
+    // In-memory fallback
+    const now = Date.now();
+    let entry = this.memoryRateLimit.get(key);
+    if (!entry || now > entry.resetAt) {
+      entry = { count: 1, resetAt: now + windowSeconds * 1000 };
+      this.memoryRateLimit.set(key, entry);
+      return { count: 1, ttl: windowSeconds };
+    } else {
+      entry.count += 1;
+      const ttl = Math.max(1, Math.ceil((entry.resetAt - now) / 1000));
+      return { count: entry.count, ttl };
+    }
+  }
+
   private pruneExpiredMemoryEntries() {
     const now = Date.now();
     for (const [key, entry] of this.memoryCache.entries()) {
@@ -212,5 +266,11 @@ export class CacheService implements OnModuleInit, OnModuleDestroy {
         this.memoryCache.delete(key);
       }
     }
+    for (const [key, entry] of this.memoryRateLimit.entries()) {
+      if (now > entry.resetAt) {
+        this.memoryRateLimit.delete(key);
+      }
+    }
   }
 }
+

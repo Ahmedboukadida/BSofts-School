@@ -1,22 +1,6 @@
-import { Injectable, NestMiddleware, HttpStatus } from '@nestjs/common';
+import { Injectable, NestMiddleware, HttpStatus, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-
-interface RateLimitRecord {
-  count: number;
-  resetAt: number;
-}
-
-const authRateLimitMap = new Map<string, RateLimitRecord>();
-
-// Cleanup stale rate limit records every 10 minutes to prevent memory leaks
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, record] of authRateLimitMap.entries()) {
-    if (now > record.resetAt) {
-      authRateLimitMap.delete(key);
-    }
-  }
-}, 10 * 60 * 1000);
+import { CacheService } from '../cache/cache.service';
 
 @Injectable()
 export class SecurityHeadersMiddleware implements NestMiddleware {
@@ -42,10 +26,13 @@ export class SecurityHeadersMiddleware implements NestMiddleware {
 
 @Injectable()
 export class AuthRateLimitMiddleware implements NestMiddleware {
-  private readonly WINDOW_MS = 15 * 60 * 1000; // 15 minutes window
+  private readonly logger = new Logger(AuthRateLimitMiddleware.name);
+  private readonly WINDOW_SECONDS = 15 * 60; // 15 minutes window
   private readonly MAX_REQUESTS = 60; // Max 60 auth requests per 15 min per IP
 
-  use(req: Request, res: Response, next: NextFunction) {
+  constructor(private readonly cacheService: CacheService) {}
+
+  async use(req: Request, res: Response, next: NextFunction) {
     // Identify client IP
     const clientIp =
       (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
@@ -53,32 +40,34 @@ export class AuthRateLimitMiddleware implements NestMiddleware {
       req.socket.remoteAddress ||
       'unknown-ip';
 
-    const now = Date.now();
-    let record = authRateLimitMap.get(clientIp);
+    const rateLimitKey = `rate_limit:auth:${clientIp}`;
 
-    if (!record || now > record.resetAt) {
-      record = { count: 1, resetAt: now + this.WINDOW_MS };
-      authRateLimitMap.set(clientIp, record);
-    } else {
-      record.count += 1;
+    try {
+      const { count, ttl } = await this.cacheService.incrementRateLimit(
+        rateLimitKey,
+        this.WINDOW_SECONDS,
+      );
+
+      const remaining = Math.max(0, this.MAX_REQUESTS - count);
+
+      res.setHeader('X-RateLimit-Limit', this.MAX_REQUESTS);
+      res.setHeader('X-RateLimit-Remaining', remaining);
+      res.setHeader('X-RateLimit-Reset', ttl);
+
+      if (count > this.MAX_REQUESTS) {
+        res.setHeader('Retry-After', ttl);
+        return res.status(HttpStatus.TOO_MANY_REQUESTS).json({
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          message: 'Trop de requêtes d\'authentification. Veuillez patienter avant de réessayer.',
+          retryAfterSeconds: ttl,
+        });
+      }
+
+      next();
+    } catch (err: any) {
+      this.logger.error(`Rate limit evaluation error: ${err.message}`);
+      // Fail-open for benign requests if unexpected error occurs
+      next();
     }
-
-    const remaining = Math.max(0, this.MAX_REQUESTS - record.count);
-    const resetSeconds = Math.ceil((record.resetAt - now) / 1000);
-
-    res.setHeader('X-RateLimit-Limit', this.MAX_REQUESTS);
-    res.setHeader('X-RateLimit-Remaining', remaining);
-    res.setHeader('X-RateLimit-Reset', resetSeconds);
-
-    if (record.count > this.MAX_REQUESTS) {
-      res.setHeader('Retry-After', resetSeconds);
-      return res.status(HttpStatus.TOO_MANY_REQUESTS).json({
-        statusCode: HttpStatus.TOO_MANY_REQUESTS,
-        message: 'Trop de requêtes d\'authentification. Veuillez patienter avant de réessayer.',
-        retryAfterSeconds: resetSeconds,
-      });
-    }
-
-    next();
   }
 }
