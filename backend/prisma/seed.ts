@@ -528,8 +528,8 @@ async function main() {
   }
 
   console.log(`👤 6. Creating Super Admin User (${rootEmail})...`);
-  const rootPassword = await bcrypt.hash(rootRawPassword, 10);
-  const commonPassword = await bcrypt.hash(commonRawPassword, 10);
+  const rootPassword = await bcrypt.hash(rootRawPassword, 12);
+  const commonPassword = await bcrypt.hash(commonRawPassword, 12);
 
   const superAdmin = await prisma.user.upsert({
     where: { email: rootEmail },

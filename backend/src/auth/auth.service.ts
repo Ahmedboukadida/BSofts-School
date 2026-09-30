@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   ConflictException,
   BadRequestException,
+  InternalServerErrorException,
   Logger,
   Optional,
 } from '@nestjs/common';
@@ -34,6 +35,24 @@ export class AuthService {
     private jwtService: JwtService,
     @Optional() private mailService?: MailService,
   ) {}
+
+  private getJwtSecret(): string {
+    const secret = process.env.JWT_SECRET;
+    if (!secret && process.env.NODE_ENV === 'production') {
+      throw new InternalServerErrorException('JWT_SECRET must be defined in production mode');
+    }
+    return secret || 'bsofts-school-jwt-secret-key';
+  }
+
+  private getRefreshSecret(): string {
+    const refreshSecret =
+      process.env.JWT_REFRESH_SECRET ||
+      (process.env.JWT_SECRET ? `${process.env.JWT_SECRET}_refresh` : undefined);
+    if (!refreshSecret && process.env.NODE_ENV === 'production') {
+      throw new InternalServerErrorException('JWT_REFRESH_SECRET must be defined in production mode');
+    }
+    return refreshSecret || 'bsofts-school-jwt-refresh-secret-key';
+  }
 
   async login(dto: LoginDto, ip?: string, userAgent?: string): Promise<AuthResponseDto> {
     // Find user by email or username
@@ -221,13 +240,16 @@ export class AuthService {
 
     // Check invitation token if provided
     if (dto.invitationToken) {
-      const validInvitationSecret = process.env.INVITATION_SECRET || 'bsofts-invitation-secret-token';
-      if (dto.invitationToken === validInvitationSecret || dto.invitationToken.startsWith('inv_')) {
+      const validInvitationSecret = process.env.INVITATION_SECRET;
+      if (
+        (validInvitationSecret && dto.invitationToken === validInvitationSecret) ||
+        dto.invitationToken.startsWith('inv_')
+      ) {
         isAuthorized = true;
       } else {
         try {
           const payload = this.jwtService.verify(dto.invitationToken, {
-            secret: process.env.JWT_SECRET || 'bsofts-school-jwt-secret-key',
+            secret: this.getJwtSecret(),
           });
           if (payload && payload.type === 'invitation') {
             isAuthorized = true;
@@ -244,7 +266,7 @@ export class AuthService {
         const authHeader = req.headers.authorization;
         const token = authHeader.replace(/^Bearer\s+/i, '');
         const payload = this.jwtService.verify(token, {
-          secret: process.env.JWT_SECRET || 'bsofts-school-jwt-secret-key',
+          secret: this.getJwtSecret(),
         });
         if (payload?.sub) {
           const caller = await this.prisma.user.findUnique({
@@ -445,9 +467,7 @@ export class AuthService {
 
   async refreshToken(refreshToken: string): Promise<AuthResponseDto> {
     try {
-      const refreshSecret =
-        process.env.JWT_REFRESH_SECRET ||
-        (process.env.JWT_SECRET ? `${process.env.JWT_SECRET}_refresh` : 'bsofts-school-jwt-refresh-secret-key');
+      const refreshSecret = this.getRefreshSecret();
 
       const payload = this.jwtService.verify(refreshToken, {
         secret: refreshSecret,
@@ -598,9 +618,7 @@ export class AuthService {
       tenantId: tenantId || null,
     };
 
-    const refreshSecret =
-      process.env.JWT_REFRESH_SECRET ||
-      (process.env.JWT_SECRET ? `${process.env.JWT_SECRET}_refresh` : 'bsofts-school-jwt-refresh-secret-key');
+    const refreshSecret = this.getRefreshSecret();
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
@@ -647,7 +665,7 @@ export class AuthService {
       throw new UnauthorizedException('Mot de passe actuel incorrect');
     }
 
-    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 12);
     await this.prisma.user.update({
       where: { id: userId },
       data: {

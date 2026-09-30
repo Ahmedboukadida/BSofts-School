@@ -104,7 +104,7 @@ export class TenantsService {
       let user = await this.prisma.user.findUnique({ where: { email } });
       if (!user) {
         const rawPassword = 'Password123!';
-        const hashedPassword = await bcrypt.hash(rawPassword, 10);
+        const hashedPassword = await bcrypt.hash(rawPassword, 12);
         const nameParts = (dto.ownerName || dto.name || 'Tenant Admin').trim().split(' ');
         const firstName = nameParts[0] || 'Admin';
         const lastName = nameParts.slice(1).join(' ') || 'Tenant';

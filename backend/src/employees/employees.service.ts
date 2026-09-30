@@ -96,7 +96,7 @@ export class EmployeesService {
         }
 
         const tempPassword = (dto as { password?: string }).password || `Emp_${Math.random().toString(36).slice(-8)}!${Math.floor(10 + Math.random() * 90)}`;
-        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
         const newUser = await this.prisma.user.create({
           data: {

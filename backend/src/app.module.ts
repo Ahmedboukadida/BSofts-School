@@ -67,6 +67,7 @@ import {
   EstablishmentContextMiddleware,
   SecurityHeadersMiddleware,
   AuthRateLimitMiddleware,
+  CsrfMiddleware,
 } from './common/middleware';
 
 @Module({
@@ -163,7 +164,7 @@ import {
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply(SecurityHeadersMiddleware)
+      .apply(SecurityHeadersMiddleware, CsrfMiddleware)
       .forRoutes('*');
     consumer
       .apply(AuthRateLimitMiddleware)

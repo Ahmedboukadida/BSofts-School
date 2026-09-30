@@ -22,6 +22,9 @@ function getBaseUrl(): string {
 
 export const api = axios.create({
   baseURL: getBaseUrl(),
+  withCredentials: true,
+  xsrfCookieName: 'XSRF-TOKEN',
+  xsrfHeaderName: 'x-xsrf-token',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -34,6 +37,16 @@ api.interceptors.request.use((config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Attach CSRF double-submit token if cookie exists
+    const xsrfCookie = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('XSRF-TOKEN='))
+      ?.split('=')[1];
+    if (xsrfCookie && !config.headers['x-xsrf-token']) {
+      config.headers['x-xsrf-token'] = decodeURIComponent(xsrfCookie);
+    }
+
     const { user } = useAuthStore.getState();
     const isValidId = (val: string | null | undefined) =>
       Boolean(val && val !== 'ALL' && val !== 'all' && val !== 'null' && val !== 'undefined' && !val.startsWith('year-'));

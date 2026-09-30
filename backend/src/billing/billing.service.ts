@@ -300,7 +300,10 @@ export class BillingService {
           process.env.STRIPE_SECRET_KEY;
 
         if (!stripeSecret) {
-          // Fallback test mode session if secret not yet supplied
+          if (process.env.NODE_ENV === 'production') {
+            throw new BadRequestException('Stripe API key is not configured for this platform.');
+          }
+          // Fallback test mode session for local development if secret not yet supplied
           checkoutResult = {
             invoiceId: invoice.id,
             gateway: 'STRIPE',
@@ -407,7 +410,10 @@ export class BillingService {
               };
             } else {
               this.logger.warn(`ClicToPay order registration response: ${JSON.stringify(data)}`);
-              // Fallback to test checkout if registration refused by sandbox
+              if (process.env.NODE_ENV === 'production') {
+                throw new BadRequestException(`ClicToPay registration failed: ${data.errorMessage || data.errorCode || 'Gateway refused transaction'}`);
+              }
+              // Fallback to test checkout for local dev if registration refused by sandbox
               checkoutResult = {
                 invoiceId: invoice.id,
                 gateway: 'CLIC_TO_PAY',
@@ -416,6 +422,12 @@ export class BillingService {
             }
           } catch (err: any) {
             this.logger.error(`Failed to register ClicToPay order: ${err.message}`);
+            if (process.env.NODE_ENV === 'production' && !(err instanceof BadRequestException)) {
+              throw new BadRequestException(`ClicToPay order failed: ${err.message}`);
+            }
+            if (err instanceof BadRequestException) {
+              throw err;
+            }
             checkoutResult = {
               invoiceId: invoice.id,
               gateway: 'CLIC_TO_PAY',

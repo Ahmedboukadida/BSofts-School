@@ -14,12 +14,13 @@ export class LivekitService {
         where: { key: 'LIVEKIT_CONFIG' },
       });
 
+      const isProd = process.env.NODE_ENV === 'production';
       if (setting?.value) {
         const parsed = JSON.parse(setting.value);
         return {
-          url: parsed.url || process.env.LIVEKIT_URL || 'wss://bsofts-yid6ey9o.livekit.cloud',
-          apiKey: parsed.apiKey || process.env.LIVEKIT_API_KEY || 'APIusw2GoZsh792',
-          apiSecret: parsed.apiSecret || process.env.LIVEKIT_API_SECRET || 'mlPDCxP4fayL3O0ZHpHKQxCl1PYnMfjrdr1R49nfxW3A',
+          url: parsed.url || process.env.LIVEKIT_URL || (isProd ? '' : 'wss://bsofts-yid6ey9o.livekit.cloud'),
+          apiKey: parsed.apiKey || process.env.LIVEKIT_API_KEY || (isProd ? '' : 'APIusw2GoZsh792'),
+          apiSecret: parsed.apiSecret || process.env.LIVEKIT_API_SECRET || (isProd ? '' : 'dev-secret-only'),
           tokenTtlMinutes: parsed.tokenTtlMinutes ? Number(parsed.tokenTtlMinutes) : 240,
         };
       }
@@ -27,10 +28,11 @@ export class LivekitService {
       this.logger.warn(`Failed reading LIVEKIT_CONFIG: ${err.message}`);
     }
 
+    const isProd = process.env.NODE_ENV === 'production';
     return {
-      url: process.env.LIVEKIT_URL || 'wss://bsofts-yid6ey9o.livekit.cloud',
-      apiKey: process.env.LIVEKIT_API_KEY || 'APIusw2GoZsh792',
-      apiSecret: process.env.LIVEKIT_API_SECRET || 'mlPDCxP4fayL3O0ZHpHKQxCl1PYnMfjrdr1R49nfxW3A',
+      url: process.env.LIVEKIT_URL || (isProd ? '' : 'wss://bsofts-yid6ey9o.livekit.cloud'),
+      apiKey: process.env.LIVEKIT_API_KEY || (isProd ? '' : 'APIusw2GoZsh792'),
+      apiSecret: process.env.LIVEKIT_API_SECRET || (isProd ? '' : 'dev-secret-only'),
       tokenTtlMinutes: 240,
     };
   }

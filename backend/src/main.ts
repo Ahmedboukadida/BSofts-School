@@ -65,6 +65,8 @@ async function bootstrap() {
       'x-tenant-id',
       'x-academic-year-id',
       'Idempotency-Key',
+      'x-xsrf-token',
+      'x-csrf-token',
     ],
   });
 

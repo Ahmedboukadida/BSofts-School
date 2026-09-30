@@ -371,7 +371,7 @@ export class ParentsService {
         }
 
         const tempPassword = (dto as any).password || `Par_${Math.random().toString(36).slice(-8)}!${Math.floor(10 + Math.random() * 90)}`;
-        const hashedPassword = await bcrypt.hash(tempPassword, 10);
+        const hashedPassword = await bcrypt.hash(tempPassword, 12);
 
         const newUser = await this.prisma.user.create({
           data: {
