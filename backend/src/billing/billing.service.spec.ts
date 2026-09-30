@@ -1,7 +1,13 @@
 import { describe, beforeEach, it, expect, vi } from 'vitest';
 import { BillingService } from './billing.service';
 import { CryptoService } from '../common/crypto/crypto.service';
-import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
+import { PaymentGatewayType } from './billing.dto';
 import * as crypto from 'node:crypto';
 
 // Mock Stripe library
@@ -27,19 +33,29 @@ describe('BillingService', () => {
   let service: BillingService;
   let cryptoService: CryptoService;
   let mockPrisma: any;
+  let mockCacheService: any;
 
   beforeEach(() => {
     cryptoService = new CryptoService();
+    mockCacheService = {
+      get: vi.fn(),
+      set: vi.fn(),
+      del: vi.fn(),
+    };
     mockPrisma = {
       platformPaymentConfig: {
         findFirst: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
       },
+      saaSPlan: {
+        findUnique: vi.fn(),
+      },
       saaSInvoice: {
         findUnique: vi.fn(),
         findFirst: vi.fn(),
         findMany: vi.fn(),
+        create: vi.fn(),
         update: vi.fn(),
         updateMany: vi.fn(),
       },
@@ -53,7 +69,7 @@ describe('BillingService', () => {
       },
     };
 
-    service = new BillingService(mockPrisma, cryptoService);
+    service = new BillingService(mockPrisma, cryptoService, mockCacheService);
   });
 
   describe('handleStripeWebhook', () => {
@@ -394,6 +410,133 @@ describe('BillingService', () => {
             clicToPaySecretKey: expect.stringMatching(/^enc:v1:/),
           }),
         }),
+      );
+    });
+  });
+
+  describe('createSubscriptionCheckout & Idempotency Keys (E4)', () => {
+    const dummyUser = { id: 'usr-1', email: 'owner@tenant.com' };
+    const dummyTenant = { id: 'ten-123', userId: 'usr-1' };
+    const dummyPlan = { id: 'plan-pro', name: 'Plan Pro', price: 99 };
+    const dummyDto = {
+      planId: 'plan-pro',
+      gateway: PaymentGatewayType.CLIC_TO_PAY,
+      periodMonths: 1,
+    };
+
+    it('should throw BadRequestException if Idempotency-Key is not provided', async () => {
+      await expect(
+        service.createSubscriptionCheckout(dummyDto, dummyUser, undefined),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if user has no associated tenant', async () => {
+      mockPrisma.tenant.findFirst.mockResolvedValue(null);
+
+      await expect(
+        service.createSubscriptionCheckout(dummyDto, dummyUser, 'ik-valid-uuid-1'),
+      ).rejects.toThrow("Aucun compte établissement (Tenant) associé à cet utilisateur.");
+    });
+
+    it('should throw ConflictException if request with identical key is currently PENDING (double-click in flight)', async () => {
+      mockPrisma.tenant.findFirst.mockResolvedValue(dummyTenant);
+      mockCacheService.get.mockResolvedValue({
+        status: 'PENDING',
+        createdAt: Date.now(),
+      });
+
+      await expect(
+        service.createSubscriptionCheckout(dummyDto, dummyUser, 'ik-concurrent-key'),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('should replay cached response with idempotentReplayed: true if key was already RESOLVED', async () => {
+      mockPrisma.tenant.findFirst.mockResolvedValue(dummyTenant);
+      const cachedResponse = {
+        invoiceId: 'inv-cached-99',
+        gateway: 'CLIC_TO_PAY',
+        checkoutUrl: 'https://test.clictopay.com/pay',
+      };
+      mockCacheService.get.mockResolvedValue({
+        status: 'RESOLVED',
+        createdAt: Date.now() - 5000,
+        response: cachedResponse,
+      });
+
+      const result = await service.createSubscriptionCheckout(
+        dummyDto,
+        dummyUser,
+        'ik-resolved-key',
+      );
+
+      expect(result).toEqual({
+        ...cachedResponse,
+        idempotentReplayed: true,
+      });
+      // Database invoice creation and external gateway should NOT have been invoked on replay
+      expect(mockPrisma.saaSInvoice.create).not.toHaveBeenCalled();
+    });
+
+    it('should create new checkout session, acquire lock, and cache resolved result for 24h', async () => {
+      mockPrisma.tenant.findFirst.mockResolvedValue(dummyTenant);
+      mockCacheService.get.mockResolvedValue(null); // Unseen key
+      mockPrisma.saaSPlan.findUnique.mockResolvedValue(dummyPlan);
+      mockPrisma.platformPaymentConfig.findFirst.mockResolvedValue({
+        isDefault: true,
+        currency: 'TND',
+        clicToPayEnabled: true,
+        clicToPayTestMode: true,
+      });
+      mockPrisma.saaSInvoice.create.mockResolvedValue({
+        id: 'inv-new-777',
+        tenantId: 'ten-123',
+        amount: 99,
+        currency: 'TND',
+        gateway: 'CLIC_TO_PAY',
+        status: 'PENDING',
+      });
+      mockPrisma.saaSInvoice.update.mockResolvedValue({});
+
+      const result = await service.createSubscriptionCheckout(
+        dummyDto,
+        dummyUser,
+        'ik-fresh-key-123',
+      );
+
+      expect(result.invoiceId).toBe('inv-new-777');
+      expect(result.gateway).toBe('CLIC_TO_PAY');
+      expect(result.checkoutUrl).toBeDefined();
+
+      // Lock set to PENDING
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        'idempotency:checkout:ten-123:ik-fresh-key-123',
+        expect.objectContaining({ status: 'PENDING' }),
+        60,
+      );
+
+      // Lock updated to RESOLVED for 86400s
+      expect(mockCacheService.set).toHaveBeenCalledWith(
+        'idempotency:checkout:ten-123:ik-fresh-key-123',
+        expect.objectContaining({
+          status: 'RESOLVED',
+          response: expect.objectContaining({ invoiceId: 'inv-new-777' }),
+        }),
+        86400,
+      );
+    });
+
+    it('should clear in-flight PENDING lock if checkout creation fails so client can retry', async () => {
+      mockPrisma.tenant.findFirst.mockResolvedValue(dummyTenant);
+      mockCacheService.get.mockResolvedValue(null);
+      mockPrisma.saaSPlan.findUnique.mockResolvedValue(null); // Plan not found!
+
+      await expect(
+        service.createSubscriptionCheckout(dummyDto, dummyUser, 'ik-fail-key'),
+      ).rejects.toThrow(NotFoundException);
+
+      // Pending lock cleared on failure
+      expect(mockCacheService.del).toHaveBeenCalledWith(
+        'idempotency:checkout:ten-123:ik-fail-key',
       );
     });
   });

@@ -106,6 +106,11 @@ export class CreateSubscriptionCheckoutDto {
   @IsOptional()
   @IsString()
   cancelUrl?: string;
+
+  @ApiProperty({ required: false, description: 'Unique UUID idempotency key to prevent double charging' })
+  @IsOptional()
+  @IsString()
+  idempotencyKey?: string;
 }
 
 export class ClicToPayCallbackDto {

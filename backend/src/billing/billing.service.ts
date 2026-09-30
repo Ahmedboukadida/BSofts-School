@@ -3,10 +3,12 @@ import {
   NotFoundException,
   BadRequestException,
   UnauthorizedException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CryptoService } from '../common/crypto/crypto.service';
+import { CacheService } from '../common/cache/cache.service';
 import {
   UpdatePlatformPaymentConfigDto,
   CreateSubscriptionCheckoutDto,
@@ -23,6 +25,7 @@ export class BillingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cryptoService: CryptoService,
+    private readonly cacheService: CacheService,
   ) {}
 
   async getPlatformConfig(user?: any) {
@@ -184,7 +187,18 @@ export class BillingService {
     });
   }
 
-  async createSubscriptionCheckout(dto: CreateSubscriptionCheckoutDto, user: any) {
+  async createSubscriptionCheckout(
+    dto: CreateSubscriptionCheckoutDto,
+    user: any,
+    headerIdempotencyKey?: string,
+  ) {
+    const rawKey = (headerIdempotencyKey || dto.idempotencyKey)?.trim();
+    if (!rawKey) {
+      throw new BadRequestException(
+        "En-tête 'Idempotency-Key' manquant. Un identifiant unique d'idempotence (UUID) est obligatoire pour sécuriser la transaction et prévenir les doubles paiements.",
+      );
+    }
+
     // 1. Identify Tenant
     const tenant = await this.prisma.tenant.findFirst({
       where: { userId: user.id },
@@ -194,189 +208,238 @@ export class BillingService {
       throw new BadRequestException('Aucun compte établissement (Tenant) associé à cet utilisateur.');
     }
 
-    // 2. Identify Plan
-    const plan = await this.prisma.saaSPlan.findUnique({
-      where: { id: dto.planId },
-    });
+    // 2. Check Idempotency Key in Cache
+    const tenantId = tenant.id;
+    const cacheKey = `idempotency:checkout:${tenantId}:${rawKey}`;
 
-    if (!plan) {
-      throw new NotFoundException(`Plan d'abonnement introuvable (ID: ${dto.planId})`);
-    }
+    const existingRecord = await this.cacheService.get<{
+      status: 'PENDING' | 'RESOLVED';
+      createdAt: number;
+      response?: any;
+    }>(cacheKey);
 
-    const periodMonths = dto.periodMonths || 1;
-    const totalAmount = Number(plan.price) * periodMonths;
-    let config = await this.prisma.platformPaymentConfig.findFirst({
-      where: { isDefault: true },
-    });
-    if (!config) {
-      config = await this.prisma.platformPaymentConfig.create({
-        data: {
-          isDefault: true,
-          currency: 'TND',
-          stripeEnabled: true,
-          clicToPayEnabled: true,
-        },
-      });
-    }
-
-    // Verify that the requested gateway is currently enabled by the Platform Root
-    if (dto.gateway === PaymentGatewayType.STRIPE && !config.stripeEnabled) {
-      throw new BadRequestException('Le mode de paiement par carte internationale (Stripe) n\'est pas activé sur la plateforme.');
-    }
-    if (dto.gateway === PaymentGatewayType.CLIC_TO_PAY && !config.clicToPayEnabled) {
-      throw new BadRequestException('Le mode de paiement ClicToPay n\'est pas activé sur la plateforme.');
-    }
-
-    // 3. Create Pending Invoice
-    const invoice = await this.prisma.saaSInvoice.create({
-      data: {
-        tenantId: tenant.id,
-        planId: plan.id,
-        amount: totalAmount,
-        currency: config.currency || 'TND',
-        gateway: dto.gateway,
-        periodMonths,
-        status: 'PENDING',
-      },
-    });
-
-    const frontendUrl = process.env.FRONTEND_URL || 'https://bsofts-school.vercel.app';
-    const successUrl = dto.successUrl || `${frontendUrl}/settings/subscription?status=success&invoiceId=${invoice.id}`;
-    const cancelUrl = dto.cancelUrl || `${frontendUrl}/settings/subscription?status=cancelled`;
-
-    // 4. Dispatch to Gateway
-    if (dto.gateway === PaymentGatewayType.STRIPE) {
-      const stripeSecret =
-        (config.stripeSecretKey ? this.cryptoService.decrypt(config.stripeSecretKey) : null) ||
-        process.env.STRIPE_SECRET_KEY;
-
-      if (!stripeSecret) {
-        // Fallback test mode session if secret not yet supplied
+    if (existingRecord) {
+      if (existingRecord.status === 'PENDING') {
+        throw new ConflictException(
+          "Une session de paiement avec cette clé d'idempotence est actuellement en cours de traitement. Veuillez patienter.",
+        );
+      }
+      if (existingRecord.status === 'RESOLVED' && existingRecord.response) {
+        this.logger.log(`Idempotent checkout replay for tenant ${tenantId}, key ${rawKey}`);
         return {
-          invoiceId: invoice.id,
-          gateway: 'STRIPE',
-          checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=stripe&invoiceId=${invoice.id}`,
-          message: 'Mode Test Stripe : Clé API non configurée par Root. Redirection vers validation simulée.',
+          ...existingRecord.response,
+          idempotentReplayed: true,
         };
       }
+    }
 
-      const stripe = new Stripe(stripeSecret);
+    // Acquire lock for in-flight operation (60s TTL)
+    await this.cacheService.set(
+      cacheKey,
+      { status: 'PENDING', createdAt: Date.now() },
+      60,
+    );
 
-      const session = await stripe.checkout.sessions.create({
-        payment_method_types: ['card'],
-        line_items: [
-          {
-            price_data: {
-              currency: (config.currency || 'eur').toLowerCase(),
-              product_data: {
-                name: `Abonnement BSofts School — ${plan.name}`,
-                description: `${periodMonths} mois d'abonnement SaaS`,
-              },
-              unit_amount: Math.round(Number(plan.price) * 100),
-            },
-            quantity: periodMonths,
+    try {
+      // 3. Identify Plan
+      const plan = await this.prisma.saaSPlan.findUnique({
+        where: { id: dto.planId },
+      });
+
+      if (!plan) {
+        throw new NotFoundException(`Plan d'abonnement introuvable (ID: ${dto.planId})`);
+      }
+
+      const periodMonths = dto.periodMonths || 1;
+      const totalAmount = Number(plan.price) * periodMonths;
+      let config = await this.prisma.platformPaymentConfig.findFirst({
+        where: { isDefault: true },
+      });
+      if (!config) {
+        config = await this.prisma.platformPaymentConfig.create({
+          data: {
+            isDefault: true,
+            currency: 'TND',
+            stripeEnabled: true,
+            clicToPayEnabled: true,
           },
-        ],
-        mode: 'payment',
-        success_url: `${successUrl}&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: cancelUrl,
-        client_reference_id: invoice.id,
-        customer_email: user.email || undefined,
-        metadata: {
-          invoiceId: invoice.id,
+        });
+      }
+
+      // Verify that the requested gateway is currently enabled by the Platform Root
+      if (dto.gateway === PaymentGatewayType.STRIPE && !config.stripeEnabled) {
+        throw new BadRequestException('Le mode de paiement par carte internationale (Stripe) n\'est pas activé sur la plateforme.');
+      }
+      if (dto.gateway === PaymentGatewayType.CLIC_TO_PAY && !config.clicToPayEnabled) {
+        throw new BadRequestException('Le mode de paiement ClicToPay n\'est pas activé sur la plateforme.');
+      }
+
+      // 4. Create Pending Invoice
+      const invoice = await this.prisma.saaSInvoice.create({
+        data: {
           tenantId: tenant.id,
           planId: plan.id,
+          amount: totalAmount,
+          currency: config.currency || 'TND',
+          gateway: dto.gateway,
+          periodMonths,
+          status: 'PENDING',
         },
       });
 
-      await this.prisma.saaSInvoice.update({
-        where: { id: invoice.id },
-        data: { gatewayRef: session.id },
-      });
+      const frontendUrl = process.env.FRONTEND_URL || 'https://bsofts-school.vercel.app';
+      const successUrl = dto.successUrl || `${frontendUrl}/settings/subscription?status=success&invoiceId=${invoice.id}`;
+      const cancelUrl = dto.cancelUrl || `${frontendUrl}/settings/subscription?status=cancelled`;
 
-      return {
-        invoiceId: invoice.id,
-        gateway: 'STRIPE',
-        checkoutUrl: session.url,
-      };
-    } else if (dto.gateway === PaymentGatewayType.CLIC_TO_PAY) {
-      // ClicToPay (Monétique Tunisie / SMT) Protocol
-      // Amount in Millimes (1 TND = 1000 Millimes)
-      const amountInMillimes = Math.round(totalAmount * 1000);
-      const orderNumber = `BS-${invoice.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+      let checkoutResult: any;
 
-      await this.prisma.saaSInvoice.update({
-        where: { id: invoice.id },
-        data: { gatewayRef: orderNumber },
-      });
+      // 5. Dispatch to Gateway
+      if (dto.gateway === PaymentGatewayType.STRIPE) {
+        const stripeSecret =
+          (config.stripeSecretKey ? this.cryptoService.decrypt(config.stripeSecretKey) : null) ||
+          process.env.STRIPE_SECRET_KEY;
 
-      if (config.clicToPayTestMode || !config.clicToPayApiKey) {
-        // Test / Sandbox mode URL
-        return {
-          invoiceId: invoice.id,
-          gateway: 'CLIC_TO_PAY',
-          orderNumber,
-          amountMillimes: amountInMillimes,
-          checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=clictopay&invoiceId=${invoice.id}&orderNumber=${orderNumber}`,
-          message: 'Mode Test ClicToPay actif. Redirection vers la passerelle de test.',
-        };
-      }
-
-      // Production ClicToPay API endpoint
-      const clicToPayEndpoint = config.clicToPayTestMode
-        ? 'https://test.clictopay.com/payment/rest/register.do'
-        : 'https://clictopay.com/payment/rest/register.do';
-
-      const returnUrl = `${frontendUrl}/api/billing/callback/clictopay?invoiceId=${invoice.id}`;
-
-      try {
-        const resolvedApiKey =
-          (config.clicToPayApiKey ? this.cryptoService.decrypt(config.clicToPayApiKey) : null) ||
-          config.clicToPayApiKey ||
-          '';
-
-        const params = new URLSearchParams({
-          userName: config.clicToPayMerchantId || '',
-          password: resolvedApiKey,
-          orderNumber,
-          amount: amountInMillimes.toString(),
-          currency: '788', // TND ISO code
-          returnUrl,
-          failUrl: cancelUrl,
-          description: `Abonnement BSofts School ${plan.name} (${periodMonths} mois)`,
-        });
-
-        const response = await fetch(`${clicToPayEndpoint}?${params.toString()}`, {
-          method: 'POST',
-        });
-        const data = await response.json();
-
-        if (data.formUrl) {
-          return {
+        if (!stripeSecret) {
+          // Fallback test mode session if secret not yet supplied
+          checkoutResult = {
             invoiceId: invoice.id,
-            gateway: 'CLIC_TO_PAY',
-            checkoutUrl: data.formUrl,
+            gateway: 'STRIPE',
+            checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=stripe&invoiceId=${invoice.id}`,
+            message: 'Mode Test Stripe : Clé API non configurée par Root. Redirection vers validation simulée.',
           };
         } else {
-          this.logger.warn(`ClicToPay order registration response: ${JSON.stringify(data)}`);
-          // Fallback to test checkout if registration refused by sandbox
-          return {
+          const stripe = new Stripe(stripeSecret);
+
+          const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [
+              {
+                price_data: {
+                  currency: (config.currency || 'eur').toLowerCase(),
+                  product_data: {
+                    name: `Abonnement BSofts School — ${plan.name}`,
+                    description: `${periodMonths} mois d'abonnement SaaS`,
+                  },
+                  unit_amount: Math.round(Number(plan.price) * 100),
+                },
+                quantity: periodMonths,
+              },
+            ],
+            mode: 'payment',
+            success_url: `${successUrl}&session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: cancelUrl,
+            client_reference_id: invoice.id,
+            customer_email: user.email || undefined,
+            metadata: {
+              invoiceId: invoice.id,
+              tenantId: tenant.id,
+              planId: plan.id,
+            },
+          });
+
+          await this.prisma.saaSInvoice.update({
+            where: { id: invoice.id },
+            data: { gatewayRef: session.id },
+          });
+
+          checkoutResult = {
             invoiceId: invoice.id,
-            gateway: 'CLIC_TO_PAY',
-            checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=clictopay&invoiceId=${invoice.id}&orderNumber=${orderNumber}`,
+            gateway: 'STRIPE',
+            checkoutUrl: session.url,
           };
         }
-      } catch (err: any) {
-        this.logger.error(`Failed to register ClicToPay order: ${err.message}`);
-        return {
-          invoiceId: invoice.id,
-          gateway: 'CLIC_TO_PAY',
-          checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=clictopay&invoiceId=${invoice.id}&orderNumber=${orderNumber}`,
-        };
-      }
-    }
+      } else if (dto.gateway === PaymentGatewayType.CLIC_TO_PAY) {
+        // ClicToPay (Monétique Tunisie / SMT) Protocol
+        // Amount in Millimes (1 TND = 1000 Millimes)
+        const amountInMillimes = Math.round(totalAmount * 1000);
+        const orderNumber = `BS-${invoice.id.slice(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
 
-    throw new BadRequestException(`Passerelle de paiement ${dto.gateway} non prise en charge.`);
+        await this.prisma.saaSInvoice.update({
+          where: { id: invoice.id },
+          data: { gatewayRef: orderNumber },
+        });
+
+        if (config.clicToPayTestMode || !config.clicToPayApiKey) {
+          // Test / Sandbox mode URL
+          checkoutResult = {
+            invoiceId: invoice.id,
+            gateway: 'CLIC_TO_PAY',
+            orderNumber,
+            amountMillimes: amountInMillimes,
+            checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=clictopay&invoiceId=${invoice.id}&orderNumber=${orderNumber}`,
+            message: 'Mode Test ClicToPay actif. Redirection vers la passerelle de test.',
+          };
+        } else {
+          // Production ClicToPay API endpoint
+          const clicToPayEndpoint = config.clicToPayTestMode
+            ? 'https://test.clictopay.com/payment/rest/register.do'
+            : 'https://clictopay.com/payment/rest/register.do';
+
+          const returnUrl = `${frontendUrl}/api/billing/callback/clictopay?invoiceId=${invoice.id}`;
+
+          try {
+            const resolvedApiKey =
+              (config.clicToPayApiKey ? this.cryptoService.decrypt(config.clicToPayApiKey) : null) ||
+              config.clicToPayApiKey ||
+              '';
+
+            const params = new URLSearchParams({
+              userName: config.clicToPayMerchantId || '',
+              password: resolvedApiKey,
+              orderNumber,
+              amount: amountInMillimes.toString(),
+              currency: '788', // TND ISO code
+              returnUrl,
+              failUrl: cancelUrl,
+              description: `Abonnement BSofts School ${plan.name} (${periodMonths} mois)`,
+            });
+
+            const response = await fetch(`${clicToPayEndpoint}?${params.toString()}`, {
+              method: 'POST',
+            });
+            const data = await response.json();
+
+            if (data.formUrl) {
+              checkoutResult = {
+                invoiceId: invoice.id,
+                gateway: 'CLIC_TO_PAY',
+                checkoutUrl: data.formUrl,
+              };
+            } else {
+              this.logger.warn(`ClicToPay order registration response: ${JSON.stringify(data)}`);
+              // Fallback to test checkout if registration refused by sandbox
+              checkoutResult = {
+                invoiceId: invoice.id,
+                gateway: 'CLIC_TO_PAY',
+                checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=clictopay&invoiceId=${invoice.id}&orderNumber=${orderNumber}`,
+              };
+            }
+          } catch (err: any) {
+            this.logger.error(`Failed to register ClicToPay order: ${err.message}`);
+            checkoutResult = {
+              invoiceId: invoice.id,
+              gateway: 'CLIC_TO_PAY',
+              checkoutUrl: `${frontendUrl}/settings/subscription?mockPayment=clictopay&invoiceId=${invoice.id}&orderNumber=${orderNumber}`,
+            };
+          }
+        }
+      } else {
+        throw new BadRequestException(`Passerelle de paiement ${dto.gateway} non prise en charge.`);
+      }
+
+      // Persist resolved response in cache for 24 hours (86400s)
+      await this.cacheService.set(
+        cacheKey,
+        { status: 'RESOLVED', createdAt: Date.now(), response: checkoutResult },
+        86400,
+      );
+
+      return checkoutResult;
+    } catch (err) {
+      // Clear pending lock on failure so user can retry
+      await this.cacheService.del(cacheKey);
+      throw err;
+    }
   }
 
   async confirmSubscriptionPayment(invoiceId: string, gateway: string, transactionRef?: string) {

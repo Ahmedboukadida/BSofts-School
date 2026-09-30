@@ -8,7 +8,9 @@ import {
   Req,
   Headers,
   Query,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { BillingService } from './billing.service';
 import {
@@ -62,11 +64,19 @@ export class BillingController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create subscription checkout session (Stripe or ClicToPay)' })
   @ApiResponse({ status: 201, description: 'Checkout session created' })
-  createCheckout(
+  @ApiResponse({ status: 400, description: 'Missing or invalid Idempotency-Key' })
+  @ApiResponse({ status: 409, description: 'Concurrent checkout request in progress' })
+  async createCheckout(
     @Body() dto: CreateSubscriptionCheckoutDto,
     @CurrentUser() user: any,
+    @Headers('idempotency-key') idempotencyKey?: string,
+    @Res({ passthrough: true }) res?: Response,
   ) {
-    return this.billingService.createSubscriptionCheckout(dto, user);
+    const result = await this.billingService.createSubscriptionCheckout(dto, user, idempotencyKey);
+    if (result && (result as any).idempotentReplayed && res) {
+      res.setHeader('Idempotent-Replayed', 'true');
+    }
+    return result;
   }
 
   @Post('confirm')

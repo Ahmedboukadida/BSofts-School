@@ -172,13 +172,26 @@ export default function SaaSAdminSubscriptionsPage() {
     if (!renewItem) return;
     setIsRenewing(true);
     try {
-      const res = await api.post('/billing/checkout', {
-        planId: renewItem.planId || 'pro',
-        billingCycle: renewMonths >= 12 ? 'ANNUAL' : 'MONTHLY',
-        gateway: selectedPlatformGateway,
-        successUrl: `${window.location.origin}/admin/subscriptions?payment=success`,
-        cancelUrl: `${window.location.origin}/admin/subscriptions?payment=cancelled`,
-      });
+      const idempotencyKey =
+        typeof crypto !== 'undefined' && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `sub-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+
+      const res = await api.post(
+        '/billing/checkout',
+        {
+          planId: renewItem.planId || 'pro',
+          billingCycle: renewMonths >= 12 ? 'ANNUAL' : 'MONTHLY',
+          gateway: selectedPlatformGateway,
+          successUrl: `${window.location.origin}/admin/subscriptions?payment=success`,
+          cancelUrl: `${window.location.origin}/admin/subscriptions?payment=cancelled`,
+        },
+        {
+          headers: {
+            'Idempotency-Key': idempotencyKey,
+          },
+        },
+      );
       const { checkoutUrl, message } = res.data || {};
       if (checkoutUrl) {
         showToast.success(message || 'Redirection vers la passerelle sécurisée...');
