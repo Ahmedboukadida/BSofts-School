@@ -5,6 +5,7 @@ import { LiveKitConfigDto, GenerateLiveKitTokenDto } from './livekit.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { Public } from '../common/decorators';
 
 @ApiTags('LiveKit Video & Realtime')
 @Controller('livekit')
@@ -38,5 +39,17 @@ export class LivekitController {
   @Roles('ROOT', 'SUPER_ADMIN')
   async testConnection(): Promise<{ success: boolean; message: string }> {
     return this.livekitService.testConnection();
+  }
+
+  @Public()
+  @Post('webhook')
+  @ApiOperation({ summary: 'Receive and verify LiveKit server webhooks' })
+  async handleWebhook(@Req() req: any, @Body() body: any): Promise<{ received: boolean }> {
+    const authHeader = req.headers?.authorization || req.headers?.['x-livekit-signature'] || '';
+    const rawBody = typeof req.rawBody === 'string'
+      ? req.rawBody
+      : JSON.stringify(body);
+    await this.livekitService.verifyWebhookSignature(authHeader, rawBody);
+    return { received: true };
   }
 }

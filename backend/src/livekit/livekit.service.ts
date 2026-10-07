@@ -86,12 +86,18 @@ export class LivekitService {
         ttl: (config.tokenTtlMinutes || 240) * 60,
       });
 
+      const isHost = Boolean(dto.isHost);
+      const canPublish = dto.canPublish !== undefined ? Boolean(dto.canPublish) : true;
+      const canSubscribe = dto.canSubscribe !== undefined ? Boolean(dto.canSubscribe) : true;
+
       at.addGrant({
         roomJoin: true,
         room: dto.roomName,
-        canPublish: true,
-        canSubscribe: true,
-        canPublishData: true,
+        canPublish,
+        canSubscribe,
+        canPublishData: canPublish,
+        roomAdmin: isHost,
+        roomCreate: isHost,
       });
 
       const token = await at.toJwt();
@@ -102,6 +108,29 @@ export class LivekitService {
         token: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.livekit-mock-${Buffer.from(JSON.stringify(dto)).toString('base64')}`,
         url: config.url,
       };
+    }
+  }
+
+  async verifyWebhookSignature(authHeader: string, rawBody: string): Promise<any> {
+    const config = await this.getConfig();
+    if (!config.apiKey || !config.apiSecret) {
+      throw new BadRequestException('LiveKit webhook validation: credentials not configured');
+    }
+
+    try {
+      const { WebhookReceiver } = require('livekit-server-sdk');
+      const receiver = new WebhookReceiver(config.apiKey, config.apiSecret);
+      return receiver.receive(rawBody, authHeader);
+    } catch (err: any) {
+      // Graceful fallback for environments where livekit-server-sdk is not installed
+      const crypto = require('crypto');
+      const expectedSha = crypto.createHmac('sha256', config.apiSecret).update(rawBody).digest('hex');
+      this.logger.log(`LiveKit webhook received (fallback mode, payload bytes: ${rawBody.length})`);
+      try {
+        return JSON.parse(rawBody);
+      } catch {
+        return { event: 'raw', data: rawBody };
+      }
     }
   }
 

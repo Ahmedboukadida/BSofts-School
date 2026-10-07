@@ -30,7 +30,8 @@ export class SystemLogsController {
   @ApiResponse({ status: 200, description: 'System log marked as resolved' })
   markResolved(@Param('id') id: string, @CurrentUser() user: any) {
     const resolvedBy = user?.email || user?.username || 'ROOT';
-    return this.service.markResolved(id, resolvedBy);
+    const resolvedById = user?.id || undefined;
+    return this.service.markResolved(id, resolvedBy, resolvedById);
   }
 
   @Delete('purge/:days')

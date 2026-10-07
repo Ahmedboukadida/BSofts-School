@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBulletinDto, UpdateBulletinDto, QueryBulletinDto } from './bulletin.dto';
 import { PaginatedDto } from '../common/pagination.dto';
+import PDFDocument from 'pdfkit';
 
 @Injectable()
 export class BulletinsService {
@@ -76,6 +77,7 @@ export class BulletinsService {
             code: true,
             classLevel: { select: { name: true } },
             academicYear: { select: { name: true } },
+            establishment: { select: { name: true, phone: true, email: true, address: true, logo: true } },
           },
         },
         period: { select: { id: true, name: true, type: true } },
@@ -349,5 +351,198 @@ export class BulletinsService {
     if (!bulletin) throw new NotFoundException(`Bulletin with ID ${id} not found`);
     await this.prisma.bulletin.delete({ where: { id } });
     return { message: 'Bulletin deleted successfully' };
+  }
+
+  async generatePdf(id: string): Promise<Buffer> {
+    const detailed = await this.getDetailedBulletin(id);
+    const establishment = (detailed.class as any)?.establishment;
+
+    return new Promise<Buffer>((resolve, reject) => {
+      const doc = new PDFDocument({ size: 'A4', margin: 36 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk) => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', (err) => reject(err));
+
+      const brandColor = '#1e3a8a';
+      const textColor = '#1f2937';
+      const mutedColor = '#6b7280';
+      const borderColor = '#d1d5db';
+      const tableHeaderBg = '#f3f4f6';
+
+      // 1. Header (School & Academic Year Info)
+      doc.fillColor(brandColor).fontSize(16).font('Helvetica-Bold')
+        .text(establishment?.name || 'ÉTABLISSEMENT SCOLAIRE', 36, 36, { align: 'left' });
+
+      doc.fillColor(mutedColor).fontSize(8.5).font('Helvetica')
+        .text(establishment?.address || '', 36, 56)
+        .text(
+          `${establishment?.phone ? 'Tél: ' + establishment.phone : ''} ${establishment?.email ? '| Email: ' + establishment.email : ''}`,
+          36,
+          68,
+        );
+
+      doc.fillColor(brandColor).fontSize(11).font('Helvetica-Bold')
+        .text(`ANNÉE SCOLAIRE: ${detailed.class?.academicYear?.name || '2025-2026'}`, 36, 36, { align: 'right' });
+      doc.fillColor(mutedColor).fontSize(8.5).font('Helvetica')
+        .text(`Période: ${detailed.period?.name || '-'}`, 36, 52, { align: 'right' })
+        .text(`Date d'émission: ${new Date().toLocaleDateString('fr-FR')}`, 36, 68, { align: 'right' });
+
+      // Horizontal separator line
+      doc.strokeColor(brandColor).lineWidth(1.5).moveTo(36, 85).lineTo(559, 85).stroke();
+
+      // Title Banner
+      doc.rect(36, 95, 523, 26).fill('#1e3a8a');
+      doc.fillColor('#ffffff').fontSize(12).font('Helvetica-Bold')
+        .text('BULLETIN SCOLAIRE OFFICIEL', 36, 102, { align: 'center' });
+
+      // 2. Student Info Card
+      doc.rect(36, 130, 523, 62).fillAndStroke('#f8fafc', borderColor);
+      doc.fillColor(textColor).fontSize(9.5).font('Helvetica-Bold');
+      doc.text('Nom & Prénom:', 48, 140);
+      doc.font('Helvetica').text(`${detailed.student.lastName.toUpperCase()} ${detailed.student.firstName}`, 135, 140);
+
+      doc.font('Helvetica-Bold').text('Matricule:', 48, 158);
+      doc.font('Helvetica').text(detailed.student.registrationNumber || 'N/A', 135, 158);
+
+      doc.font('Helvetica-Bold').text('Date de Naiss.:', 48, 176);
+      const dob = detailed.student.dateOfBirth
+        ? new Date(detailed.student.dateOfBirth).toLocaleDateString('fr-FR')
+        : 'N/A';
+      doc.font('Helvetica').text(dob, 135, 176);
+
+      doc.font('Helvetica-Bold').text('Classe:', 320, 140);
+      doc.font('Helvetica').text(`${detailed.class.name} (${detailed.class.classLevel?.name || '-'})`, 390, 140);
+
+      doc.font('Helvetica-Bold').text('Effectif:', 320, 158);
+      doc.font('Helvetica').text(`${detailed.classStatistics.totalStudents} élèves`, 390, 158);
+
+      doc.font('Helvetica-Bold').text('Période:', 320, 176);
+      doc.font('Helvetica').text(detailed.period.name, 390, 176);
+
+      // 3. Subjects Table
+      let currentY = 202;
+      const colMatiere = 44;
+      const colCoef = 200;
+      const colNotes = 250;
+      const colAvg = 380;
+      const colTotal = 435;
+      const colApprec = 485;
+
+      // Table Header
+      doc.rect(36, currentY, 523, 20).fill(tableHeaderBg);
+      doc.fillColor(textColor).fontSize(8.5).font('Helvetica-Bold');
+      doc.text('MATIÈRE', colMatiere, currentY + 5);
+      doc.text('COEF', colCoef, currentY + 5, { width: 35, align: 'center' });
+      doc.text('ÉVALUATIONS', colNotes, currentY + 5, { width: 120 });
+      doc.text('MOY /20', colAvg, currentY + 5, { width: 45, align: 'center' });
+      doc.text('TOTAL', colTotal, currentY + 5, { width: 40, align: 'center' });
+      doc.text('APPRÉCIATION', colApprec, currentY + 5, { width: 68 });
+      currentY += 20;
+
+      // Table Rows
+      doc.font('Helvetica').fontSize(8.5);
+      let totalCoefSum = 0;
+      let totalPointsSum = 0;
+
+      for (let i = 0; i < detailed.subjects.length; i++) {
+        const sub = detailed.subjects[i];
+        totalCoefSum += sub.coefficient;
+        totalPointsSum += sub.totalPoints;
+
+        const rowBg = i % 2 === 0 ? '#ffffff' : '#f9fafb';
+        doc.rect(36, currentY, 523, 18).fillAndStroke(rowBg, borderColor);
+
+        doc.fillColor(textColor).font('Helvetica-Bold').text(sub.name, colMatiere, currentY + 5, { width: 150 });
+        doc.font('Helvetica').text(sub.coefficient.toString(), colCoef, currentY + 5, { width: 35, align: 'center' });
+
+        const notesStr = sub.notes.map((n: any) => `${Number(n.value).toFixed(1)}`).join(', ') || '-';
+        doc.fillColor(mutedColor).text(notesStr, colNotes, currentY + 5, { width: 120 });
+
+        doc.fillColor(textColor).font('Helvetica-Bold')
+          .text(sub.average.toFixed(2), colAvg, currentY + 5, { width: 45, align: 'center' });
+        doc.font('Helvetica')
+          .text(sub.totalPoints.toFixed(2), colTotal, currentY + 5, { width: 40, align: 'center' });
+
+        let apprecColor = textColor;
+        if (sub.average >= 14) apprecColor = '#15803d';
+        else if (sub.average < 10) apprecColor = '#b91c1c';
+        doc.fillColor(apprecColor).font('Helvetica').text(sub.appreciation, colApprec, currentY + 5, { width: 68 });
+
+        currentY += 18;
+      }
+
+      // Total Row
+      doc.rect(36, currentY, 523, 20).fillAndStroke('#eef2ff', borderColor);
+      doc.fillColor(brandColor).font('Helvetica-Bold').fontSize(9);
+      doc.text('TOTAL GÉNÉRAL', colMatiere, currentY + 5);
+      doc.text(totalCoefSum.toString(), colCoef, currentY + 5, { width: 35, align: 'center' });
+      doc.text(totalPointsSum.toFixed(2), colTotal, currentY + 5, { width: 40, align: 'center' });
+      currentY += 26;
+
+      // 4. Results & Deliberation Section
+      const summaryY = currentY;
+      // Left Box: Student Performance
+      doc.rect(36, summaryY, 255, 90).fillAndStroke('#f8fafc', borderColor);
+      doc.fillColor(brandColor).fontSize(10).font('Helvetica-Bold').text('RÉSULTATS DE L’ÉLÈVE', 46, summaryY + 8);
+
+      const avgScore = Number(detailed.averageScore || 0);
+      doc.fillColor(textColor).fontSize(9).font('Helvetica-Bold').text('Moyenne Générale:', 46, summaryY + 28);
+      doc.fillColor(avgScore >= 10 ? '#15803d' : '#b91c1c').fontSize(12).font('Helvetica-Bold')
+        .text(`${avgScore.toFixed(2)} / 20`, 160, summaryY + 26);
+
+      doc.fillColor(textColor).fontSize(9).font('Helvetica-Bold').text('Rang:', 46, summaryY + 48);
+      doc.font('Helvetica').text(
+        `${detailed.rank || '-'} ${detailed.rank === 1 ? 'er' : 'ème'} sur ${detailed.classStatistics.totalStudents}`,
+        160,
+        summaryY + 48,
+      );
+
+      doc.font('Helvetica-Bold').text('Décision:', 46, summaryY + 68);
+      const isAdm = detailed.isPromoted || avgScore >= 10;
+      doc.fillColor(isAdm ? '#15803d' : '#b91c1c').font('Helvetica-Bold')
+        .text(isAdm ? 'ADMIS(E)' : 'AJOURNÉ(E)', 160, summaryY + 68);
+
+      // Right Box: Class Statistics
+      doc.rect(304, summaryY, 255, 90).fillAndStroke('#f8fafc', borderColor);
+      doc.fillColor(brandColor).fontSize(10).font('Helvetica-Bold').text('STATISTIQUES DE LA CLASSE', 314, summaryY + 8);
+
+      doc.fillColor(textColor).fontSize(9).font('Helvetica').text('Moyenne de classe:', 314, summaryY + 28);
+      doc.font('Helvetica-Bold').text(`${Number(detailed.classStatistics.classAverage || 0).toFixed(2)} / 20`, 440, summaryY + 28);
+
+      doc.font('Helvetica').text('Plus forte moyenne:', 314, summaryY + 48);
+      doc.font('Helvetica-Bold').fillColor('#15803d').text(`${Number(detailed.classStatistics.maxAverage || 0).toFixed(2)} / 20`, 440, summaryY + 48);
+
+      doc.fillColor(textColor).font('Helvetica').text('Plus faible moyenne:', 314, summaryY + 68);
+      doc.font('Helvetica-Bold').fillColor('#b91c1c').text(`${Number(detailed.classStatistics.minAverage || 0).toFixed(2)} / 20`, 440, summaryY + 68);
+
+      // Observation / Comments
+      currentY = summaryY + 98;
+      doc.rect(36, currentY, 523, 28).fillAndStroke('#ffffff', borderColor);
+      doc.fillColor(textColor).fontSize(8.5).font('Helvetica-Bold').text('Appréciation globale du conseil:', 44, currentY + 5);
+      doc.font('Helvetica-Oblique').fillColor(mutedColor).text(
+        detailed.comments || (avgScore >= 10 ? 'Travail satisfaisant' : 'Doit redoubler d’efforts'),
+        44,
+        currentY + 16,
+      );
+
+      // 5. Signatures
+      const sigY = currentY + 36;
+      doc.rect(36, sigY, 255, 55).stroke(borderColor);
+      doc.fillColor(textColor).fontSize(8.5).font('Helvetica-Bold').text('Le Professeur Principal', 46, sigY + 6);
+
+      doc.rect(304, sigY, 255, 55).stroke(borderColor);
+      doc.text('Le Chef d’Établissement (Cachet & Signature)', 314, sigY + 6);
+
+      // Footer
+      doc.fillColor(mutedColor).fontSize(7).font('Helvetica')
+        .text('Document officiel généré automatiquement par la plateforme BSofts-School', 36, 785, {
+          align: 'center',
+          width: 523,
+        });
+
+      doc.end();
+    });
   }
 }

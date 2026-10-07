@@ -69,15 +69,75 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Deduplicate concurrent in-flight GET requests
+// LRU Query Cache with TTL and Mutating Invalidation
+interface CacheEntry<T = any> {
+  data: T;
+  expiresAt: number;
+}
+
+class LruQueryCache {
+  private readonly maxCapacity: number;
+  private readonly defaultTtlMs: number;
+  private readonly cache = new Map<string, CacheEntry>();
+
+  constructor(maxCapacity = 100, defaultTtlMs = 60000) {
+    this.maxCapacity = maxCapacity;
+    this.defaultTtlMs = defaultTtlMs;
+  }
+
+  get<T>(key: string): T | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) return undefined;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+    // Re-insert to refresh recency
+    this.cache.delete(key);
+    this.cache.set(key, entry);
+    return entry.data as T;
+  }
+
+  set<T>(key: string, data: T, ttlMs = this.defaultTtlMs): void {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxCapacity) {
+      // Evict oldest (least recently used)
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) this.cache.delete(oldestKey);
+    }
+    this.cache.set(key, {
+      data,
+      expiresAt: Date.now() + ttlMs,
+    });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  invalidateMatching(prefix: string): void {
+    for (const key of this.cache.keys()) {
+      if (key.startsWith(prefix)) {
+        this.cache.delete(key);
+      }
+    }
+  }
+}
+
+export const lruQueryCache = new LruQueryCache(150, 45000); // 150 entries, 45s TTL
+
+// In-flight GET deduplication map
 const inFlightGetRequests = new Map<string, Promise<any>>();
 const originalGet = api.get.bind(api);
 
 export function clearApiCache(): void {
   inFlightGetRequests.clear();
+  lruQueryCache.clear();
 }
 
 (api as any).clearCache = clearApiCache;
+(api as any).lruCache = lruQueryCache;
 
 (api as any).get = function <T = any, R = any, D = any>(
   url: string,
@@ -93,29 +153,49 @@ export function clearApiCache(): void {
   const paramsKey = config?.params ? JSON.stringify(config.params) : '';
   const key = `${url}::${paramsKey}::${token}::${estId}::${tenantId}`;
 
-  if (inFlightGetRequests.has(key)) {
-    return inFlightGetRequests.get(key) as Promise<R>;
+  // Check LRU cache first (if not explicitly bypassing cache)
+  const bypassCache = Boolean(config?.headers?.['x-skip-cache'] || config?.skipCache);
+  if (!bypassCache) {
+    const cachedData = lruQueryCache.get<R>(key);
+    if (cachedData !== undefined) {
+      return Promise.resolve(cachedData);
+    }
   }
 
-  if (inFlightGetRequests.size > 50) {
-    inFlightGetRequests.clear();
+  // Deduplicate concurrent in-flight requests
+  if (inFlightGetRequests.has(key)) {
+    return inFlightGetRequests.get(key) as Promise<R>;
   }
 
   const timeoutId = setTimeout(() => {
     inFlightGetRequests.delete(key);
   }, 15000);
 
-  const promise = originalGet<T, R, D>(url, config).finally(() => {
-    clearTimeout(timeoutId);
-    inFlightGetRequests.delete(key);
-  });
+  const promise = originalGet<T, R, D>(url, config)
+    .then((response: any) => {
+      if (!bypassCache && response && response.status >= 200 && response.status < 300) {
+        lruQueryCache.set(key, response);
+      }
+      return response;
+    })
+    .finally(() => {
+      clearTimeout(timeoutId);
+      inFlightGetRequests.delete(key);
+    });
 
   inFlightGetRequests.set(key, promise);
   return promise as Promise<any>;
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Automatically invalidate cached queries when modifying data
+    const method = response.config?.method?.toLowerCase();
+    if (method && ['post', 'put', 'patch', 'delete'].includes(method)) {
+      lruQueryCache.clear();
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {

@@ -356,6 +356,7 @@ model User {
   conversationParticipants ConversationParticipant[]
   createdMeetings          Meeting[]                 @relation("MeetingCreator")
   meetingParticipants      MeetingParticipant[]
+  systemLogsResolved       SystemLog[]               @relation("SystemLogResolver")
 }
 
 model Role {
@@ -1877,25 +1878,28 @@ model AuditLog {
 }
 
 model SystemLog {
-  id         String   @id @default(uuid())
-  level      String // "ERROR" | "WARN" | "FATAL" | "INFO"
-  message    String
-  stack      String?
-  context    String?
-  path       String?
-  method     String?
-  statusCode Int?
-  userId     String?
-  ipAddress  String?
-  resolved   Boolean   @default(false)
-  resolvedAt DateTime?
-  resolvedBy String?
-  createdAt  DateTime  @default(now())
+  id             String   @id @default(uuid())
+  level          String // "ERROR" | "WARN" | "FATAL" | "INFO"
+  message        String
+  stack          String?
+  context        String?
+  path           String?
+  method         String?
+  statusCode     Int?
+  userId         String?
+  ipAddress      String?
+  resolved       Boolean   @default(false)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  resolvedById   String?
+  resolvedByUser User?     @relation("SystemLogResolver", fields: [resolvedById], references: [id])
+  createdAt      DateTime  @default(now())
 
   @@index([level])
   @@index([createdAt])
   @@index([statusCode])
   @@index([resolved])
+  @@index([resolvedById])
 }
 
 model PlatformSetting {

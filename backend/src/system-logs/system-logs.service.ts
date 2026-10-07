@@ -94,14 +94,18 @@ export class SystemLogsService {
     return { message: 'Journal système supprimé avec succès' };
   }
 
-  async markResolved(id: string, resolvedBy: string): Promise<SystemLogEntity> {
+  async markResolved(id: string, resolvedBy: string, resolvedById?: string): Promise<SystemLogEntity> {
+    const data: any = {
+      resolved: true,
+      resolvedAt: new Date(),
+      resolvedBy,
+    };
+    if (resolvedById) {
+      data.resolvedById = resolvedById;
+    }
     const updated = await this.prisma.systemLog.update({
       where: { id },
-      data: {
-        resolved: true,
-        resolvedAt: new Date(),
-        resolvedBy,
-      },
+      data,
     });
     return new SystemLogEntity(updated);
   }

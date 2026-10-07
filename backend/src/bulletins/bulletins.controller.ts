@@ -1,6 +1,7 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, Res
 } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { BulletinsService } from './bulletins.service';
 import { CreateBulletinDto, UpdateBulletinDto, QueryBulletinDto } from './bulletin.dto';
@@ -49,6 +50,20 @@ export class BulletinsController {
   @ApiResponse({ status: 200, description: 'Detailed bulletin retrieved successfully' })
   getDetailed(@Param('id', ParseUUIDPipe) id: string) {
     return this.service.getDetailedBulletin(id);
+  }
+
+  @Get(':id/pdf')
+  @Permissions('bulletins:read')
+  @ApiOperation({ summary: 'Download bulletin as PDF report card' })
+  @ApiResponse({ status: 200, description: 'PDF generated successfully' })
+  async downloadPdf(@Param('id', ParseUUIDPipe) id: string, @Res({ passthrough: false }) res: Response) {
+    const pdfBuffer = await this.service.generatePdf(id);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=bulletin-${id}.pdf`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
   }
 
   @Get(':id')

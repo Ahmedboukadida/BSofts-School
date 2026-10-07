@@ -311,11 +311,15 @@ export class MeetingsService {
       });
     }
 
-    // Generate LiveKit token
+    // Generate LiveKit token with role-based grants
+    const isModerator = participant.role === 'MODERATOR' || participant.role === 'PRESENTER';
     const tokenResult = await this.livekitService.generateToken({
       roomName: meeting.roomName,
       participantIdentity: participant.id,
       participantName: participant.name,
+      isHost: isModerator,
+      canPublish: true,
+      canSubscribe: true,
     });
 
     return {

@@ -33,4 +33,16 @@ export class GenerateLiveKitTokenDto {
   @IsOptional()
   @IsString()
   participantName?: string;
+
+  @ApiPropertyOptional({ description: 'Whether participant has host/moderator privileges', default: false })
+  @IsOptional()
+  isHost?: boolean;
+
+  @ApiPropertyOptional({ description: 'Whether participant can publish audio/video/data', default: true })
+  @IsOptional()
+  canPublish?: boolean;
+
+  @ApiPropertyOptional({ description: 'Whether participant can subscribe to streams', default: true })
+  @IsOptional()
+  canSubscribe?: boolean;
 }

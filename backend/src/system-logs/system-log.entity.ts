@@ -40,6 +40,9 @@ export class SystemLogEntity {
   @ApiProperty({ required: false, nullable: true })
   resolvedBy: string | null;
 
+  @ApiProperty({ required: false, nullable: true })
+  resolvedById: string | null;
+
   @ApiProperty()
   createdAt: Date;
 
