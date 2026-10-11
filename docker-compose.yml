@@ -1,34 +1,10 @@
 # ==============================================================================
 # BSofts-School — Unified Production Docker Compose Stack
 # Multi-tenant School Management & SaaS Platform
-# Services: PostgreSQL 16, Redis 7, NestJS Backend, Next.js Frontend
+# Services: Redis 7, NestJS Backend, Next.js Frontend (Uses Local Host PostgreSQL)
 # ==============================================================================
 
 services:
-  # ----------------------------------------------------------------------------
-  # PostgreSQL 16 Database
-  # ----------------------------------------------------------------------------
-  postgres:
-    image: postgres:16-alpine
-    container_name: bsofts_postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-bsofts_school}
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - bsofts-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-bsofts_school}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   # ----------------------------------------------------------------------------
   # Redis 7 In-Memory Cache & Session Store
   # ----------------------------------------------------------------------------
@@ -59,10 +35,12 @@ services:
       dockerfile: Dockerfile
     container_name: bsofts_backend
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     environment:
       NODE_ENV: production
       PORT: 3025
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-bsofts_school}?schema=public
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:admin@host.docker.internal:5432/bsoftsschool?schema=public}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-bsofts-production-super-secret-key-change-in-env-2026}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
@@ -71,8 +49,6 @@ services:
     ports:
       - "3025:3025"
     depends_on:
-      postgres:
-        condition: service_healthy
       redis:
         condition: service_healthy
     networks:
@@ -118,8 +94,6 @@ services:
 # Persistent Storage Volumes & Internal Network
 # ------------------------------------------------------------------------------
 volumes:
-  postgres_data:
-    driver: local
   redis_data:
     driver: local
 
