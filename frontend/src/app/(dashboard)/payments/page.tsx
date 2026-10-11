@@ -144,7 +144,25 @@ export default function PaymentsPage() {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const mockOnline = params.get('mockOnline');
-      if (mockOnline) {
+      const statusParam = params.get('status');
+      const paymentId = params.get('paymentId');
+
+      if ((mockOnline || statusParam === 'success') && paymentId) {
+        const gateway = mockOnline ? (mockOnline === 'clictopay' ? 'CLIC_TO_PAY' : 'STRIPE') : 'ONLINE';
+        api.post('/student-payments/confirm-online', { paymentId, gateway })
+          .then(() => {
+            fetchStudentPayments();
+            fetchCaisseData();
+            toast.showToast(
+              `Paiement sécurisé (${mockOnline === 'clictopay' ? 'ClicToPay Monétique Tunisie' : 'Stripe'}) validé avec succès.`,
+              'success'
+            );
+          })
+          .catch((err) => {
+            console.error('Erreur confirmation paiement:', err);
+          });
+        window.history.replaceState({}, '', window.location.pathname);
+      } else if (mockOnline) {
         toast.showToast(
           `Paiement sécurisé par ${mockOnline === 'clictopay' ? 'ClicToPay (Monétique Tunisie)' : 'Stripe'} simulé avec succès en environnement bac à sable.`,
           'success'
@@ -342,7 +360,9 @@ export default function PaymentsPage() {
       if (checkoutUrl) {
         toast.showToast(message || 'Redirection vers la passerelle sécurisée...', 'success');
         setOnlinePayModal({ show: false, payment: null, availableGateways: [], selectedGateway: 'CLIC_TO_PAY', isLoading: false, isInitiating: false });
-        window.location.href = checkoutUrl;
+        if (typeof window !== 'undefined') {
+          window.location.assign(checkoutUrl);
+        }
       } else {
         toast.showToast('Lien de paiement initialisé', 'success');
         setOnlinePayModal({ show: false, payment: null, availableGateways: [], selectedGateway: 'CLIC_TO_PAY', isLoading: false, isInitiating: false });

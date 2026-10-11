@@ -166,6 +166,12 @@ export class BulletinsService {
       where: { id: classId },
       include: {
         studentClassAssignments: {
+          where: {
+            student: {
+              isDeleted: false,
+              isActive: true,
+            },
+          },
           include: { student: true },
         },
         moduleAssignments: {
@@ -178,7 +184,7 @@ export class BulletinsService {
 
     const students = cls.studentClassAssignments.map((a) => a.student);
     if (students.length === 0) {
-      throw new BadRequestException(`Aucun élève inscrit dans cette classe.`);
+      throw new BadRequestException(`Aucun élève actif inscrit dans cette classe.`);
     }
 
     // Calculate averages for each student
@@ -222,64 +228,75 @@ export class BulletinsService {
       });
     }
 
-    // Rank students descending
+    // Rank students descending by averageScore
     studentAverages.sort((a, b) => b.averageScore - a.averageScore);
 
-    // Upsert bulletins with Rank and Deliberation / Rachat
-    const createdBulletins = [];
-    for (let i = 0; i < studentAverages.length; i++) {
-      const { studentId, totalScore, averageScore } = studentAverages[i];
-      const rank = i + 1;
+    // Upsert bulletins with Rank (supporting ex-aequo ties) and Deliberation / Rachat inside transaction
+    const createdBulletins = await this.prisma.$transaction(async (tx) => {
+      const list = [];
+      let currentRank = 1;
 
-      let isPromoted = false;
-      let comments = 'Ajourné';
-      if (averageScore >= 10.0) {
-        isPromoted = true;
-        if (averageScore >= 16) comments = 'Admis - Félicitations du conseil (Très Bien)';
-        else if (averageScore >= 14) comments = 'Admis - Tableau d’honneur (Bien)';
-        else if (averageScore >= 12) comments = 'Admis - Encouragements (Assez Bien)';
-        else comments = 'Admis (Passable)';
-      } else if (averageScore >= 9.5) {
-        // Deliberation / Rachat rule
-        isPromoted = true;
-        comments = 'Admis par délibération du conseil de classe (Rachat)';
-      }
+      for (let i = 0; i < studentAverages.length; i++) {
+        const { studentId, totalScore, averageScore } = studentAverages[i];
 
-      const bulletin = await this.prisma.bulletin.upsert({
-        where: {
-          studentId_periodId_classId: {
+        // Standard competition ranking (1, 2, 2, 4) for ties
+        if (i > 0 && averageScore < studentAverages[i - 1].averageScore) {
+          currentRank = i + 1;
+        }
+        const rank = currentRank;
+
+        let isPromoted = false;
+        let comments = 'Ajourné';
+        if (averageScore >= 10.0) {
+          isPromoted = true;
+          if (averageScore >= 16) comments = 'Admis - Félicitations du conseil (Très Bien)';
+          else if (averageScore >= 14) comments = 'Admis - Tableau d’honneur (Bien)';
+          else if (averageScore >= 12) comments = 'Admis - Encouragements (Assez Bien)';
+          else comments = 'Admis (Passable)';
+        } else if (averageScore >= 9.5) {
+          // Deliberation / Rachat rule
+          isPromoted = true;
+          comments = 'Admis par délibération du conseil de classe (Rachat)';
+        }
+
+        const bulletin = await tx.bulletin.upsert({
+          where: {
+            studentId_periodId_classId: {
+              studentId,
+              periodId,
+              classId,
+            },
+          },
+          update: {
+            totalScore,
+            averageScore,
+            rank,
+            isPromoted,
+            comments,
+            generatedBy: user?.userId || 'SYSTEM',
+          },
+          create: {
             studentId,
             periodId,
             classId,
+            totalScore,
+            averageScore,
+            rank,
+            isPromoted,
+            comments,
+            generatedBy: user?.userId || 'SYSTEM',
           },
-        },
-        update: {
-          totalScore,
-          averageScore,
-          rank,
-          isPromoted,
-          comments,
-          generatedBy: user?.userId || 'SYSTEM',
-        },
-        create: {
-          studentId,
-          periodId,
-          classId,
-          totalScore,
-          averageScore,
-          rank,
-          isPromoted,
-          comments,
-          generatedBy: user?.userId || 'SYSTEM',
-        },
-        include: {
-          student: { select: { id: true, firstName: true, lastName: true } },
-          class: { select: { id: true, name: true } },
-          period: { select: { id: true, name: true } },
-        },
-      });
-      createdBulletins.push(bulletin);
-    }
+          include: {
+            student: { select: { id: true, firstName: true, lastName: true } },
+            class: { select: { id: true, name: true } },
+            period: { select: { id: true, name: true } },
+          },
+        });
+        list.push(bulletin);
+      }
+
+      return list;
+    });
 
     return {
       message: `${createdBulletins.length} bulletins calculés et délibérés avec succès`,

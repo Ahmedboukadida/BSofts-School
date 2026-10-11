@@ -4,8 +4,6 @@
 # Services: PostgreSQL 16, Redis 7, NestJS Backend, Next.js Frontend
 # ==============================================================================
 
-version: '3.8'
-
 services:
   # ----------------------------------------------------------------------------
   # PostgreSQL 16 Database
@@ -68,8 +66,8 @@ services:
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-bsofts-production-super-secret-key-change-in-env-2026}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-7d}
-      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
-      CORS_ORIGIN: http://localhost:3000,http://localhost:3025
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3026}
+      CORS_ORIGIN: http://localhost:3026,http://localhost:3025
     ports:
       - "3025:3025"
     depends_on:
@@ -99,18 +97,18 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
-      PORT: 3000
+      PORT: 3026
       HOSTNAME: "0.0.0.0"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3025/api}
     ports:
-      - "3000:3000"
+      - "3026:3026"
     depends_on:
       backend:
         condition: service_healthy
     networks:
       - bsofts-network
     healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3026/ || exit 1"]
       interval: 15s
       timeout: 5s
       retries: 3

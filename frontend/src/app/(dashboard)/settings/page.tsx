@@ -338,7 +338,7 @@ export default function SettingsPage() {
                     <CreditCard className="w-6 h-6" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-text-primary">Passerelles d'Encaissement Scolaire</h3>
+                    <h3 className="text-lg font-semibold text-text-primary">Passerelles d&apos;Encaissement Scolaire</h3>
                     <p className="text-xs text-text-secondary">
                       Configurez ClicToPay et Stripe pour permettre aux parents de régler les frais de scolarité et inscriptions en ligne.
                     </p>
@@ -367,7 +367,7 @@ export default function SettingsPage() {
                   {/* Devise */}
                   <div className="p-4 rounded-xl bg-surface border border-border">
                     <div className="max-w-xs">
-                      <label className="text-xs font-bold text-text-primary block mb-1.5">Devise d'encaissement des élèves</label>
+                      <label className="text-xs font-bold text-text-primary block mb-1.5">Devise d&apos;encaissement des élèves</label>
                       <select
                         className="w-full h-10 px-3 rounded-lg border border-border bg-background text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-brand"
                         value={payConfig.currency}

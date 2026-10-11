@@ -8,6 +8,7 @@ describe('BulletinsService', () => {
 
   beforeEach(() => {
     prismaMock = {
+      $transaction: vi.fn().mockImplementation((cb) => cb(prismaMock)),
       bulletin: {
         findMany: vi.fn(),
         count: vi.fn(),
@@ -176,6 +177,83 @@ describe('BulletinsService', () => {
       expect(Buffer.isBuffer(buffer)).toBe(true);
       expect(buffer.length).toBeGreaterThan(500); // Standard A4 PDF should have substantial byte content
       expect(buffer.toString('utf-8', 0, 5)).toBe('%PDF-'); // Valid PDF magic bytes header
+    });
+  });
+
+  describe('generateForClass', () => {
+    it('should throw NotFoundException if class not found', async () => {
+      prismaMock.class.findUnique.mockResolvedValue(null);
+
+      await expect(service.generateForClass('c-nonexistent', 'p-1')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should calculate averages, handle ex-aequo ties and execute batch inside transaction', async () => {
+      const mockClass = {
+        id: 'c-1',
+        name: '4ème Maths',
+        studentClassAssignments: [
+          { student: { id: 's-1', firstName: 'Karim', lastName: 'Ayari' } },
+          { student: { id: 's-2', firstName: 'Samia', lastName: 'Gharbi' } },
+          { student: { id: 's-3', firstName: 'Nidhal', lastName: 'Sassi' } },
+        ],
+        moduleAssignments: [],
+      };
+
+      prismaMock.class.findUnique.mockResolvedValue(mockClass);
+
+      // Student 1: 16/20
+      // Student 2: 16/20 (tied for 1st)
+      // Student 3: 11/20 (3rd rank)
+      prismaMock.note.findMany
+        .mockResolvedValueOnce([
+          {
+            matiereId: 'm-1',
+            value: 16,
+            maxValue: 20,
+            coefficient: 1,
+            matiere: { id: 'm-1', coefficient: 2 },
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            matiereId: 'm-1',
+            value: 16,
+            maxValue: 20,
+            coefficient: 1,
+            matiere: { id: 'm-1', coefficient: 2 },
+          },
+        ])
+        .mockResolvedValueOnce([
+          {
+            matiereId: 'm-1',
+            value: 11,
+            maxValue: 20,
+            coefficient: 1,
+            matiere: { id: 'm-1', coefficient: 2 },
+          },
+        ]);
+
+      prismaMock.bulletin.upsert
+        .mockResolvedValueOnce({ id: 'b-1', studentId: 's-1', rank: 1, averageScore: 16.0 })
+        .mockResolvedValueOnce({ id: 'b-2', studentId: 's-2', rank: 1, averageScore: 16.0 })
+        .mockResolvedValueOnce({ id: 'b-3', studentId: 's-3', rank: 3, averageScore: 11.0 });
+
+      const result = await service.generateForClass('c-1', 'p-1');
+
+      expect(prismaMock.$transaction).toHaveBeenCalled();
+      expect(result.count).toBe(3);
+      expect(prismaMock.bulletin.upsert).toHaveBeenCalledTimes(3);
+
+      // Verify rank calls: first two should be rank 1 (tied), third should be rank 3
+      const firstUpsertCall = prismaMock.bulletin.upsert.mock.calls[0][0];
+      const secondUpsertCall = prismaMock.bulletin.upsert.mock.calls[1][0];
+      const thirdUpsertCall = prismaMock.bulletin.upsert.mock.calls[2][0];
+
+      expect(firstUpsertCall.create.rank).toBe(1);
+      expect(secondUpsertCall.create.rank).toBe(1);
+      expect(thirdUpsertCall.create.rank).toBe(3);
     });
   });
 });

@@ -112,7 +112,7 @@ export default function EstablishmentsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [isTrashMode, activeTenantId, user?.isRoot]);
+  }, [isTrashMode, activeTenantId, user]);
 
   useEffect(() => {
     fetchEstablishments();

@@ -29,9 +29,10 @@ async function bootstrap() {
   const rawOrigins = [
     'https://bsofts-school.vercel.app',
     'http://localhost:3026',
+    'http://127.0.0.1:3026',
     process.env.FRONTEND_URL,
     ...configuredCors,
-    ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://localhost:3025'] : []),
+    ...(process.env.NODE_ENV !== 'production' ? ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3025'] : []),
   ];
 
   const allowedOrigins = Array.from(

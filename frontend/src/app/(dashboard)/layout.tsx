@@ -11,6 +11,7 @@ import { Sidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { HorizontalNav } from '@/components/layout/horizontal-nav';
 import { ScrollToTop } from '@/components/ui/scroll-to-top';
+import { AiAssistantDrawer } from '@/components/ai/ai-assistant-drawer';
 
 const routePermissions: Record<string, string> = {
   '/students': 'students:list',
@@ -124,6 +125,7 @@ export default function DashboardLayout({
           </div>
         </div>
         <ScrollToTop />
+        <AiAssistantDrawer />
       </ErrorBoundary>
     </ToastProvider>
   );

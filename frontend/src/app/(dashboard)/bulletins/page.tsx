@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
-  FileText, Search, Download, CheckCircle, XCircle, AlertCircle, Eye
+  FileText, Search, Download, CheckCircle, XCircle, AlertCircle, Eye, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -15,12 +15,15 @@ import { usePagination } from '@/hooks/use-pagination';
 import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { useActiveContext } from '@/hooks/use-active-context';
+import { useTenantAi } from '@/hooks/use-tenant-ai';
+import { AiBulletinModal } from '@/components/ai/ai-bulletin-modal';
 import type { BulletinItem, DetailedBulletin, Class } from '@/types';
 
 export default function BulletinsPage() {
   const { t } = useTranslation();
   const { showToast } = useToast();
   const { contextParams } = useActiveContext();
+  const { hasAiFeature } = useTenantAi();
 
   const [bulletins, setBulletins] = useState<BulletinItem[]>([]);
   const [classes, setClasses] = useState<Class[]>([]);
@@ -37,6 +40,8 @@ export default function BulletinsPage() {
   const [selectedBulletin, setSelectedBulletin] = useState<DetailedBulletin | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+  const [showAiBulletinModal, setShowAiBulletinModal] = useState(false);
+  const [aiStudentData, setAiStudentData] = useState<{ studentId: string; studentName: string; periodId: string } | null>(null);
 
   // Pagination
   const filteredBulletins = useMemo(() => {
@@ -160,10 +165,25 @@ export default function BulletinsPage() {
             {t('navigation.bulletinsDesc') || 'Gérez et éditez les bulletins officiels des élèves'}
           </p>
         </div>
-        <Button onClick={() => setShowGenerateModal(true)}>
-          <FileText className="mr-2 h-4 w-4" />
-          {t('exams.calculateBulletins') || 'Générer les Bulletins'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {hasAiFeature && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAiStudentData(null);
+                setShowAiBulletinModal(true);
+              }}
+              className="border-[#CCA43B] text-[#8C6D1F] hover:bg-[#FAF6EC] dark:hover:bg-[#2A2415] font-medium"
+            >
+              <Sparkles className="mr-2 h-4 w-4 text-[#CCA43B]" />
+              Appréciation IA
+            </Button>
+          )}
+          <Button onClick={() => setShowGenerateModal(true)}>
+            <FileText className="mr-2 h-4 w-4" />
+            {t('exams.calculateBulletins') || 'Générer les Bulletins'}
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -360,7 +380,7 @@ export default function BulletinsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <h3 className="font-semibold text-lg">Informations de l'élève</h3>
+                  <h3 className="font-semibold text-lg">Informations de l&apos;élève</h3>
                 </CardHeader>
                 <CardContent className="space-y-1 text-sm">
                   <p>
@@ -450,6 +470,23 @@ export default function BulletinsPage() {
             </div>
 
             <div className="flex justify-end gap-2">
+              {hasAiFeature && selectedBulletin && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setAiStudentData({
+                      studentId: selectedBulletin.student.id,
+                      studentName: `${selectedBulletin.student.firstName} ${selectedBulletin.student.lastName}`,
+                      periodId: selectedBulletin.period.id,
+                    });
+                    setShowAiBulletinModal(true);
+                  }}
+                  className="border-[#CCA43B] text-[#8C6D1F] hover:bg-[#FAF6EC] dark:hover:bg-[#2A2415] font-medium"
+                >
+                  <Sparkles className="mr-2 h-4 w-4 text-[#CCA43B]" />
+                  Générer appréciation IA
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() =>
@@ -469,6 +506,17 @@ export default function BulletinsPage() {
           </div>
         ) : null}
       </Modal>
+
+      {/* AI Bulletin Remarks Generator Modal */}
+      {hasAiFeature && (
+        <AiBulletinModal
+          isOpen={showAiBulletinModal}
+          onClose={() => setShowAiBulletinModal(false)}
+          studentId={aiStudentData?.studentId}
+          periodId={aiStudentData?.periodId}
+          studentName={aiStudentData?.studentName}
+        />
+      )}
     </div>
   );
 }

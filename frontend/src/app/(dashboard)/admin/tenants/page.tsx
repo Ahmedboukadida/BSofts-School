@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Users,
+  Sparkles,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,6 +65,10 @@ export default function SaaSAdminTenantsPage() {
             activePlanPrice: Number(t.activePlanPrice ?? plan?.price ?? 350),
             currency: 'TND',
             isActive: t.isActive ?? t.user?.isActive ?? true,
+            hasAiFeature:
+              t.planFeatureOverrides?.some(
+                (o: any) => o.featureCode === 'AI_FEATURES_ENABLED' && (o.value === 'true' || o.value === '1'),
+              ) ?? false,
           };
         });
         setTenants(formatted);
@@ -172,6 +177,22 @@ export default function SaaSAdminTenantsPage() {
   };
 
 
+  const handleToggleAi = async (item: TenantItem) => {
+    try {
+      const nextState = !item.hasAiFeature;
+      await api.put(`/ai/admin/tenants/${item.id}/toggle`, { isEnabled: nextState });
+      showToast(
+        nextState
+          ? `Fonctionnalités IA activées pour ${item.name}`
+          : `Fonctionnalités IA désactivées pour ${item.name}`,
+        'success',
+      );
+      await fetchTenants();
+    } catch (err: any) {
+      showApiErrorToast(err, 'Erreur lors du basculement de l’option IA');
+    }
+  };
+
   const filteredTenants = tenants.filter((t) => {
     if (statusFilter && (statusFilter === 'active' ? !t.isActive : t.isActive)) return false;
     return true;
@@ -232,6 +253,28 @@ export default function SaaSAdminTenantsPage() {
             {Number(row.activePlanPrice || 0).toLocaleString('fr-TN')} {row.currency || 'TND'} / mois
           </span>
         </div>
+      ),
+    },
+    {
+      key: 'hasAiFeature',
+      header: 'Option IA',
+      render: (row) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleAi(row);
+          }}
+          type="button"
+          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold cursor-pointer transition-all duration-200 border shadow-xs ${
+            row.hasAiFeature
+              ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-300/80 hover:bg-amber-500/25'
+              : 'bg-muted/40 text-text-tertiary border-border hover:bg-muted hover:text-text-primary'
+          }`}
+          title="Cliquer pour activer ou désactiver l'accès IA pour cet établissement"
+        >
+          <Sparkles className={`w-3.5 h-3.5 ${row.hasAiFeature ? 'text-amber-500 animate-pulse' : 'text-text-tertiary'}`} />
+          <span>{row.hasAiFeature ? 'IA Activée' : 'Désactivée'}</span>
+        </button>
       ),
     },
     {

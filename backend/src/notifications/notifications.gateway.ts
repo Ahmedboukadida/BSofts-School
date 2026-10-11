@@ -14,6 +14,8 @@ import { Logger } from '@nestjs/common';
 @WebSocketGateway({
   cors: {
     origin: [
+      'http://localhost:3026',
+      'http://127.0.0.1:3026',
       'http://localhost:3000',
       'http://localhost:3001',
       'http://127.0.0.1:3000',

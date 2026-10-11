@@ -36,24 +36,28 @@ RUN npm prune --production
 FROM node:22-alpine AS runner
 WORKDIR /app
 
-RUN apk add --no-cache openssl libc6-compat wget
+RUN apk add --no-cache openssl libc6-compat wget && \
+    mkdir -p /app/uploads /app/data && \
+    chown -R node:node /app && \
+    chmod -R 777 /app/uploads /app/data
 
 ENV NODE_ENV=production
 ENV PORT=3025
-
-# Create dedicated non-root application user
-USER node
 
 # Copy production artifacts
 COPY --chown=node:node --from=builder /app/node_modules ./node_modules
 COPY --chown=node:node --from=builder /app/dist ./dist
 COPY --chown=node:node --from=builder /app/prisma ./prisma
 COPY --chown=node:node --from=builder /app/package.json ./package.json
+COPY --chown=node:node --from=builder /app/data ./data
+
+# Switch to non-root user
+USER node
 
 EXPOSE 3025
 
 # Container Healthcheck using NestJS /api/health probe
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=15s --timeout=5s --start-period=20s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3025/api/health || exit 1
 
 CMD ["node", "dist/main"]

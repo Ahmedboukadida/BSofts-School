@@ -12,6 +12,7 @@ import {
   GraduationCap,
   Users,
   FileText,
+  Sparkles,
 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,29 +23,37 @@ import { DataTable, ColumnDef, DetailSection } from '@/components/ui/data-table'
 import { showToast, showApiErrorToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 import { useActiveContext } from '@/hooks/use-active-context';
+import { useTenantAi } from '@/hooks/use-tenant-ai';
+import { AiHomeworkModal } from '@/components/ai/ai-homework-modal';
 import type { HomeworkItem } from '@/types';
 
 export default function HomeworkPage() {
   const { contextParams } = useActiveContext();
+  const { hasAiFeature } = useTenantAi();
   const [homeworkList, setHomeworkList] = useState<HomeworkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isTrashMode, setIsTrashMode] = useState(false);
   const [classFilter, setClassFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [showAiHomeworkModal, setShowAiHomeworkModal] = useState(false);
 
   // Create / Edit Modal State (Extra Large Size 6xl)
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<HomeworkItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    className: '',
-    matiereName: '',
-    assignedDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
-    totalStudents: 0,
-    status: 'OPEN' as 'OPEN' | 'SUBMITTED' | 'GRADED' | 'EXPIRED',
+  const [formData, setFormData] = useState(() => {
+    const today = new Date();
+    const nextWeek = new Date(today.getTime() + 7 * 86400000);
+    return {
+      title: '',
+      description: '',
+      className: '',
+      matiereName: '',
+      assignedDate: today.toISOString().split('T')[0],
+      dueDate: nextWeek.toISOString().split('T')[0],
+      totalStudents: 0,
+      status: 'OPEN' as 'OPEN' | 'SUBMITTED' | 'GRADED' | 'EXPIRED',
+    };
   });
 
   const fetchHomework = useCallback(async () => {
@@ -349,6 +358,16 @@ export default function HomeworkPage() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {hasAiFeature && (
+            <Button
+              variant="outline"
+              onClick={() => setShowAiHomeworkModal(true)}
+              className="border-[#CCA43B] text-[#8C6D1F] hover:bg-[#FAF6EC] dark:hover:bg-[#2A2415] font-medium"
+            >
+              <Sparkles className="w-4 h-4 mr-1.5 text-[#CCA43B]" />
+              Générer devoir IA
+            </Button>
+          )}
           <Button
             variant={isTrashMode ? 'secondary' : 'outline'}
             onClick={() => setIsTrashMode(!isTrashMode)}
@@ -625,6 +644,15 @@ export default function HomeworkPage() {
           </div>
         </form>
       </Modal>
+
+      {/* AI Homework Generator Modal */}
+      {hasAiFeature && (
+        <AiHomeworkModal
+          isOpen={showAiHomeworkModal}
+          onClose={() => setShowAiHomeworkModal(false)}
+          onCreated={() => fetchHomework()}
+        />
+      )}
     </div>
   );
 }

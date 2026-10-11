@@ -90,6 +90,8 @@ export interface TenantItem extends BaseAuditItem {
   activePlanPrice: number;
   currency: 'TND';
   isActive: boolean;
+  hasAiFeature?: boolean;
+  planFeatureOverrides?: Array<{ featureCode: string; value: string }>;
 }
 
 export interface SubscriptionItem extends BaseAuditItem {

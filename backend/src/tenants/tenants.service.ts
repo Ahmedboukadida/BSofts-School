@@ -58,6 +58,7 @@ export class TenantsService {
             },
           },
           settings: true,
+          planFeatureOverrides: true,
         },
       }),
       this.prisma.tenant.count({ where }),
@@ -83,6 +84,7 @@ export class TenantsService {
           },
         },
         settings: true,
+        planFeatureOverrides: true,
       },
     });
 

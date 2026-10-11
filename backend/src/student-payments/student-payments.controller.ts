@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe,
+  Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe, Res,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { StudentPaymentsService } from './student-payments.service';
@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Permissions } from '../common/decorators/permissions.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
-import { CurrentUser } from '../common/decorators';
+import { CurrentUser, Public } from '../common/decorators';
 
 @ApiTags('Payments')
 @ApiBearerAuth()
@@ -126,5 +126,21 @@ export class StudentPaymentsController {
     @CurrentUser() user: any,
   ) {
     return this.service.confirmOnlinePayment(body.paymentId, body.gateway, user);
+  }
+
+  @Get('callback/clictopay')
+  @Public()
+  @ApiOperation({ summary: 'ClicToPay browser callback for student payment' })
+  @ApiResponse({ status: 200, description: 'ClicToPay return handled' })
+  handleClicToPayCallback(@Query() query: any, @Res() res: any) {
+    return this.service.handleClicToPayCallback(query, res);
+  }
+
+  @Post('webhook/clictopay')
+  @Public()
+  @ApiOperation({ summary: 'ClicToPay server-to-server webhook IPN' })
+  @ApiResponse({ status: 200, description: 'Webhook processed' })
+  handleClicToPayWebhook(@Body() body: any) {
+    return this.service.handleClicToPayCallback(body);
   }
 }

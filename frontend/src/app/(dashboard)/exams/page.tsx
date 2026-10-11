@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Plus, Search, FileText, Edit, Trash2, Award, Printer,
   Calculator, CheckCircle, AlertTriangle, XCircle, GraduationCap,
-  BookOpen, Calendar, ListChecks, Globe, CheckCircle2
+  BookOpen, Calendar, ListChecks, Globe, CheckCircle2, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -19,14 +19,18 @@ import { Pagination } from '@/components/ui/pagination';
 import api from '@/lib/api';
 import { LoadingCard } from '@/components/ui/spinner';
 import { useActiveContext } from '@/hooks/use-active-context';
+import { useTenantAi } from '@/hooks/use-tenant-ai';
+import { AiExamModal } from '@/components/ai/ai-exam-modal';
 import type { Exam, BulletinSummary, DetailedBulletinData } from '@/types';
 
 export default function ExamsAndBulletinsPage() {
   const { t } = useTranslation();
   const toast = useToast();
   const { contextParams } = useActiveContext();
+  const { hasAiFeature } = useTenantAi();
 
   const [activeTab, setActiveTab] = useState<'exams' | 'bulletins'>('exams');
+  const [showAiExamModal, setShowAiExamModal] = useState(false);
   const [exams, setExams] = useState<Exam[]>([]);
   const [bulletins, setBulletins] = useState<BulletinSummary[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
@@ -375,10 +379,22 @@ export default function ExamsAndBulletinsPage() {
           </div>
 
           {activeTab === 'exams' && (
-            <Button onClick={openAddExamForm} className="bg-[#242F40] hover:bg-[#363636] text-white">
-              <Plus className="w-4 h-4 mr-1.5" />
-              {t('exams.newExam')}
-            </Button>
+            <div className="flex items-center gap-2">
+              {hasAiFeature && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAiExamModal(true)}
+                  className="border-[#CCA43B] text-[#8C6D1F] hover:bg-[#FAF6EC] dark:hover:bg-[#2A2415] font-medium"
+                >
+                  <Sparkles className="w-4 h-4 mr-1.5 text-[#CCA43B]" />
+                  Générer un sujet IA
+                </Button>
+              )}
+              <Button onClick={openAddExamForm} className="bg-[#242F40] hover:bg-[#363636] text-white">
+                <Plus className="w-4 h-4 mr-1.5" />
+                {t('exams.newExam')}
+              </Button>
+            </div>
           )}
         </div>
       </div>
@@ -1150,6 +1166,15 @@ export default function ExamsAndBulletinsPage() {
           </div>
         </div>
       </Modal>
+
+      {/* AI Exam Generator Modal */}
+      {hasAiFeature && (
+        <AiExamModal
+          isOpen={showAiExamModal}
+          onClose={() => setShowAiExamModal(false)}
+          onCreated={() => fetchExams()}
+        />
+      )}
 
       {/* Confirmation Dialog */}
       <ConfirmDialog

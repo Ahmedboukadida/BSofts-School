@@ -42,8 +42,19 @@ export class UploadService {
       this.baseUploadDir = path.join(process.cwd(), 'uploads');
     }
 
-    if (!fs.existsSync(this.baseUploadDir)) {
-      fs.mkdirSync(this.baseUploadDir, { recursive: true });
+    try {
+      if (!fs.existsSync(this.baseUploadDir)) {
+        fs.mkdirSync(this.baseUploadDir, { recursive: true });
+      }
+    } catch (err: any) {
+      this.logger.warn(`Failed to create ${this.baseUploadDir} (${err.message}). Falling back to temporary directory.`);
+      const os = require('os');
+      this.baseUploadDir = path.join(os.tmpdir(), 'bsofts-uploads');
+      if (!fs.existsSync(this.baseUploadDir)) {
+        try {
+          fs.mkdirSync(this.baseUploadDir, { recursive: true });
+        } catch { /* ignored */ }
+      }
     }
   }
 

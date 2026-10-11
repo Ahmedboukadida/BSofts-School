@@ -34,7 +34,7 @@ WORKDIR /app
 RUN apk add --no-cache wget
 
 ENV NODE_ENV=production
-ENV PORT=3000
+ENV PORT=3026
 ENV HOSTNAME="0.0.0.0"
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -49,10 +49,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3026
 
 # Container Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3026/ || exit 1
 
 CMD ["node", "server.js"]

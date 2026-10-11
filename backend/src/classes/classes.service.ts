@@ -334,6 +334,16 @@ export class ClassesService {
     });
     if (!targetClass) throw new NotFoundException(`Classe cible avec ID ${targetClassId} introuvable`);
 
+    // Strict Multi-Establishment Integrity Check
+    if (targetClass.establishmentId !== fromClass.establishmentId) {
+      throw new BadRequestException('La classe cible doit appartenir au même établissement.');
+    }
+
+    // Target Academic Year Integrity Check
+    if (targetClass.academicYearId !== targetAcademicYearId) {
+      throw new BadRequestException("La classe cible doit correspondre à l'année académique cible spécifiée.");
+    }
+
     // Fetch the latest bulletins or academic records for this class
     const latestBulletins = await this.prisma.bulletin.findMany({
       where: { classId: fromClassId },
@@ -347,80 +357,112 @@ export class ClassesService {
       }
     }
 
-    const processedRecords = [];
+    // Calculate how many students are eligible for promotion
+    const eligiblePromotedCount = fromClass.studentClassAssignments.filter((a) => {
+      const b = bulletinsMap.get(a.studentId);
+      return b ? b.isPromoted : false;
+    }).length;
 
-    for (const assignment of fromClass.studentClassAssignments) {
-      const studentId = assignment.studentId;
-      const bulletin = bulletinsMap.get(studentId);
-      const isPromoted = bulletin ? bulletin.isPromoted : false;
-      const averageScore = bulletin ? Number(bulletin.averageScore) : 0;
-      const reason = isPromoted
-        ? `Admis vers ${targetClass.name} (Moyenne: ${averageScore.toFixed(2)}/20)`
-        : `Non promu / Redoublement (Moyenne: ${averageScore.toFixed(2)}/20)`;
-
-      // Create or update GraduationRecord
-      const gradRecord = await this.prisma.graduationRecord.upsert({
+    // Capacity verification
+    if (targetClass.maxStudents) {
+      const currentEnrolled = await this.prisma.studentClassAssignment.count({
         where: {
-          studentId_academicYearId: {
-            studentId,
-            academicYearId: fromClass.academicYearId,
-          },
-        },
-        update: {
-          fromClassId,
-          toClassId: isPromoted ? targetClassId : fromClassId,
-          averageScore,
-          isPromoted,
-          reason,
-          processedBy: user?.userId || 'SYSTEM',
-          processedAt: new Date(),
-        },
-        create: {
-          studentId,
-          academicYearId: fromClass.academicYearId,
-          fromClassId,
-          toClassId: isPromoted ? targetClassId : fromClassId,
-          averageScore,
-          isPromoted,
-          reason,
-          processedBy: user?.userId || 'SYSTEM',
+          classId: targetClassId,
+          academicYearId: targetAcademicYearId,
+          student: { isDeleted: false, isActive: true },
         },
       });
 
-      // Update the previous assignment status
-      await this.prisma.studentClassAssignment.update({
-        where: { id: assignment.id },
-        data: { isPromoted },
-      });
+      if (currentEnrolled + eligiblePromotedCount > targetClass.maxStudents) {
+        throw new BadRequestException(
+          `Capacité maximale dépassée pour la classe cible (${targetClass.name}): ` +
+            `${currentEnrolled} inscrits actuels + ${eligiblePromotedCount} admis = ` +
+            `${currentEnrolled + eligiblePromotedCount} (Capacité max: ${targetClass.maxStudents}).`,
+        );
+      }
+    }
 
-      // If promoted, automatically assign student to target class in target academic year
-      if (isPromoted) {
-        await this.prisma.studentClassAssignment.upsert({
+    // Execute promotion atomically inside a transaction
+    const processedRecords = await this.prisma.$transaction(async (tx) => {
+      const records = [];
+
+      for (const assignment of fromClass.studentClassAssignments) {
+        const studentId = assignment.studentId;
+        const bulletin = bulletinsMap.get(studentId);
+        const isPromoted = bulletin ? bulletin.isPromoted : false;
+        const averageScore = bulletin ? Number(bulletin.averageScore) : 0;
+        const reason = isPromoted
+          ? `Admis vers ${targetClass.name} (Moyenne: ${averageScore.toFixed(2)}/20)`
+          : `Non promu / Redoublement (Moyenne: ${averageScore.toFixed(2)}/20)`;
+
+        // Create or update GraduationRecord
+        await tx.graduationRecord.upsert({
           where: {
             studentId_academicYearId: {
               studentId,
-              academicYearId: targetAcademicYearId,
+              academicYearId: fromClass.academicYearId,
             },
           },
           update: {
-            classId: targetClassId,
-            isPromoted: null,
+            fromClassId,
+            toClassId: isPromoted ? targetClassId : fromClassId,
+            averageScore,
+            isPromoted,
+            reason,
+            processedBy: user?.userId || 'SYSTEM',
+            processedAt: new Date(),
           },
           create: {
             studentId,
-            classId: targetClassId,
-            academicYearId: targetAcademicYearId,
+            academicYearId: fromClass.academicYearId,
+            fromClassId,
+            toClassId: isPromoted ? targetClassId : fromClassId,
+            averageScore,
+            isPromoted,
+            reason,
+            processedBy: user?.userId || 'SYSTEM',
           },
+        });
+
+        // Update the previous assignment status
+        await tx.studentClassAssignment.update({
+          where: { id: assignment.id },
+          data: { isPromoted },
+        });
+
+        // If promoted, assign student to target class in target academic year
+        if (isPromoted) {
+          await tx.studentClassAssignment.upsert({
+            where: {
+              studentId_academicYearId: {
+                studentId,
+                academicYearId: targetAcademicYearId,
+              },
+            },
+            update: {
+              classId: targetClassId,
+              isPromoted: null,
+            },
+            create: {
+              studentId,
+              classId: targetClassId,
+              academicYearId: targetAcademicYearId,
+            },
+          });
+        }
+
+        records.push({
+          student: assignment.student,
+          isPromoted,
+          averageScore,
+          targetClass: isPromoted ? targetClass.name : fromClass.name,
         });
       }
 
-      processedRecords.push({
-        student: assignment.student,
-        isPromoted,
-        averageScore,
-        targetClass: isPromoted ? targetClass.name : fromClass.name,
-      });
-    }
+      return records;
+    });
+
+    await this.cacheService.invalidateResource(null, fromClass.establishmentId, 'classes');
 
     return {
       message: `Passage de classe effectué: ${processedRecords.filter((p) => p.isPromoted).length} admis, ${processedRecords.filter((p) => !p.isPromoted).length} non admis`,

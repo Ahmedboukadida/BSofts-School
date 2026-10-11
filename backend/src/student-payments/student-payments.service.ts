@@ -383,12 +383,19 @@ export class StudentPaymentsService {
 
       const Stripe = (await import('stripe')).default;
       const stripe = new Stripe(stripeKey, { apiVersion: '2025-02-24.acacia' as any });
+
+      // Ensure valid ISO currency code for Stripe card processing
+      const supportedCurrencies = ['eur', 'usd', 'gbp', 'cad'];
+      const resolvedCurrency = payment.currency && supportedCurrencies.includes(payment.currency.toLowerCase())
+        ? payment.currency.toLowerCase()
+        : 'eur';
+
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
           {
             price_data: {
-              currency: 'eur',
+              currency: resolvedCurrency,
               product_data: {
                 name: `Frais Scolaires — ${payment.student.firstName} ${payment.student.lastName}`,
                 description: payment.notes || 'Paiement en ligne scolarité',
@@ -432,7 +439,8 @@ export class StudentPaymentsService {
         ? 'https://test.clictopay.com/payment/rest/register.do'
         : 'https://clictopay.com/payment/rest/register.do';
 
-      const returnUrl = `${frontendUrl}/api/student-payments/callback/clictopay?paymentId=${payment.id}`;
+      const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      const returnUrl = `${backendUrl}/api/student-payments/callback/clictopay?paymentId=${payment.id}`;
 
       try {
         const params = new URLSearchParams({
@@ -465,6 +473,28 @@ export class StudentPaymentsService {
         checkoutUrl: `${frontendUrl}/payments?mockOnline=clictopay&paymentId=${payment.id}&orderNumber=${orderNumber}`,
       };
     }
+  }
+
+  async handleClicToPayCallback(query: any, res?: any) {
+    const { paymentId, respCode, responseCode } = query || {};
+    const isSuccess = respCode === '00' || respCode === '0' || responseCode === '00' || !respCode;
+
+    if (paymentId && isSuccess) {
+      await this.confirmOnlinePayment(paymentId, 'CLIC_TO_PAY');
+    }
+
+    const frontendUrl = process.env.FRONTEND_URL || 'https://bsofts-school.vercel.app';
+    if (res && typeof res.redirect === 'function') {
+      return res.redirect(
+        `${frontendUrl}/payments?status=${isSuccess ? 'success' : 'failed'}&paymentId=${paymentId || ''}`,
+      );
+    }
+
+    return {
+      success: isSuccess,
+      message: isSuccess ? 'Paiement ClicToPay validé avec succès' : 'Échec de paiement ClicToPay',
+      paymentId,
+    };
   }
 
   async confirmOnlinePayment(paymentId: string, gateway: string, user?: any) {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ClassesService } from './classes.service';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 
 describe('ClassesService', () => {
   let service: ClassesService;
@@ -18,6 +18,7 @@ describe('ClassesService', () => {
     };
 
     prisma = {
+      $transaction: vi.fn().mockImplementation((cb) => cb(prisma)),
       class: {
         findUnique: vi.fn(),
         findFirst: vi.fn(),
@@ -29,6 +30,15 @@ describe('ClassesService', () => {
       },
       studentClassAssignment: {
         findMany: vi.fn(),
+        count: vi.fn().mockResolvedValue(0),
+        update: vi.fn().mockResolvedValue({}),
+        upsert: vi.fn().mockResolvedValue({}),
+      },
+      bulletin: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+      graduationRecord: {
+        upsert: vi.fn().mockResolvedValue({}),
       },
       auditLog: {
         create: vi.fn().mockResolvedValue({ id: 'aud-1' }),
@@ -204,6 +214,114 @@ describe('ClassesService', () => {
       prisma.class.findUnique.mockResolvedValue(null);
 
       await expect(service.remove('1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('promoteClass', () => {
+    it('should throw NotFoundException if source class does not exist', async () => {
+      prisma.class.findUnique.mockResolvedValueOnce(null);
+
+      await expect(
+        service.promoteClass('cls-nonexistent', 'cls-target', 'ay-2026'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw NotFoundException if target class does not exist', async () => {
+      prisma.class.findUnique
+        .mockResolvedValueOnce({ id: 'cls-1', establishmentId: 'est-1' })
+        .mockResolvedValueOnce(null);
+
+      await expect(
+        service.promoteClass('cls-1', 'cls-target-nonexistent', 'ay-2026'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException if target class belongs to a different establishment', async () => {
+      prisma.class.findUnique
+        .mockResolvedValueOnce({ id: 'cls-1', establishmentId: 'est-1', academicYearId: 'ay-2025' })
+        .mockResolvedValueOnce({ id: 'cls-2', establishmentId: 'est-OTHER', academicYearId: 'ay-2026' });
+
+      await expect(
+        service.promoteClass('cls-1', 'cls-2', 'ay-2026'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if target class academicYear does not match targetAcademicYearId', async () => {
+      prisma.class.findUnique
+        .mockResolvedValueOnce({ id: 'cls-1', establishmentId: 'est-1', academicYearId: 'ay-2025' })
+        .mockResolvedValueOnce({ id: 'cls-2', establishmentId: 'est-1', academicYearId: 'ay-MISMATCH' });
+
+      await expect(
+        service.promoteClass('cls-1', 'cls-2', 'ay-2026'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException if target class capacity would be exceeded', async () => {
+      prisma.class.findUnique
+        .mockResolvedValueOnce({
+          id: 'cls-1',
+          establishmentId: 'est-1',
+          academicYearId: 'ay-2025',
+          studentClassAssignments: [
+            { id: 'asgn-1', studentId: 'stu-1', student: { id: 'stu-1' } },
+            { id: 'asgn-2', studentId: 'stu-2', student: { id: 'stu-2' } },
+          ],
+        })
+        .mockResolvedValueOnce({
+          id: 'cls-2',
+          name: '5ème B',
+          establishmentId: 'est-1',
+          academicYearId: 'ay-2026',
+          maxStudents: 10,
+        });
+
+      // Both students have passing bulletins
+      prisma.bulletin.findMany.mockResolvedValue([
+        { studentId: 'stu-1', isPromoted: true, averageScore: 14.5 },
+        { studentId: 'stu-2', isPromoted: true, averageScore: 13.0 },
+      ]);
+
+      // Target class already has 9 active students
+      prisma.studentClassAssignment.count.mockResolvedValue(9);
+
+      await expect(
+        service.promoteClass('cls-1', 'cls-2', 'ay-2026'),
+      ).rejects.toThrow(/Capacité maximale dépassée/);
+    });
+
+    it('should successfully execute promotion atomically and invalidate cache', async () => {
+      prisma.class.findUnique
+        .mockResolvedValueOnce({
+          id: 'cls-1',
+          name: '6ème A',
+          establishmentId: 'est-1',
+          academicYearId: 'ay-2025',
+          studentClassAssignments: [
+            { id: 'asgn-1', studentId: 'stu-1', student: { id: 'stu-1', firstName: 'Sami' } },
+            { id: 'asgn-2', studentId: 'stu-2', student: { id: 'stu-2', firstName: 'Leila' } },
+          ],
+        })
+        .mockResolvedValueOnce({
+          id: 'cls-2',
+          name: '5ème A',
+          establishmentId: 'est-1',
+          academicYearId: 'ay-2026',
+          maxStudents: 30,
+        });
+
+      prisma.bulletin.findMany.mockResolvedValue([
+        { studentId: 'stu-1', isPromoted: true, averageScore: 14.0 },
+        { studentId: 'stu-2', isPromoted: false, averageScore: 8.5 },
+      ]);
+
+      prisma.studentClassAssignment.count.mockResolvedValue(15);
+
+      const result = await service.promoteClass('cls-1', 'cls-2', 'ay-2026', { userId: 'admin-1' });
+
+      expect(prisma.$transaction).toHaveBeenCalled();
+      expect(result.processedCount).toBe(2);
+      expect(result.promotedCount).toBe(1);
+      expect(cacheService.invalidateResource).toHaveBeenCalledWith(null, 'est-1', 'classes');
     });
   });
 });

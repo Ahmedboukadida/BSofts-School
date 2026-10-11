@@ -8,6 +8,8 @@ import { CommandPalette } from '@/components/command-palette';
 import { useTranslation } from '@/components/providers/i18n-provider';
 import { useAuthStore } from '@/store/auth-store';
 import { useEstablishmentStore, EstablishmentOption, TenantOption, AcademicYearOption } from '@/store/establishment-store';
+import { useSocketNotifications } from '@/hooks/use-socket-notifications';
+import { showToast } from '@/components/ui/toast';
 import api from '@/lib/api';
 
 interface HeaderProps {
@@ -62,6 +64,21 @@ export function Header({ onMenuClick }: HeaderProps) {
       setUnreadCount(list.filter((n: Notification) => !n.isRead).length);
     } catch { /* empty */ }
   }, []);
+
+  const handleSocketNotification = useCallback((newNotif: any) => {
+    const formatted: Notification = {
+      id: newNotif.id || String(Date.now()),
+      title: newNotif.title || 'Notification',
+      message: newNotif.message || '',
+      isRead: Boolean(newNotif.isRead),
+      createdAt: newNotif.createdAt || new Date().toISOString(),
+    };
+    setNotifications((prev) => [formatted, ...prev]);
+    setUnreadCount((prev) => prev + 1);
+    showToast(`${formatted.title}: ${formatted.message}`, 'info');
+  }, []);
+
+  useSocketNotifications(handleSocketNotification);
 
   useEffect(() => {
     fetchNotifications();
