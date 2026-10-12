@@ -122,9 +122,23 @@ export class MeetingsService {
   }
 
   async create(dto: CreateMeetingDto, user?: any) {
-    const establishmentId = dto.establishmentId || user?.establishmentId;
+    let establishmentId = dto.establishmentId || user?.establishmentId;
     if (!establishmentId) {
-      throw new BadRequestException('establishmentId is required to schedule a meeting');
+      if (user?.tenantId) {
+        const est = await this.prisma.establishment.findFirst({
+          where: { tenantId: user.tenantId, isDeleted: false },
+        });
+        establishmentId = est?.id;
+      }
+      if (!establishmentId) {
+        const est = await this.prisma.establishment.findFirst({
+          where: { isDeleted: false },
+        });
+        establishmentId = est?.id;
+      }
+    }
+    if (!establishmentId) {
+      throw new BadRequestException('Aucun établissement actif trouvé pour planifier la réunion');
     }
 
     const roomName = `school-room-${randomUUID().slice(0, 8)}`;

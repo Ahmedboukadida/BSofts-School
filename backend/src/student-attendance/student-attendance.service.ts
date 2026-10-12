@@ -222,7 +222,7 @@ export class StudentAttendanceService {
           throw new BadRequestException('Année scolaire requise pour créer une session');
         }
 
-        const currentPeriod = await this.prisma.academicPeriod.findFirst({
+        let currentPeriod = await this.prisma.academicPeriod.findFirst({
           where: {
             academicYearId: currentYear.id,
             academicYear: { establishmentId: cls.establishmentId },
@@ -231,7 +231,22 @@ export class StudentAttendanceService {
         });
 
         if (!currentPeriod?.id) {
-          throw new BadRequestException('Période académique requise pour créer une session');
+          // Fallback to any period in the establishment or create Trimestre 1
+          currentPeriod = await this.prisma.academicPeriod.findFirst({
+            where: { academicYear: { establishmentId: cls.establishmentId } },
+          });
+
+          if (!currentPeriod?.id) {
+            currentPeriod = await this.prisma.academicPeriod.create({
+              data: {
+                academicYearId: currentYear.id,
+                name: 'Trimestre 1',
+                code: 'T1',
+                startDate: new Date(),
+                endDate: new Date(Date.now() + 90 * 24 * 3600 * 1000),
+              },
+            });
+          }
         }
 
         const newSession = await this.prisma.session.create({
@@ -257,17 +272,42 @@ export class StudentAttendanceService {
     const results = await this.prisma.$transaction(async (tx) => {
       const batch = [];
       for (const att of dto.attendances) {
-        const result = await this.mark({
-          studentId: att.studentId,
-          sessionId: targetSessionId,
-          status: att.status,
-          reason: att.reason,
-          markedBy: dto.markedBy,
-        }, tx, user);
-        batch.push(result);
+        const client = tx;
+        const existing = await client.studentAttendance.findUnique({
+          where: { studentId_sessionId: { studentId: att.studentId, sessionId: targetSessionId } },
+        });
+
+        let record;
+        if (existing) {
+          record = await client.studentAttendance.update({
+            where: { id: existing.id },
+            data: { status: att.status as any, reason: att.reason, markedBy: dto.markedBy || user?.username },
+          });
+        } else {
+          record = await client.studentAttendance.create({
+            data: {
+              studentId: att.studentId,
+              sessionId: targetSessionId,
+              status: att.status as any,
+              reason: att.reason,
+              markedBy: dto.markedBy || user?.username,
+            },
+          });
+        }
+        batch.push(new StudentAttendanceEntity(record as any));
       }
       return batch;
     });
+
+    // Notify parents asynchronously outside of the database transaction
+    for (const att of dto.attendances) {
+      if (att.status === 'ABSENT') {
+        this.notifyParentsOfAbsence(att.studentId, targetSessionId).catch((err) =>
+          this.logger.warn(`Failed to dispatch parent absence alert: ${err?.message || err}`),
+        );
+      }
+    }
+
     return { message: `${results.length} attendance records marked`, data: results };
   }
 

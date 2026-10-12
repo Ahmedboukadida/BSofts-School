@@ -12,7 +12,8 @@ export class SaaSPlansService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (query.includeDeleted) {
+    const isTrash = query.includeDeleted === true || query.includeDeleted === 'true';
+    if (isTrash) {
       where.isActive = false;
     } else if (isActive !== undefined) {
       where.isActive = isActive === 'true' || isActive === true;

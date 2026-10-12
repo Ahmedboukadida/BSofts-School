@@ -17,8 +17,8 @@ export class NotificationsController {
   @Get()
   @ApiOperation({ summary: 'List all notifications' })
   @ApiResponse({ status: 200, description: 'Notifications retrieved successfully' })
-  findAll(@CurrentUser() user: any, @Query() query: QueryNotificationDto) {
-    return this.service.findAll(user.id, query);
+  findAll(@CurrentUser() user: any, @Query() query: any) {
+    return this.service.findAll(user, query);
   }
 
   @Post()

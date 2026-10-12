@@ -11,12 +11,18 @@ export class NotificationsService {
     @Optional() private readonly gateway?: NotificationsGateway,
   ) {}
 
-  async findAll(userId: string, query: QueryNotificationDto) {
+  async findAll(user: any, query: any) {
     const { page = 1, limit = 20, isRead, type } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = { userId };
-    if (isRead !== undefined) where.isRead = isRead;
+    const userId = typeof user === 'string' ? user : user?.id;
+    const isRootOrAdmin = user?.isRoot || user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
+
+    const where: any = {};
+    if (!isRootOrAdmin || query.onlyMine === 'true') {
+      where.userId = userId;
+    }
+    if (isRead !== undefined) where.isRead = isRead === 'true' || isRead === true;
     if (type) where.type = type;
 
     const [data, total] = await Promise.all([

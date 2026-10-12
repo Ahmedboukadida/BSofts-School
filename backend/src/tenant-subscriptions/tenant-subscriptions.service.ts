@@ -12,7 +12,8 @@ export class TenantSubscriptionsService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (query.includeDeleted) {
+    const isTrash = query.includeDeleted === true || query.includeDeleted === 'true';
+    if (isTrash) {
       where.status = { in: ['CANCELLED', 'EXPIRED'] };
     } else if (status) {
       where.status = status;

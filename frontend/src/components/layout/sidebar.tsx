@@ -43,13 +43,8 @@ export const operationalNavigation: NavigationItem[] = [
     ],
   },
   { name: 'Teachers', href: '/teachers', icon: Users, key: 'nav.teachers', permission: 'teachers:list' },
-  {
-    name: 'Students & Parents', href: '#', icon: GraduationCap, key: 'nav.students',
-    children: [
-      { name: 'Students', href: '/students', icon: GraduationCap, key: 'nav.students', permission: 'students:list' },
-      { name: 'Parents', href: '/parents', icon: Users, key: 'nav.parents', permission: 'parents:list' },
-    ],
-  },
+  { name: 'Students', href: '/students', icon: GraduationCap, key: 'nav.students', permission: 'students:list' },
+  { name: 'Parents', href: '/parents', icon: Users, key: 'nav.parents', permission: 'parents:list' },
   {
     name: 'Schedule & Calendar', href: '#', icon: Calendar, key: 'nav.schedule',
     children: [
@@ -229,7 +224,10 @@ export function Sidebar({ isOpen, onClose, collapsed, onToggleCollapse }: Sideba
             <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-[#E5E5E5] pl-2">
               {item.children?.map((child) => {
                 if (child.permission && !hasPermission(child.permission)) return null;
-                const childActive = pathname === child.href || pathname.startsWith(child.href + '/');
+                const hasSpecificSibling = item.children?.some(
+                  (sibling) => sibling.href !== child.href && sibling.href.startsWith(child.href) && (pathname === sibling.href || pathname.startsWith(sibling.href + '/'))
+                );
+                const childActive = pathname === child.href || (!hasSpecificSibling && pathname.startsWith(child.href + '/'));
                 return (
                   <li key={child.key}>
                     <Link

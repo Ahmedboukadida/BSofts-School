@@ -26,7 +26,8 @@ export class EstablishmentsService {
       where.isActive = typeof isActive === 'string' ? isActive === 'true' : Boolean(isActive);
     }
 
-    if (includeDeleted) {
+    const isTrash = includeDeleted === true || includeDeleted === 'true';
+    if (isTrash) {
       where.OR = [{ isDeleted: true }, { isActive: false }];
     } else {
       where.isDeleted = false;

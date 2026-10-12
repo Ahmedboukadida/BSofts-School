@@ -16,7 +16,8 @@ export class TenantsService {
     const skip = (page - 1) * limit;
 
     const where: any = {};
-    if (query.includeDeleted) {
+    const isTrash = query.includeDeleted === true || query.includeDeleted === 'true';
+    if (isTrash) {
       where.user = { isActive: false };
     } else if (query.isActive !== undefined) {
       const activeVal = typeof query.isActive === 'string' ? query.isActive === 'true' : Boolean(query.isActive);
